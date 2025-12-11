@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Withdrawal Link</title>
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<div id="topBar"><div class="rainbow-text">Admin - Set YouTube Link & Code</div></div>
+
+<div class="section">
+  <button onclick="location.href='index.html'">Return Home</button>
+</div>
+
+<div class="section">
+  <label>YouTube Video URL:</label><br>
+  <input type="text" id="ytLink" placeholder="Enter YouTube URL"><br>
+  <label>Secret Withdrawal Code:</label><br>
+  <input type="text" id="secretCode" placeholder="Enter Secret Code"><br>
+  <button onclick="saveLinkCode()">Save</button>
+</div>
+
+<script>
+function saveLinkCode(){
+  const link=document.getElementById('ytLink').value;
+  const code=document.getElementById('secretCode').value;
+  if(link && code){
+    localStorage.setItem('ytLink', link);
+    localStorage.setItem('secretCode', code);
+    alert('YouTube Link and Code Saved!');
+  } else alert('Both fields required!');
+}
+</script>
+</body>
+</html>

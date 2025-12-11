@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile</title>
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+
+<div id="topBar"><div class="rainbow-text">Profile</div></div>
+<div id="coins">Coins: 0</div>
+
+<div class="section">
+  <h3>Your Profile</h3>
+  <input type="text" id="userName" placeholder="Enter Name">
+  <textarea id="userBio" placeholder="Enter Bio"></textarea>
+  <p>Unique ID: <span id="uniqueId"></span></p>
+  <button onclick="saveProfile()">Save Profile</button>
+
+  <h3>Other Users (Demo)</h3>
+  <div id="otherUsers"></div>
+
+  <button onclick="location.href='index.html'">Return Home</button>
+</div>
+
+<script>
+function initProfile(){
+  let uid = localStorage.getItem('uniqueId');
+  if(!uid){
+    uid = Math.floor(100000000000 + Math.random()*900000000000); // Unique 12-digit ID
+    localStorage.setItem('uniqueId', uid);
+  }
+  document.getElementById('uniqueId').innerText = uid;
+
+  const name = localStorage.getItem('userName')||'';
+  const bio = localStorage.getItem('userBio')||'';
+  document.getElementById('userName').value = name;
+  document.getElementById('userBio').value = bio;
+
+  displayOtherUsers();
+}
+
+function saveProfile(){
+  localStorage.setItem('userName', document.getElementById('userName').value);
+  localStorage.setItem('userBio', document.getElementById('userBio').value);
+  alert('Profile saved!');
+  displayOtherUsers();
+}
+
+function displayOtherUsers(){
+  const div = document.getElementById('otherUsers');
+  // Demo: show only self; can expand for multiple users
+  div.innerHTML = `<div>Name: ${localStorage.getItem('userName')||'Guest'}<br>
+                    Bio: ${localStorage.getItem('userBio')||''}<br>
+                    ID: ${localStorage.getItem('uniqueId')}</div>`;
+}
+
+initProfile();
+</script>
+</body>
+</html>

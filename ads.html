@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ads Corner</title>
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+<script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
+</head>
+<body>
+
+<div id="topBar"><div class="rainbow-text">ADS CORNER</div></div>
+<div id="coins">Coins: 0</div>
+
+<div class="section">
+  <h2 class="rainbow-text">Watch Ads to Earn Coins</h2>
+  <button onclick="watchAd(1)">Ad 1 (Earn 1 Coin)</button>
+  <button onclick="watchAd(2)">Ad 2 (Earn 1 Coin)</button>
+  <button onclick="watchAd(3)">Ad 3</button>
+  <button onclick="watchAd(4)">Ad 4</button>
+  <button onclick="location.href='index.html'">Return Home</button>
+</div>
+
+<script>
+// Auto-next ads for buttons 1 and 2 every 15s
+setInterval(()=>{ watchAd(1); },15000);
+setInterval(()=>{ watchAd(2); },15000);
+</script>
+</body>
+</html>

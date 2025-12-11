@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Withdrawals</title>
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<div id="topBar"><div class="rainbow-text">Withdraw Coins</div></div>
+<div id="coins">Coins: 0</div>
+
+<div class="section">
+  <p>Watch full video to know the secret code:</p>
+  <a id="ytVideo" href="https://www.youtube.com/watch?v=yourvideoid" target="_blank">Watch Video</a>
+</div>
+
+<div class="section">
+  <input type="text" id="withdrawCode" placeholder="Enter code">
+  <p>GCash: 1 coin = 0.005 PHP</p>
+  <input type="text" id="gcashNumber" placeholder="GCash Mobile Number">
+  <p>FaucetPay Options:</p>
+  <select id="cryptoChoice">
+    <option value="USDT">USDT (1 coin = 0.000085)</option>
+    <option value="TRX">TRX (1 coin = 0.003)</option>
+    <option value="LTC">LTC (1 coin = 0.000001)</option>
+  </select>
+  <input type="text" id="faucetPayAccount" placeholder="FaucetPay Account">
+  <p>Min: 500 coins | Max: 10000 coins</p>
+  <button onclick="processWithdrawal()">Withdraw Now</button>
+  <button onclick="location.href='index.html'">Return Home</button>
+</div>
+
+<script>
+function processWithdrawal(){
+  const code=document.getElementById('withdrawCode').value;
+  const min=500,max=10000;
+  if(code===localStorage.getItem('secretCode')){
+    const amount=Math.min(coins,max);
+    if(amount<min){ alert('Need at least 500 coins!'); return; }
+    alert('Withdrawal processing!');
+    updateCoins(-amount);
+  } else { alert('Incorrect code!'); }
+}
+</script>
+</body>
+</html>

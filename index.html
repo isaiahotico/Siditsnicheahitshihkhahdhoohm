@@ -3,66 +3,153 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PAPER HOUSE INC - Ultimate CPM Dashboard</title>
+<title>PAPER HOUSE INC</title>
 <style>
 /* Base */
 body {
-  font-family:'Arial',sans-serif;
-  background:#0a0a0a;
+  font-family: 'Arial', sans-serif;
+  background:#0d0d0d;
   color:white;
-  margin:0;
-  padding:0;
+  margin:0; padding:0;
   overflow-x:hidden;
 }
 header {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+  display:flex; justify-content:space-between; align-items:center;
   padding:12px 20px;
   background:linear-gradient(90deg,#ff00ff,#00ffff);
-  box-shadow:0 4px 15px rgba(0,0,0,0.6);
+  box-shadow:0 4px 10px rgba(0,0,0,0.5);
 }
-#balance { font-weight:bold; font-size:24px; text-shadow:0 0 15px #ff00ff;}
-#username { background:magenta; padding:5px 12px; border-radius:6px; font-weight:bold; text-shadow:0 0 8px #fff;}
+#balance {
+  font-weight:bold;
+  font-size:20px;
+  text-shadow:0 0 10px #ff00ff;
+}
+#username {
+  background:magenta;
+  padding:3px 8px;
+  border-radius:5px;
+  font-weight:bold;
+  text-shadow:0 0 5px #fff;
+}
 
 /* Main Button */
-.main { display:flex; justify-content:center; align-items:center; height:70vh;}
-.button { padding:25px 45px; font-size:24px; border:none; border-radius:14px; cursor:pointer; background:linear-gradient(45deg,#ffcc00,#ff6600,#ff00ff); color:#fff; font-weight:bold; box-shadow:0 0 25px rgba(255,255,255,0.25); transition: all 0.3s ease;}
-.button:hover { transform:scale(1.1); box-shadow:0 0 35px rgba(255,255,255,0.6);}
+.main {
+  display:flex; justify-content:center; align-items:center;
+  height:70vh;
+}
+.button {
+  padding:20px 35px;
+  font-size:20px;
+  border:none;
+  border-radius:12px;
+  cursor:pointer;
+  background:linear-gradient(45deg,#ffcc00,#ff6600,#ff00ff);
+  color:#fff;
+  font-weight:bold;
+  box-shadow:0 0 15px rgba(255,255,255,0.2);
+  transition: all 0.3s ease;
+}
+.button:hover {
+  transform:scale(1.1);
+  box-shadow:0 0 25px rgba(255,255,255,0.6);
+}
 
 /* Ads Room */
-.ads-room { display:none; text-align:center; padding:30px; animation:fadeIn 0.5s ease forwards;}
+.ads-room {
+  display:none;
+  text-align:center;
+  padding:20px;
+  animation:fadeIn 0.5s ease forwards;
+}
 @keyframes fadeIn {0%{opacity:0}100%{opacity:1}}
-.ad-btn { display:block; margin:25px auto; padding:22px 40px; font-size:22px; border-radius:14px; cursor:pointer; background:linear-gradient(45deg,#ff00ff,#ff6600); color:white; font-weight:bold; box-shadow:0 0 18px rgba(255,0,255,0.5); transition: all 0.2s ease;}
-.ad-btn:hover { transform:scale(1.05); box-shadow:0 0 28px rgba(255,0,255,0.8);}
-.cooldown { font-size:15px; color:#ccc; margin-top:6px; font-weight:bold;}
+.ad-btn {
+  display:block;
+  margin:20px auto;
+  padding:18px 30px;
+  font-size:18px;
+  border-radius:10px;
+  cursor:pointer;
+  background:linear-gradient(45deg,#ff00ff,#ff6600);
+  color:white;
+  font-weight:bold;
+  box-shadow:0 0 10px rgba(255,0,255,0.4);
+  transition: all 0.2s ease;
+}
+.ad-btn:hover {
+  transform:scale(1.05);
+  box-shadow:0 0 20px rgba(255,0,255,0.7);
+}
+
+/* Cooldown */
+.cooldown {
+  font-size:14px;
+  color:#ccc;
+  margin-top:5px;
+  font-weight:bold;
+}
 
 /* Popup */
-.popup { position:fixed; top:12px; left:50%; transform:translateX(-50%) scale(1); background:#00ffcc; color:#222; padding:18px 28px; border-radius:14px; font-weight:bold; display:none; z-index:1000; box-shadow:0 0 28px rgba(0,255,255,0.8); animation:popupAnim 2s forwards;}
-@keyframes popupAnim {0% {opacity:0; transform:translateX(-50%) scale(0.8);} 10% {opacity:1; transform:translateX(-50%) scale(1);} 90% {opacity:1; transform:translateX(-50%) scale(1);} 100% {opacity:0; transform:translateX(-50%) scale(0.8);}}
+.popup {
+  position:fixed;
+  top:10px;
+  left:50%;
+  transform:translateX(-50%) scale(1);
+  background:#00ffcc;
+  color:#222;
+  padding:15px 25px;
+  border-radius:12px;
+  font-weight:bold;
+  display:none;
+  z-index:1000;
+  box-shadow:0 0 20px rgba(0,255,255,0.7);
+  animation:popupAnim 2s forwards;
+}
+@keyframes popupAnim {
+  0% {opacity:0; transform:translateX(-50%) scale(0.8);}
+  10% {opacity:1; transform:translateX(-50%) scale(1);}
+  90% {opacity:1; transform:translateX(-50%) scale(1);}
+  100% {opacity:0; transform:translateX(-50%) scale(0.8);}
+}
 
 /* Leaderboard */
-.leaderboard { margin-top:40px; padding:22px; background:#111; border-radius:16px; max-width:480px; margin-left:auto; margin-right:auto; box-shadow:0 0 22px rgba(255,255,255,0.25);}
-.leaderboard h3 { margin-top:0; text-align:center; font-size:24px; color:#ffcc00;}
-.leaderboard ul { list-style:none; padding-left:0; margin:0;}
-.leaderboard li { padding:10px; border-bottom:1px solid #333; font-weight:bold; transition:0.3s;}
-.leaderboard li.currentUser { color:magenta; background:rgba(255,0,255,0.2); border-left:4px solid magenta;}
+.leaderboard {
+  margin-top:30px;
+  padding:15px;
+  background:#111;
+  border-radius:12px;
+  max-width:400px;
+  margin-left:auto;
+  margin-right:auto;
+  box-shadow:0 0 15px rgba(255,255,255,0.2);
+}
+.leaderboard h3 {
+  margin-top:0;
+  text-align:center;
+  font-size:20px;
+  color:#ffcc00;
+}
+.leaderboard ul {
+  list-style:none;
+  padding-left:0;
+  margin:0;
+}
+.leaderboard li {
+  padding:8px;
+  border-bottom:1px solid #333;
+  font-weight:bold;
+  transition:0.3s;
+}
+.leaderboard li.currentUser {
+  color:magenta;
+  background:rgba(255,0,255,0.1);
+  border-left:4px solid magenta;
+}
 .leaderboard li.rank1 {color:gold;}
 .leaderboard li.rank2 {color:silver;}
 .leaderboard li.rank3 {color:#cd7f32;}
-
-/* CPM Meter */
-.cpm-meter-container { width:85%; height:30px; background:#222; border-radius:16px; margin:20px auto; overflow:hidden; box-shadow:0 0 14px rgba(255,255,255,0.25);}
-.cpm-meter-bar { height:100%; width:0%; text-align:right; padding-right:6px; font-weight:bold; color:#fff; line-height:30px; border-radius:16px; transition:0.3s;}
-/* Particle background */
-#particles { position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1; pointer-events:none; }
-.particle { position:absolute; width:4px; height:4px; background:#fff; border-radius:50%; opacity:0.5; animation:float 10s linear infinite; }
-@keyframes float {0%{transform:translateY(0px);} 50%{transform:translateY(-100px);} 100%{transform:translateY(0px);} }
 </style>
 </head>
 <body>
-
-<div id="particles"></div>
 
 <header>
   <div id="balance">$0.00</div>
@@ -75,23 +162,17 @@ header {
 
 <div class="ads-room" id="adsRoom">
   <h2>Daily Sign In Sentinels</h2>
-
   <div>
     <button class="ad-btn" data-zone="10276123" data-id="V1">🍍Daily Sign In Sentinel V1🍍</button>
     <div class="cooldown" id="cdV1">Ready</div>
-    <div class="cpm-meter-container"><div class="cpm-meter-bar" id="barV1"></div></div>
   </div>
-
   <div>
     <button class="ad-btn" data-zone="10337795" data-id="V2">🍍Daily Sign In Sentinel V2🍍</button>
     <div class="cooldown" id="cdV2">Ready</div>
-    <div class="cpm-meter-container"><div class="cpm-meter-bar" id="barV2"></div></div>
   </div>
-
   <div>
     <button class="ad-btn" data-zone="10337853" data-id="V3">🍍Daily Sign In Sentinel V3🍍</button>
     <div class="cooldown" id="cdV3">Ready</div>
-    <div class="cpm-meter-container"><div class="cpm-meter-bar" id="barV3"></div></div>
   </div>
 
   <div class="leaderboard">
@@ -103,10 +184,12 @@ header {
 <div class="popup" id="popup"></div>
 
 <script>
-// Balance
+// Balance with localStorage
 let balance = parseFloat(localStorage.getItem('ph_balance')) || 0;
 const balanceEl = document.getElementById('balance');
 balanceEl.textContent = `$${balance.toFixed(2)}`;
+
+// Cooldowns
 let cooldowns = {V1:0,V2:0,V3:0};
 
 // Open Room
@@ -115,7 +198,7 @@ document.getElementById('openRoom').addEventListener('click', ()=>{
   document.getElementById('adsRoom').style.display='block';
 });
 
-// Popup
+// Popup function
 function showPopup(msg){
   const popup = document.getElementById('popup');
   popup.textContent = msg;
@@ -123,62 +206,69 @@ function showPopup(msg){
   setTimeout(()=>{popup.style.display='none'},2000);
 }
 
-// Balance update
+// Update balance
 function updateBalance(amount){
   balance += amount;
   balanceEl.textContent = `$${balance.toFixed(2)}`;
   localStorage.setItem('ph_balance', balance.toFixed(2));
 }
 
-// Cooldown
+// Start cooldown
 function startCooldown(id){
   cooldowns[id] = 5*60;
   const cdEl = document.getElementById('cd'+id);
   const interval = setInterval(()=>{
-    if(cooldowns[id]<=0){ cdEl.textContent="Ready"; clearInterval(interval); }
-    else { let m=Math.floor(cooldowns[id]/60); let s=cooldowns[id]%60; cdEl.textContent=`${m}:${s<10?'0':''}${s}`; cooldowns[id]--; }
+    if(cooldowns[id] <=0){
+      cdEl.textContent = "Ready";
+      clearInterval(interval);
+    }else{
+      let mins = Math.floor(cooldowns[id]/60);
+      let secs = cooldowns[id]%60;
+      cdEl.textContent = `${mins}:${secs<10?'0':''}${secs}`;
+      cooldowns[id]--;
+    }
   },1000);
 }
 
-// CPM Meter animation
-function animateCPMBar(barId, value, cpmLevel){
-  const bar = document.getElementById(barId);
-  bar.style.background = (cpmLevel==="low")?"#00f":(cpmLevel==="medium")?"#ffa500":"magenta";
-  bar.style.width="0%";
-  let width=0;
-  const interval = setInterval(()=>{
-    if(width>=value*100){ clearInterval(interval); bar.textContent=`$${value.toFixed(2)}`; }
-    else { width+=1; bar.style.width=width+"%"; bar.textContent=`$${(value).toFixed(2)}`; }
-  },10);
-}
-
-// Ad click
+// Handle ad click
 document.querySelectorAll('.ad-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     const id = btn.dataset.id;
-    if(cooldowns[id]>0){ alert('Ad is on cooldown!'); return; }
+    if(cooldowns[id]>0){
+      alert('Ad is on cooldown!');
+      return;
+    }
 
+    // Monetag ad script
     const zone = btn.dataset.zone;
-    const s = document.createElement('script'); s.src='//libtl.com/sdk.js'; s.dataset.zone=zone; s.dataset.sdk='show_'+zone; document.body.appendChild(s);
+    const s = document.createElement('script');
+    s.src = '//libtl.com/sdk.js';
+    s.dataset.zone = zone;
+    s.dataset.sdk = 'show_'+zone;
+    document.body.appendChild(s);
 
-    let reward=0; let level="low"; const r=Math.random();
-    if(r<0.3){ reward=Math.random()*0.02+0.01; level="low"; }
-    else if(r<0.8){ reward=Math.random()*0.05+0.03; level="medium"; }
-    else { reward=Math.random()*0.1+0.06; level="high"; }
+    // High/medium CPM reward simulation
+    let reward = 0;
+    const r = Math.random();
+    if(r<0.3) reward = (Math.random()*0.02+0.01);
+    else if(r<0.8) reward = (Math.random()*0.05+0.03);
+    else reward = (Math.random()*0.1+0.06);
 
     updateBalance(reward);
     showPopup(`🍋Congratulations gain $${reward.toFixed(2)} 🎉🍋`);
     startCooldown(id);
-    animateCPMBar("bar"+id, reward, level);
+
     updateLeaderboard();
   });
 });
 
-// Username
-function updateUsername(name){ document.getElementById('username').textContent=name; }
+// Telegram username simulation
+function updateUsername(name){
+  document.getElementById('username').textContent = name;
+}
 updateUsername("@LiveTelegramUser");
 
-// Leaderboard
+// Leaderboard simulation
 let leaderboard = [
   {user:"@PlayerOne", amount:3.25},
   {user:"@PlayerTwo", amount:2.88},
@@ -186,39 +276,41 @@ let leaderboard = [
   {user:"@PlayerFour", amount:1.75},
   {user:"@PlayerFive", amount:1.50},
 ];
-function simulateGlobalEarnings(){ leaderboard.forEach(u=>{if(u.user!=="@LiveTelegramUser") u.amount+=Math.random()*0.05;}); updateLeaderboard();}
+
+// Random global earnings simulation
+function simulateGlobalEarnings(){
+  leaderboard.forEach(u=>{
+    if(u.user !== "@LiveTelegramUser"){
+      u.amount += Math.random()*0.05; // small random gain
+    }
+  });
+  updateLeaderboard();
+}
+
+// Update leaderboard
 function updateLeaderboard(){
-  leaderboard[0]={user:"@LiveTelegramUser", amount:balance};
+  // Add current user
+  leaderboard[0] = {user:"@LiveTelegramUser", amount:balance};
   leaderboard.sort((a,b)=>b.amount-a.amount);
   const listEl = document.getElementById('leaderboardList');
-  listEl.innerHTML='';
+  listEl.innerHTML = '';
   leaderboard.slice(0,5).forEach((u,i)=>{
-    const li=document.createElement('li'); li.textContent=`${u.user}: $${u.amount.toFixed(2)}`;
-    if(u.user==="@LiveTelegramUser") li.classList.add("currentUser");
-    if(i===0) li.classList.add("rank1"); if(i===1) li.classList.add("rank2"); if(i===2) li.classList.add("rank3");
+    const li = document.createElement('li');
+    li.textContent = `${u.user}: $${u.amount.toFixed(2)}`;
+    if(u.user === "@LiveTelegramUser") li.classList.add("currentUser");
+    if(i===0) li.classList.add("rank1");
+    if(i===1) li.classList.add("rank2");
+    if(i===2) li.classList.add("rank3");
     listEl.appendChild(li);
   });
 }
+
+// Initial render
 updateLeaderboard();
-setInterval(simulateGlobalEarnings,3000);
 
-// Particle background
-function createParticles(count){
-  const container = document.getElementById('particles');
-  for(let i=0;i<count;i++){
-    const p = document.createElement('div');
-    p.className='particle';
-    p.style.left=Math.random()*window.innerWidth+'px';
-    p.style.top=Math.random()*window.innerHeight+'px';
-    p.style.width=Math.random()*4+2+'px';
-    p.style.height=p.style.width;
-    p.style.opacity=Math.random();
-    p.style.animationDuration=(Math.random()*10+5)+'s';
-    container.appendChild(p);
-  }
-}
-createParticles(80);
+// Simulate real-time global updates every 3 seconds
+setInterval(simulateGlobalEarnings, 3000);
+
 </script>
-
 </body>
 </html>

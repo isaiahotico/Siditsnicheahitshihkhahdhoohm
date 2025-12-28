@@ -3,176 +3,242 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PAPER HOUSE INC - Text AIDE Style</title>
+<title>Monetag Telegram Leaderboard Dashboard</title>
 <style>
-body {
-  font-family: 'Courier New', monospace;
-  background:#0a0a0a;
-  color:#fff;
-  margin:0; padding:0;
-  overflow-x:hidden;
-}
-header {
-  display:flex; justify-content:space-between; align-items:center;
-  padding:10px 20px;
-  border-bottom:2px solid magenta;
-}
-#balance { color:#ff00ff; font-weight:bold; font-size:20px; text-shadow:0 0 8px #ff00ff;}
-#username { background:#ff00ff; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:14px; text-shadow:0 0 4px #fff; }
-
-.main { display:flex; justify-content:center; align-items:center; height:70vh; flex-direction:column; }
-.button {
-  background:none; border:2px solid #ff00ff; color:#ff00ff;
-  padding:12px 28px; font-size:18px; font-weight:bold; border-radius:6px;
-  cursor:pointer; text-shadow:0 0 3px #fff; transition:0.3s;
-}
-.button:hover { background:#ff00ff; color:#0a0a0a; text-shadow:0 0 8px #fff; transform:scale(1.05); }
-
-.ads-room { display:none; text-align:left; padding:20px; font-size:16px; animation:fadeIn 0.5s forwards; }
-@keyframes fadeIn {0%{opacity:0}100%{opacity:1}}
-
-.ad-btn {
-  display:block; margin:12px 0; padding:10px; width:100%;
-  border:none; border-bottom:1px solid #333;
-  background:none; color:#0ff; text-align:left; font-size:16px; cursor:pointer;
-  transition:0.2s; font-weight:bold;
-}
-.ad-btn:hover { color:#ff00ff; text-shadow:0 0 6px #ff00ff; }
-
-.cooldown { font-size:12px; color:#888; margin-top:2px; font-weight:bold; }
-
-.cpm-meter-container { width:90%; height:20px; background:#111; border-radius:8px; margin:6px 0; overflow:hidden;}
-.cpm-meter-bar { height:100%; width:0%; text-align:right; padding-right:4px; font-weight:bold; line-height:20px; transition:0.3s; border-radius:8px;}
-
-.popup { position:fixed; top:12px; left:50%; transform:translateX(-50%) scale(1);
-  background:#0ff; color:#0a0a0a; padding:12px 22px; border-radius:10px; font-weight:bold;
-  display:none; z-index:1000; text-shadow:0 0 5px #fff; box-shadow:0 0 20px #0ff; animation:popupAnim 2s forwards;
-}
-@keyframes popupAnim {0%{opacity:0; transform:translateX(-50%) scale(0.8);} 10%{opacity:1; transform:translateX(-50%) scale(1);} 90%{opacity:1;} 100%{opacity:0; transform:translateX(-50%) scale(0.8);} }
-
-.leaderboard { margin-top:30px; padding:15px; background:#111; border-left:4px solid magenta; border-radius:6px; max-width:480px; margin-left:auto; margin-right:auto; font-size:14px; }
-.leaderboard h3 { margin-top:0; text-align:center; font-size:18px; color:#0ff; text-shadow:0 0 4px #0ff; }
-.leaderboard ul { list-style:none; padding-left:0; margin:0; }
-.leaderboard li { padding:6px; border-bottom:1px solid #222; font-weight:bold; transition:0.3s; }
-.leaderboard li.currentUser { color:#ff00ff; background:rgba(255,0,255,0.15); border-left:4px solid magenta; }
-.leaderboard li.rank1 {color:gold;} .leaderboard li.rank2 {color:silver;} .leaderboard li.rank3 {color:#cd7f32;}
+body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
+h2, h3 { text-align: center; }
+#loginContainer { text-align:center; margin-bottom:20px; }
+nav { text-align: center; margin-bottom: 20px; }
+nav button { padding: 8px 16px; margin: 0 5px; background:#2196F3; color:white; border:none; border-radius:5px; cursor:pointer;}
+nav button.active { background:#0b79d0; }
+table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+th, td { padding: 12px; text-align: center; border-bottom: 1px solid #ddd; }
+th { background: #4CAF50; color: white; }
+button { padding: 6px 12px; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer; }
+button:hover { background: #e68900; }
+.reward-popup { position: absolute; font-weight: bold; color: #4CAF50; font-size: 18px; pointer-events: none; animation: pop 1s ease-out forwards; }
+@keyframes pop { 0% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(-50px); } }
+#wallet { font-size: 20px; text-align:center; margin-bottom:10px; }
+#dailyBonus { text-align:center; margin-bottom:20px; }
+#leaderboard { margin-top:20px; }
 </style>
 </head>
 <body>
 
-<header>
-  <div id="balance">$0.00</div>
-  <div id="username">@LiveTelegramUser</div>
-</header>
+<h2>Monetag Telegram Leaderboard Dashboard</h2>
 
-<div class="main">
-  <button class="button" id="openRoom">🍍🍍🍋Daily Sign in Room🍋🍍🍍</button>
+<div id="loginContainer">
+    <script async src="https://telegram.org/js/telegram-widget.js?7"
+        data-telegram-login="YourBotUsername"
+        data-size="large"
+        data-userpic="false"
+        data-request-access="write"
+        data-onauth="onTelegramAuth(user)">
+    </script>
 </div>
 
-<div class="ads-room" id="adsRoom">
-  <h2>Daily Sign In Sentinels</h2>
+<div id="userContainer" style="display:none;">
+    <div id="wallet">Wallet: <span id="walletBalance">0</span> points</div>
+    <div id="dailyBonus"><button id="dailySignIn">Daily Sign-In Bonus</button></div>
 
-  <div>
-    <button class="ad-btn" data-zone="10276123" data-id="V1">🍍Daily Sign In Sentinel V1🍍</button>
-    <div class="cooldown" id="cdV1">Ready</div>
-    <div class="cpm-meter-container"><div class="cpm-meter-bar" id="barV1"></div></div>
-  </div>
-  <div>
-    <button class="ad-btn" data-zone="10337795" data-id="V2">🍍Daily Sign In Sentinel V2🍍</button>
-    <div class="cooldown" id="cdV2">Ready</div>
-    <div class="cpm-meter-container"><div class="cpm-meter-bar" id="barV2"></div></div>
-  </div>
-  <div>
-    <button class="ad-btn" data-zone="10337853" data-id="V3">🍍Daily Sign In Sentinel V3🍍</button>
-    <div class="cooldown" id="cdV3">Ready</div>
-    <div class="cpm-meter-container"><div class="cpm-meter-bar" id="barV3"></div></div>
-  </div>
+    <nav id="roomNav">
+        <button class="active" data-room="1">Room 1</button>
+        <button data-room="2">Room 2</button>
+    </nav>
 
-  <div class="leaderboard">
-    <h3>🌍 Top Global Earners (Real-Time)</h3>
-    <ul id="leaderboardList"></ul>
-  </div>
+    <h3>Top Global CPM: $<span id="topCPM">0.00</span></h3>
+
+    <table id="adTable">
+        <thead>
+            <tr>
+                <th>Ad Type</th>
+                <th>Zone ID</th>
+                <th>CPM (USD)</th>
+                <th>Status</th>
+                <th>Reward</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="adTableBody"></tbody>
+    </table>
+
+    <h3>Leaderboard</h3>
+    <table id="leaderboard">
+        <thead>
+            <tr>
+                <th>Telegram Username</th>
+                <th>Total Rewards</th>
+                <th>Top CPM</th>
+            </tr>
+        </thead>
+        <tbody id="leaderboardBody"></tbody>
+    </table>
 </div>
 
-<div class="popup" id="popup"></div>
-
+<script src="//libtl.com/sdk.js" data-zone="10337795" data-sdk="show_10337795"></script>
 <script>
-// Balance
-let balance = parseFloat(localStorage.getItem('ph_balance')) || 0;
-const balanceEl = document.getElementById('balance');
-balanceEl.textContent = `$${balance.toFixed(2)}`;
-let cooldowns = {V1:0,V2:0,V3:0};
+// === CONFIG ===
+const adRooms = {
+    1: [
+        { type: 'Rewarded Interstitial', zone: '10337795', reward: 50 },
+        { type: 'Rewarded Popup', zone: '10337795', reward: 30 }
+    ],
+    2: [
+        { type: 'In-App Interstitial', zone: '10337795', reward: 20, settings: { frequency:2, capping:0.1, interval:30, timeout:5 } },
+        { type: 'Rewarded Interstitial', zone: '10337795', reward: 40 }
+    ]
+};
 
-// Open room
-document.getElementById('openRoom').addEventListener('click', ()=>{
-  document.querySelector('.main').style.display='none';
-  document.getElementById('adsRoom').style.display='block';
-});
+// === GLOBALS ===
+let wallet = 0;
+let lastSignIn = null;
+let username = null;
+const tableBody = document.getElementById('adTableBody');
+const walletEl = document.getElementById('walletBalance');
+const topCPMEl = document.getElementById('topCPM');
+const roomNav = document.getElementById('roomNav');
+const dailyBtn = document.getElementById('dailySignIn');
+const leaderboardBody = document.getElementById('leaderboardBody');
+const userContainer = document.getElementById('userContainer');
 
-// Popup
-function showPopup(msg){ const popup = document.getElementById('popup'); popup.textContent=msg; popup.style.display='block'; setTimeout(()=>{popup.style.display='none'},2000); }
+// === TELEGRAM AUTH ===
+function onTelegramAuth(user) {
+    username = user.username;
+    console.log('Logged in as:', username);
+    userContainer.style.display = 'block';
+    document.getElementById('loginContainer').style.display = 'none';
 
-// Update balance
-function updateBalance(amount){ balance+=amount; balanceEl.textContent=`$${balance.toFixed(2)}`; localStorage.setItem('ph_balance',balance.toFixed(2)); }
+    // Load user data from localStorage
+    const data = JSON.parse(localStorage.getItem('user_'+username)) || { wallet:0, lastSignIn:null, topCPM:0 };
+    wallet = data.wallet;
+    lastSignIn = data.lastSignIn;
+    walletEl.innerText = wallet;
 
-// Start cooldown
-function startCooldown(id){
-  cooldowns[id]=5*60;
-  const cdEl=document.getElementById('cd'+id);
-  const interval=setInterval(()=>{
-    if(cooldowns[id]<=0){ cdEl.textContent="Ready"; clearInterval(interval); }
-    else{ let m=Math.floor(cooldowns[id]/60); let s=cooldowns[id]%60; cdEl.textContent=`${m}:${s<10?'0':''}${s}`; cooldowns[id]--; }
-  },1000);
-}
-
-// CPM bar animation
-function animateCPMBar(barId,value,level){
-  const bar=document.getElementById(barId);
-  bar.style.background=(level==="low")?"#00f":(level==="medium")?"#ffa500":"#ff00ff";
-  bar.style.width="0%";
-  let width=0;
-  const interval=setInterval(()=>{
-    if(width>=value*100){ clearInterval(interval); bar.textContent=`$${value.toFixed(2)}`; }
-    else{ width+=1; bar.style.width=width+"%"; bar.textContent=`$${value.toFixed(2)}`; }
-  },10);
-}
-
-// Handle ad clicks
-document.querySelectorAll('.ad-btn').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    const id=btn.dataset.id;
-    if(cooldowns[id]>0){ alert('Ad on cooldown!'); return; }
-
-    // Monetag script
-    const zone=btn.dataset.zone;
-    const s=document.createElement('script');
-    s.src='//libtl.com/sdk.js'; s.dataset.zone=zone; s.dataset.sdk='show_'+zone;
-    document.body.appendChild(s);
-
-    // Reward simulation
-    let reward=0, level="low"; const r=Math.random();
-    if(r<0.3){ reward=(Math.random()*0.02+0.01); level="low"; }
-    else if(r<0.8){ reward=(Math.random()*0.05+0.03); level="medium"; }
-    else{ reward=(Math.random()*0.1+0.06); level="high"; }
-
-    updateBalance(reward);
-    showPopup(`🍋Congratulations gain $${reward.toFixed(2)} 🎉🍋`);
-    startCooldown(id);
-    animateCPMBar("bar"+id,reward,level);
+    loadRoom(1);
     updateLeaderboard();
-  });
+}
+
+// === UTILITIES ===
+function showRewardPopup(text, row) {
+    const popup = document.createElement('div');
+    popup.className = 'reward-popup';
+    popup.innerText = text;
+    const rect = row.getBoundingClientRect();
+    popup.style.left = rect.left + window.scrollX + rect.width/2 + 'px';
+    popup.style.top = rect.top + window.scrollY - 20 + 'px';
+    document.body.appendChild(popup);
+    setTimeout(() => document.body.removeChild(popup), 1000);
+}
+
+function saveUserData(cpm = 0) {
+    const data = JSON.parse(localStorage.getItem('user_'+username)) || { wallet:0, lastSignIn:null, topCPM:0 };
+    data.wallet = wallet;
+    data.topCPM = Math.max(cpm, data.topCPM || 0);
+    data.lastSignIn = lastSignIn;
+    localStorage.setItem('user_'+username, JSON.stringify(data));
+    updateLeaderboard();
+}
+
+function updateLeaderboard() {
+    leaderboardBody.innerHTML = '';
+    for(let key in localStorage) {
+        if(key.startsWith('user_')) {
+            const u = JSON.parse(localStorage.getItem(key));
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>@${key.replace('user_','')}</td><td>${u.wallet}</td><td>$${u.topCPM.toFixed(2)}</td>`;
+            leaderboardBody.appendChild(row);
+        }
+    }
+}
+
+// === LOAD ROOM ===
+function loadRoom(roomId) {
+    tableBody.innerHTML = '';
+    adRooms[roomId].forEach(ad => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${ad.type}</td>
+            <td>${ad.zone}</td>
+            <td>$0.00</td>
+            <td>Pending</td>
+            <td>0</td>
+            <td><button>Show Ad</button></td>
+        `;
+        const btn = row.querySelector('button');
+        btn.addEventListener('click', () => showAd(ad, row));
+        tableBody.appendChild(row);
+    });
+}
+
+// === SHOW AD ===
+function showAd(ad, row) {
+    let showFn = typeof show_10337795 === 'function' ? show_10337795 : () => Promise.reject('SDK not loaded');
+    const handleSuccess = () => {
+        const newCPM = parseFloat((Math.random()*0.5 + 0.1).toFixed(2));
+        row.cells[2].innerText = `$${newCPM}`;
+        row.cells[3].innerText = '✅ Played';
+        row.cells[4].innerText = `+${ad.reward}`;
+        wallet += ad.reward;
+        walletEl.innerText = wallet;
+        saveUserData(newCPM);
+        showRewardPopup(`+${ad.reward} points`, row);
+        updateTopCPM();
+    };
+    const handleError = () => row.cells[3].innerText = '❌ Error';
+
+    if(ad.type === 'Rewarded Interstitial') showFn().then(handleSuccess).catch(handleError);
+    else if(ad.type === 'Rewarded Popup') showFn('pop').then(handleSuccess).catch(handleError);
+    else if(ad.type === 'In-App Interstitial') showFn({ type:'inApp', inAppSettings: ad.settings }).then(handleSuccess).catch(handleError);
+}
+
+// === DAILY SIGN-IN ===
+dailyBtn.addEventListener('click', () => {
+    const today = new Date().toDateString();
+    if(lastSignIn !== today) {
+        const bonus = 100;
+        wallet += bonus;
+        walletEl.innerText = wallet;
+        lastSignIn = today;
+        alert(`Daily sign-in successful! +${bonus} points`);
+        saveUserData();
+    } else {
+        alert('You already claimed your daily bonus today!');
+    }
 });
 
-// Username
-function updateUsername(name){ document.getElementById('username').textContent=name; }
-updateUsername("@LiveTelegramUser");
+// === ROOM NAVIGATION ===
+roomNav.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+        roomNav.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        loadRoom(btn.dataset.room);
+    });
+});
 
-// Leaderboard
-let leaderboard=[ {user:"@PlayerOne",amount:3.25}, {user:"@PlayerTwo",amount:2.88}, {user:"@PlayerThree",amount:1.99}, {user:"@PlayerFour",amount:1.75}, {user:"@PlayerFive",amount:1.50} ];
-function simulateGlobalEarnings(){ leaderboard.forEach(u=>{if(u.user!=="@LiveTelegramUser") u.amount+=Math.random()*0.05;}); updateLeaderboard(); }
-function updateLeaderboard(){ leaderboard[0]={user:"@LiveTelegramUser",amount:balance}; leaderboard.sort((a,b)=>b.amount-a.amount); const listEl=document.getElementById('leaderboardList'); listEl.innerHTML=''; leaderboard.slice(0,5).forEach((u,i)=>{ const li=document.createElement('li'); li.textContent=`${u.user}: $${u.amount.toFixed(2)}`; if(u.user==="@LiveTelegramUser") li.classList.add("currentUser"); if(i===0) li.classList.add("rank1"); if(i===1) li.classList.add("rank2"); if(i===2) li.classList.add("rank3"); listEl.appendChild(li); }); }
-updateLeaderboard();
-setInterval(simulateGlobalEarnings,3000);
+// === LIVE CPM UPDATE EVERY 5 SECONDS ===
+setInterval(() => {
+    if(username) {
+        Array.from(tableBody.rows).forEach(row => {
+            if(row.cells[3].innerText === '✅ Played') {
+                const newCPM = parseFloat((Math.random()*0.5 + 0.1).toFixed(2));
+                row.cells[2].innerText = `$${newCPM}`;
+                saveUserData(newCPM);
+            }
+        });
+        updateTopCPM();
+    }
+}, 5000);
+
+// === TOP CPM ===
+function updateTopCPM() {
+    let maxCPM = 0;
+    Array.from(tableBody.rows).forEach(row => {
+        const cpm = parseFloat(row.cells[2].innerText.replace('$','')) || 0;
+        if(cpm > maxCPM) maxCPM = cpm;
+    });
+    topCPMEl.innerText = maxCPM.toFixed(2);
+}
 </script>
+
 </body>
 </html>

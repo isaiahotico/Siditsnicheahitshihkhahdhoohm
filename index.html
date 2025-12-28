@@ -3,53 +3,58 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PAPER HOUSE INC</title>
+<title>PAPER HOUSE INC - Text AIDE Style</title>
 <style>
 body {
-  font-family:'Arial',sans-serif;
-  background:#0d0d0d;
-  color:white;
+  font-family: 'Courier New', monospace;
+  background:#0a0a0a;
+  color:#fff;
   margin:0; padding:0;
   overflow-x:hidden;
 }
 header {
   display:flex; justify-content:space-between; align-items:center;
-  padding:12px 20px;
-  background:linear-gradient(90deg,#ff00ff,#00ffff);
-  box-shadow:0 4px 12px rgba(0,0,0,0.5);
+  padding:10px 20px;
+  border-bottom:2px solid magenta;
 }
-#balance { font-weight:bold; font-size:22px; text-shadow:0 0 12px #ff00ff;}
-#username { background:magenta; padding:4px 10px; border-radius:6px; font-weight:bold; text-shadow:0 0 6px #fff;}
+#balance { color:#ff00ff; font-weight:bold; font-size:20px; text-shadow:0 0 8px #ff00ff;}
+#username { background:#ff00ff; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:14px; text-shadow:0 0 4px #fff; }
 
-.main { display:flex; justify-content:center; align-items:center; height:70vh;}
+.main { display:flex; justify-content:center; align-items:center; height:70vh; flex-direction:column; }
 .button {
-  padding:22px 40px; font-size:22px; border:none; border-radius:14px; cursor:pointer;
-  background:linear-gradient(45deg,#ffcc00,#ff6600,#ff00ff); color:#fff; font-weight:bold;
-  box-shadow:0 0 18px rgba(255,255,255,0.3); transition:all 0.3s ease;
+  background:none; border:2px solid #ff00ff; color:#ff00ff;
+  padding:12px 28px; font-size:18px; font-weight:bold; border-radius:6px;
+  cursor:pointer; text-shadow:0 0 3px #fff; transition:0.3s;
 }
-.button:hover { transform:scale(1.1); box-shadow:0 0 28px rgba(255,255,255,0.6); }
+.button:hover { background:#ff00ff; color:#0a0a0a; text-shadow:0 0 8px #fff; transform:scale(1.05); }
 
-.ads-room { display:none; text-align:center; padding:25px; animation:fadeIn 0.5s forwards;}
+.ads-room { display:none; text-align:left; padding:20px; font-size:16px; animation:fadeIn 0.5s forwards; }
 @keyframes fadeIn {0%{opacity:0}100%{opacity:1}}
+
 .ad-btn {
-  display:block; margin:20px auto; padding:20px 35px; font-size:20px;
-  border-radius:12px; cursor:pointer; background:linear-gradient(45deg,#ff00ff,#ff6600);
-  color:white; font-weight:bold; box-shadow:0 0 14px rgba(255,0,255,0.5); transition:0.2s;
+  display:block; margin:12px 0; padding:10px; width:100%;
+  border:none; border-bottom:1px solid #333;
+  background:none; color:#0ff; text-align:left; font-size:16px; cursor:pointer;
+  transition:0.2s; font-weight:bold;
 }
-.ad-btn:hover { transform:scale(1.05); box-shadow:0 0 24px rgba(255,0,255,0.8); }
+.ad-btn:hover { color:#ff00ff; text-shadow:0 0 6px #ff00ff; }
 
-.cooldown { font-size:15px; color:#ccc; margin-top:6px; font-weight:bold; }
-.cpm-meter-container { width:85%; height:25px; background:#222; border-radius:14px; margin:10px auto 25px auto; overflow:hidden; box-shadow:0 0 10px rgba(255,255,255,0.25);}
-.cpm-meter-bar { height:100%; width:0%; text-align:right; padding-right:6px; font-weight:bold; color:white; line-height:25px; border-radius:14px; transition:0.3s; }
+.cooldown { font-size:12px; color:#888; margin-top:2px; font-weight:bold; }
 
-.popup { position:fixed; top:12px; left:50%; transform:translateX(-50%) scale(1); background:#00ffcc; color:#222; padding:18px 28px; border-radius:14px; font-weight:bold; display:none; z-index:1000; box-shadow:0 0 28px rgba(0,255,255,0.8); animation:popupAnim 2s forwards;}
-@keyframes popupAnim {0%{opacity:0; transform:translateX(-50%) scale(0.8);} 10%{opacity:1; transform:translateX(-50%) scale(1);} 90%{opacity:1; transform:translateX(-50%) scale(1);} 100%{opacity:0; transform:translateX(-50%) scale(0.8);} }
+.cpm-meter-container { width:90%; height:20px; background:#111; border-radius:8px; margin:6px 0; overflow:hidden;}
+.cpm-meter-bar { height:100%; width:0%; text-align:right; padding-right:4px; font-weight:bold; line-height:20px; transition:0.3s; border-radius:8px;}
 
-.leaderboard { margin-top:40px; padding:22px; background:#111; border-radius:16px; max-width:480px; margin-left:auto; margin-right:auto; box-shadow:0 0 22px rgba(255,255,255,0.25);}
-.leaderboard h3 { margin-top:0; text-align:center; font-size:24px; color:#ffcc00;}
-.leaderboard ul { list-style:none; padding-left:0; margin:0;}
-.leaderboard li { padding:10px; border-bottom:1px solid #333; font-weight:bold; transition:0.3s;}
-.leaderboard li.currentUser { color:magenta; background:rgba(255,0,255,0.2); border-left:4px solid magenta;}
+.popup { position:fixed; top:12px; left:50%; transform:translateX(-50%) scale(1);
+  background:#0ff; color:#0a0a0a; padding:12px 22px; border-radius:10px; font-weight:bold;
+  display:none; z-index:1000; text-shadow:0 0 5px #fff; box-shadow:0 0 20px #0ff; animation:popupAnim 2s forwards;
+}
+@keyframes popupAnim {0%{opacity:0; transform:translateX(-50%) scale(0.8);} 10%{opacity:1; transform:translateX(-50%) scale(1);} 90%{opacity:1;} 100%{opacity:0; transform:translateX(-50%) scale(0.8);} }
+
+.leaderboard { margin-top:30px; padding:15px; background:#111; border-left:4px solid magenta; border-radius:6px; max-width:480px; margin-left:auto; margin-right:auto; font-size:14px; }
+.leaderboard h3 { margin-top:0; text-align:center; font-size:18px; color:#0ff; text-shadow:0 0 4px #0ff; }
+.leaderboard ul { list-style:none; padding-left:0; margin:0; }
+.leaderboard li { padding:6px; border-bottom:1px solid #222; font-weight:bold; transition:0.3s; }
+.leaderboard li.currentUser { color:#ff00ff; background:rgba(255,0,255,0.15); border-left:4px solid magenta; }
 .leaderboard li.rank1 {color:gold;} .leaderboard li.rank2 {color:silver;} .leaderboard li.rank3 {color:#cd7f32;}
 </style>
 </head>
@@ -105,59 +110,47 @@ document.getElementById('openRoom').addEventListener('click', ()=>{
 });
 
 // Popup
-function showPopup(msg){
-  const popup = document.getElementById('popup');
-  popup.textContent = msg;
-  popup.style.display='block';
-  setTimeout(()=>{popup.style.display='none'},2000);
-}
+function showPopup(msg){ const popup = document.getElementById('popup'); popup.textContent=msg; popup.style.display='block'; setTimeout(()=>{popup.style.display='none'},2000); }
 
 // Update balance
-function updateBalance(amount){
-  balance += amount;
-  balanceEl.textContent = `$${balance.toFixed(2)}`;
-  localStorage.setItem('ph_balance', balance.toFixed(2));
-}
+function updateBalance(amount){ balance+=amount; balanceEl.textContent=`$${balance.toFixed(2)}`; localStorage.setItem('ph_balance',balance.toFixed(2)); }
 
 // Start cooldown
 function startCooldown(id){
-  cooldowns[id] = 5*60;
-  const cdEl = document.getElementById('cd'+id);
-  const interval = setInterval(()=>{
+  cooldowns[id]=5*60;
+  const cdEl=document.getElementById('cd'+id);
+  const interval=setInterval(()=>{
     if(cooldowns[id]<=0){ cdEl.textContent="Ready"; clearInterval(interval); }
     else{ let m=Math.floor(cooldowns[id]/60); let s=cooldowns[id]%60; cdEl.textContent=`${m}:${s<10?'0':''}${s}`; cooldowns[id]--; }
   },1000);
 }
 
 // CPM bar animation
-function animateCPMBar(barId, value, level){
-  const bar = document.getElementById(barId);
-  bar.style.background = (level==="low")?"#00f":(level==="medium")?"#ffa500":"magenta";
+function animateCPMBar(barId,value,level){
+  const bar=document.getElementById(barId);
+  bar.style.background=(level==="low")?"#00f":(level==="medium")?"#ffa500":"#ff00ff";
   bar.style.width="0%";
   let width=0;
-  const interval = setInterval(()=>{
-    if(width >= value*100){ clearInterval(interval); bar.textContent=`$${value.toFixed(2)}`; }
-    else { width+=1; bar.style.width = width+"%"; bar.textContent=`$${value.toFixed(2)}`; }
+  const interval=setInterval(()=>{
+    if(width>=value*100){ clearInterval(interval); bar.textContent=`$${value.toFixed(2)}`; }
+    else{ width+=1; bar.style.width=width+"%"; bar.textContent=`$${value.toFixed(2)}`; }
   },10);
 }
 
 // Handle ad clicks
 document.querySelectorAll('.ad-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    const id = btn.dataset.id;
+    const id=btn.dataset.id;
     if(cooldowns[id]>0){ alert('Ad on cooldown!'); return; }
 
-    // Monetag ad script
-    const zone = btn.dataset.zone;
-    const s = document.createElement('script');
-    s.src='//libtl.com/sdk.js';
-    s.dataset.zone=zone;
-    s.dataset.sdk='show_'+zone;
+    // Monetag script
+    const zone=btn.dataset.zone;
+    const s=document.createElement('script');
+    s.src='//libtl.com/sdk.js'; s.dataset.zone=zone; s.dataset.sdk='show_'+zone;
     document.body.appendChild(s);
 
     // Reward simulation
-    let reward=0, level="low";
-    const r=Math.random();
+    let reward=0, level="low"; const r=Math.random();
     if(r<0.3){ reward=(Math.random()*0.02+0.01); level="low"; }
     else if(r<0.8){ reward=(Math.random()*0.05+0.03); level="medium"; }
     else{ reward=(Math.random()*0.1+0.06); level="high"; }
@@ -175,32 +168,9 @@ function updateUsername(name){ document.getElementById('username').textContent=n
 updateUsername("@LiveTelegramUser");
 
 // Leaderboard
-let leaderboard=[
-  {user:"@PlayerOne",amount:3.25},
-  {user:"@PlayerTwo",amount:2.88},
-  {user:"@PlayerThree",amount:1.99},
-  {user:"@PlayerFour",amount:1.75},
-  {user:"@PlayerFive",amount:1.50}
-];
-function simulateGlobalEarnings(){
-  leaderboard.forEach(u=>{if(u.user!=="@LiveTelegramUser") u.amount+=Math.random()*0.05;});
-  updateLeaderboard();
-}
-function updateLeaderboard(){
-  leaderboard[0]={user:"@LiveTelegramUser",amount:balance};
-  leaderboard.sort((a,b)=>b.amount-a.amount);
-  const listEl=document.getElementById('leaderboardList');
-  listEl.innerHTML='';
-  leaderboard.slice(0,5).forEach((u,i)=>{
-    const li=document.createElement('li');
-    li.textContent=`${u.user}: $${u.amount.toFixed(2)}`;
-    if(u.user==="@LiveTelegramUser") li.classList.add("currentUser");
-    if(i===0) li.classList.add("rank1");
-    if(i===1) li.classList.add("rank2");
-    if(i===2) li.classList.add("rank3");
-    listEl.appendChild(li);
-  });
-}
+let leaderboard=[ {user:"@PlayerOne",amount:3.25}, {user:"@PlayerTwo",amount:2.88}, {user:"@PlayerThree",amount:1.99}, {user:"@PlayerFour",amount:1.75}, {user:"@PlayerFive",amount:1.50} ];
+function simulateGlobalEarnings(){ leaderboard.forEach(u=>{if(u.user!=="@LiveTelegramUser") u.amount+=Math.random()*0.05;}); updateLeaderboard(); }
+function updateLeaderboard(){ leaderboard[0]={user:"@LiveTelegramUser",amount:balance}; leaderboard.sort((a,b)=>b.amount-a.amount); const listEl=document.getElementById('leaderboardList'); listEl.innerHTML=''; leaderboard.slice(0,5).forEach((u,i)=>{ const li=document.createElement('li'); li.textContent=`${u.user}: $${u.amount.toFixed(2)}`; if(u.user==="@LiveTelegramUser") li.classList.add("currentUser"); if(i===0) li.classList.add("rank1"); if(i===1) li.classList.add("rank2"); if(i===2) li.classList.add("rank3"); listEl.appendChild(li); }); }
 updateLeaderboard();
 setInterval(simulateGlobalEarnings,3000);
 </script>

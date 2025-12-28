@@ -40,88 +40,39 @@ button:hover { transform: scale(1.05); background: #ffd700; }
 #adminDashboard { display:none; border:2px solid #fff; padding:10px; margin-top:20px; background:#222; color:#fff; overflow-x:auto; }
 #adminTable { width:100%; border-collapse:collapse; margin-top:10px; color:#333; background:#fff; }
 #adminTable th, #adminTable td { padding:8px; border-bottom:1px solid #ccc; text-align:center; }
-.new-request { background-color: #fffa8c !important; transition: background-color 1s ease; }
-#pendingBadge {
-    display:none;
-    background:red; color:#fff; border-radius:50%; padding:2px 8px; font-size:14px; margin-left:5px;
-}
+#pendingBadge { display:none; background:red; color:#fff; border-radius:50%; padding:2px 8px; font-size:14px; margin-left:5px; }
 </style>
 
+<!-- Monetag SDK -->
 <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
-</head>
-<body>
 
-<h1>🍍 GLOBAL REWARDS INDIE 🍋</h1>
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-app.js";
+import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-database.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-auth.js";
 
-<!-- Username -->
-<div>
-    <input type="text" id="usernameInput" placeholder="Enter your Telegram username" />
-    <button id="setUsername">Set Username</button>
-</div>
+// --- Firebase Config ---
+const firebaseConfig = {
+  apiKey: "AIzaSyDMGU5X7BBp-C6tIl34Uuu5N9MXAVFTn7c",
+  authDomain: "paper-house-inc.firebaseapp.com",
+  databaseURL: "https://paper-house-inc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "paper-house-inc",
+  storageBucket: "paper-house-inc.firebasestorage.app",
+  messagingSenderId: "658389836376",
+  appId: "1:658389836376:web:513b1ddbebf52849a8e02d"
+};
 
-<div>Balance: <span id="balance">$0.00</span></div>
-<div id="cpm">Current CPM: $0.00</div>
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
 
-<!-- Ad Rooms -->
-<div class="room-buttons">
-    <button class="adRoom" data-room="1">🍍 Room 1 ($0.05-$0.15)</button>
-    <button class="adRoom" data-room="2">🍋 Room 2 ($0.05-$0.15)</button>
-    <button class="adRoom" data-room="3">🎉 Room 3 ($0.05-$0.20)</button>
-</div>
-
-<!-- Daily Bonus -->
-<button id="dailyBonus">🎁 Daily Bonus</button>
-
-<!-- Withdrawal -->
-<div>
-    <input type="text" id="gcashNumber" placeholder="Enter your GCash Number" />
-    <input type="number" id="withdrawAmount" placeholder="Amount to withdraw ($)" step="0.01" />
-    <button id="requestWithdrawBtn">💵 Request Withdraw</button>
-</div>
-
-<h2>Top Global Users (Balance)</h2>
-<ul id="leaderboard"></ul>
-
-<h2>Global Withdrawals (₱)</h2>
-<ul id="withdrawLeaderboard"></ul>
-
-<!-- Admin Dashboard Button -->
-<div style="margin-top:20px; position: relative; display: inline-block;">
-    <input type="password" id="adminPass" placeholder="Owner Password" />
-    <button id="adminLoginBtn">Access Admin Dashboard <span id="pendingBadge"></span></button>
-</div>
-
-<!-- Admin Dashboard -->
-<div id="adminDashboard">
-    <h2>Admin Withdrawal Dashboard</h2>
-    <table id="adminTable">
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>GCash Number</th>
-                <th>Amount ($)</th>
-                <th>Amount (₱)</th>
-                <th>Date/Time</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="adminTableBody"></tbody>
-    </table>
-</div>
-
-<script>
-// --- Constants ---
-const MIN_WITHDRAW = 0.50, OWNER_PASSWORD = "Propetas6", CONVERSION_RATE = 55;
-
-// --- Storage Setup ---
 let username = localStorage.getItem('username') || '';
 let balance = parseFloat(localStorage.getItem('balance')) || 0;
-let topUsers = JSON.parse(localStorage.getItem('topUsers')) || [];
-let withdrawals = JSON.parse(localStorage.getItem('withdrawals')) || [];
-let pendingRequests = JSON.parse(localStorage.getItem('pendingRequests')) || [];
-
-if(username) document.getElementById('usernameInput').value = username;
+let topUsers = {}; // {username: balance}
+const CONVERSION_RATE = 55;
+const OWNER_PASSWORD = "Propetas6";
 
 // --- UI Elements ---
 const balanceEl=document.getElementById('balance');
@@ -133,24 +84,6 @@ const badgeEl=document.getElementById('pendingBadge');
 
 // --- Functions ---
 function updateBalanceUI(){ balanceEl.textContent=`$${balance.toFixed(2)}`; }
-function updateLeaderboard(){
-    leaderboardEl.innerHTML='';
-    topUsers.slice().sort((a,b)=>b.balance-a.balance).forEach(u=>{
-        const li=document.createElement('li');
-        li.textContent=`${u.name} - $${parseFloat(u.balance).toFixed(2)}`;
-        leaderboardEl.appendChild(li);
-    });
-    localStorage.setItem('topUsers',JSON.stringify(topUsers));
-}
-function updateWithdrawLeaderboard(){
-    withdrawLeaderboardEl.innerHTML='';
-    withdrawals.slice().sort((a,b)=>b.peso-a.peso).forEach(w=>{
-        const li=document.createElement('li');
-        li.textContent=`${w.username} - ₱${w.peso}`;
-        withdrawLeaderboardEl.appendChild(li);
-    });
-    localStorage.setItem('withdrawals',JSON.stringify(withdrawals));
-}
 function showConfetti(){
     for(let i=0;i<20;i++){
         const c=document.createElement('div'); c.className='confetti';
@@ -160,34 +93,24 @@ function showConfetti(){
         setTimeout(()=>c.remove(),1000);
     }
 }
-function updateAdminTable(){
-    pendingEl.innerHTML='';
-    pendingRequests.slice().reverse().forEach((req, idx)=>{
-        const tr=document.createElement('tr');
-        tr.innerHTML=`
-            <td>${req.username}</td>
-            <td>${req.gcash}</td>
-            <td>$${req.usd}</td>
-            <td>₱${req.peso}</td>
-            <td>${req.date}</td>
-            <td>${req.status}</td>
-            <td>
-                <button onclick="approveRequest(${idx})" ${req.status==="Approved"?"disabled":""}>Approve</button>
-                <button onclick="denyRequest(${idx})" ${req.status==="Denied"?"disabled":""}>Deny</button>
-            </td>
-        `;
-        if(req.status === "Pending" && !req.highlighted){
-            req.highlighted = true;
-            tr.classList.add('new-request');
-            setTimeout(()=> tr.classList.remove('new-request'), 2000);
-        }
-        pendingEl.appendChild(tr);
+function updateLeaderboardUI(){
+    leaderboardEl.innerHTML='';
+    Object.keys(topUsers).sort((a,b)=>topUsers[b]-topUsers[a]).forEach(u=>{
+        const li=document.createElement('li');
+        li.textContent=`${u} - $${parseFloat(topUsers[u]).toFixed(2)}`;
+        leaderboardEl.appendChild(li);
     });
-    localStorage.setItem('pendingRequests',JSON.stringify(pendingRequests));
-    updatePendingBadge();
 }
-function updatePendingBadge(){
-    const count = pendingRequests.filter(r => r.status==="Pending").length;
+function updateWithdrawLeaderboardUI(withdrawals){
+    withdrawLeaderboardEl.innerHTML='';
+    withdrawals.slice().sort((a,b)=>b.peso-a.peso).forEach(w=>{
+        const li=document.createElement('li');
+        li.textContent=`${w.username} - ₱${w.peso}`;
+        withdrawLeaderboardEl.appendChild(li);
+    });
+}
+function updatePendingBadge(withdrawals){
+    const count = withdrawals.filter(r=>r.status==="Pending").length;
     if(count>0){ badgeEl.style.display="inline-block"; badgeEl.textContent=count; }
     else badgeEl.style.display="none";
 }
@@ -195,14 +118,21 @@ function updatePendingBadge(){
 // --- CPM Simulation ---
 setInterval(()=>{ cpmEl.textContent=`Current CPM: $${(Math.random()*2+0.5).toFixed(2)}`; },5000);
 
+// --- Firebase Auth ---
+signInAnonymously(auth).then(userCredential=>{
+    console.log("Signed in anonymously", userCredential.user.uid);
+}).catch(err=>console.error(err));
+
 // --- Set Username ---
 document.getElementById('setUsername').addEventListener('click',()=>{
     const input=document.getElementById('usernameInput').value.trim();
     if(input.length<3){ alert("Username too short"); return; }
     username=input;
     localStorage.setItem('username',username);
-    if(!topUsers.find(u=>u.name===username)) topUsers.push({name:username,balance:balance});
-    updateLeaderboard();
+    // Save in Firebase
+    set(ref(db,'users/'+username), { balance: balance, isAdmin: false });
+    topUsers[username] = balance;
+    updateLeaderboardUI();
     alert(`Username set: ${username}`);
 });
 
@@ -217,8 +147,9 @@ document.querySelectorAll('.adRoom').forEach(btn=>{
             const reward=(Math.random()*0.15+0.05).toFixed(2);
             balance+=parseFloat(reward);
             localStorage.setItem('balance',balance);
-            const user=topUsers.find(u=>u.name===username); if(user) user.balance=balance;
-            updateBalanceUI(); updateLeaderboard(); showConfetti();
+            topUsers[username]=balance;
+            updateBalanceUI(); updateLeaderboardUI(); showConfetti();
+            set(ref(db,'users/'+username),{balance});
             btn.textContent=originalText; btn.disabled=false;
         }).catch(()=>{ btn.textContent=originalText; btn.disabled=false; });
     });
@@ -232,11 +163,12 @@ document.getElementById('dailyBonus').addEventListener('click',()=>{
     show_10337795('pop').then(()=>{
         const bonus=(Math.random()*0.50+0.50).toFixed(2);
         balance+=parseFloat(bonus);
-        localStorage.setItem('balance',balance); 
-        const user=topUsers.find(u=>u.name===username); if(user) user.balance=balance;
-        updateBalanceUI(); updateLeaderboard(); 
+        localStorage.setItem('balance',balance);
+        topUsers[username]=balance;
+        updateBalanceUI(); updateLeaderboardUI();
         localStorage.setItem('lastDaily',today);
         alert(`Daily Bonus: $${bonus}`); showConfetti();
+        set(ref(db,'users/'+username),{balance});
     }).catch(()=>{});
 });
 
@@ -248,69 +180,98 @@ document.getElementById('requestWithdrawBtn').addEventListener('click',()=>{
     if(!gcashNum){ alert("Enter GCash number!"); return; }
     if(!amount || amount<=0 || amount>balance){ alert("Invalid withdraw amount!"); return; }
     const peso = amount * CONVERSION_RATE;
-    pendingRequests.push({username, gcash:gcashNum, usd:amount, peso, date:new Date().toLocaleString(), status:"Pending", notified:false});
-    localStorage.setItem('pendingRequests',JSON.stringify(pendingRequests));
-    alert(`Withdrawal request submitted: $${amount} (₱${peso.toFixed(2)}) to ${gcashNum}`);
-    updateAdminTable();
+    push(ref(db,'withdrawals'),{
+        username, gcash: gcashNum, usd: amount, peso, date:new Date().toLocaleString(), status:"Pending"
+    });
+    alert(`Withdrawal request submitted: $${amount} (₱${peso.toFixed(2)})`);
 });
 
-// --- Admin Login ---
+// --- Admin Dashboard Access ---
 document.getElementById('adminLoginBtn').addEventListener('click',()=>{
-    const pass=document.getElementById('adminPass').value;
+    const pass = document.getElementById('adminPass').value;
     if(pass===OWNER_PASSWORD){
         document.getElementById('adminDashboard').style.display='block';
-        updateAdminTable();
         alert("Owner access granted");
-    } else { alert("Wrong password"); }
+    } else alert("Wrong password");
 });
 
-// --- Approve / Deny ---
-window.approveRequest=function(idx){
-    const req=pendingRequests[idx]; req.status="Approved";
-    withdrawals.push({username:req.username, gcash:req.gcash, usd:req.usd, peso:req.peso, date:req.date, status:"Approved"});
-    const user=topUsers.find(u=>u.name===req.username); if(user) user.balance-=req.usd;
-    if(username===req.username) balance=user.balance;
-    updateBalanceUI(); updateLeaderboard(); updateWithdrawLeaderboard(); updateAdminTable();
-    alert(`✅ Withdrawal of $${req.usd} to ${req.gcash} APPROVED!`);
-    localStorage.setItem('withdrawals', JSON.stringify(withdrawals));
-    localStorage.setItem('pendingRequests', JSON.stringify(pendingRequests));
-}
-window.denyRequest=function(idx){
-    pendingRequests[idx].status="Denied"; updateAdminTable();
-    alert(`❌ Withdrawal of $${pendingRequests[idx].usd} to ${pendingRequests[idx].gcash} DENIED!`);
-    localStorage.setItem('pendingRequests', JSON.stringify(pendingRequests));
-}
+// --- Real-Time Listeners ---
+// Withdrawals
+onValue(ref(db,'withdrawals'), snapshot=>{
+    const withdrawals = [];
+    snapshot.forEach(snap=>withdrawals.push({id:snap.key, ...snap.val()}));
+    updateWithdrawLeaderboardUI(withdrawals);
+    updatePendingBadge(withdrawals);
 
-// --- Real-time Notifications ---
-function checkWithdrawalNotifications(){
-    pendingRequests.forEach(req=>{
-        if(req.username===username && req.status && !req.notified){
-            req.notified=true;
-            if(req.status==="Approved"){
-                alert(`✅ Your withdrawal of $${req.usd} to ${req.gcash} has been APPROVED!`);
-                const user = topUsers.find(u=>u.name===username);
-                if(user) user.balance -= req.usd;
-                balance = user.balance;
-                updateBalanceUI();
-                updateLeaderboard();
-            } else if(req.status==="Denied"){
-                alert(`❌ Your withdrawal of $${req.usd} to ${req.gcash} has been DENIED!`);
-            }
-            updateAdminTable();
-            localStorage.setItem('pendingRequests', JSON.stringify(pendingRequests));
+    // Admin table
+    pendingEl.innerHTML='';
+    withdrawals.slice().reverse().forEach(req=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+            <td>${req.username}</td>
+            <td>${req.gcash}</td>
+            <td>$${req.usd}</td>
+            <td>₱${req.peso}</td>
+            <td>${req.date}</td>
+            <td>${req.status}</td>
+            <td>
+                <button onclick="approveRequest('${req.id}')" ${req.status==="Approved"?"disabled":""}>Approve</button>
+                <button onclick="denyRequest('${req.id}')" ${req.status==="Denied"?"disabled":""}>Deny</button>
+            </td>
+        `;
+        pendingEl.appendChild(tr);
+    });
+
+    // Notify user if their withdrawal approved/denied
+    withdrawals.forEach(req=>{
+        if(req.username===username && req.status==="Approved" && !localStorage.getItem('notified_'+req.id)){
+            alert(`✅ Your withdrawal of $${req.usd} to ${req.gcash} has been APPROVED!`);
+            balance -= req.usd; 
+            updateBalanceUI();
+            topUsers[username]=balance;
+            updateLeaderboardUI();
+            localStorage.setItem('notified_'+req.id,true);
+        }
+        if(req.username===username && req.status==="Denied" && !localStorage.getItem('notified_'+req.id)){
+            alert(`❌ Your withdrawal of $${req.usd} to ${req.gcash} has been DENIED!`);
+            localStorage.setItem('notified_'+req.id,true);
         }
     });
+});
+
+// Users leaderboard
+onValue(ref(db,'users'), snapshot=>{
+    topUsers = snapshot.val() || {};
+    updateLeaderboardUI();
+});
+
+// --- Approve/Deny Functions ---
+window.approveRequest = function(id){
+    update(ref(db,'withdrawals/'+id), {status:"Approved"});
+    const reqRef = ref(db,'withdrawals/'+id);
+    onValue(reqRef, snapshot=>{
+        const data = snapshot.val();
+        const userRef = ref(db,'users/'+data.username);
+        onValue(userRef, snap=>{
+            const newBalance = snap.val().balance - data.usd;
+            set(userRef,{balance:newBalance});
+            if(data.username===username){ balance=newBalance; updateBalanceUI(); topUsers[username]=balance; updateLeaderboardUI(); }
+        });
+    });
 }
-setInterval(checkWithdrawalNotifications, 3000);
+window.denyRequest = function(id){
+    update(ref(db,'withdrawals/'+id), {status:"Denied"});
+}
 
 // --- Auto Reward Popups ---
 setInterval(()=>{ 
     if(Math.random()<0.3 && username){
         show_10337795('pop').then(()=>{
             const bonus=(Math.random()*0.30+0.20).toFixed(2);
-            balance+=parseFloat(bonus); localStorage.setItem('balance',balance);
-            const user=topUsers.find(u=>u.name===username); if(user) user.balance=balance;
-            updateBalanceUI(); updateLeaderboard(); showConfetti();
+            balance+=parseFloat(bonus);
+            topUsers[username]=balance;
+            updateBalanceUI(); updateLeaderboardUI(); showConfetti();
+            set(ref(db,'users/'+username),{balance});
         }).catch(()=>{});
     }
 },30000);
@@ -318,16 +279,6 @@ setInterval(()=>{
 // --- Monetag In-App Interstitial ---
 show_10337795({type:'inApp', inAppSettings:{frequency:2, capping:0.1, interval:30, timeout:5, everyPage:false}});
 
-// --- Simulated Live Users ---
-setInterval(()=>{
-    const names=['UserX','StarGazer','PixelKing','NeoWave','Luna','CryptoCat','GlitchMaster','EchoBot'];
-    const randName=names[Math.floor(Math.random()*names.length)];
-    if(!topUsers.find(u=>u.name===randName)) topUsers.push({name:randName,balance:(Math.random()*20+1).toFixed(2)});
-    if(topUsers.length>15) topUsers.shift(); updateLeaderboard();
-},15000);
-
-// --- Initialize ---
-updateBalanceUI(); updateLeaderboard(); updateWithdrawLeaderboard(); updateAdminTable();
 </script>
 </body>
 </html>

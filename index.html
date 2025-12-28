@@ -5,240 +5,155 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GLOBAL REWARDS INDIE - Full System</title>
 <style>
-body {
-    background: linear-gradient(120deg, #ff9a9e, #fad0c4);
-    font-family: 'Comic Sans MS', cursive, sans-serif;
-    color: #fff;
-    text-align: center;
-    padding: 20px;
-}
-h1 { font-size: 2rem; margin-bottom: 10px; }
-#balance { font-size: 2rem; margin: 15px 0; }
-button {
-    font-size: 18px;
-    padding: 12px 25px;
-    margin: 5px;
-    border-radius: 20px;
-    border: none;
-    cursor: pointer;
-    background: #ffec61;
-    color: #333;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    transition: transform 0.2s ease, background 0.2s ease;
-}
-button:hover { transform: scale(1.05); background: #ffd700; }
-#leaderboard, #withdrawLeaderboard { 
-    text-align: left; display: inline-block; margin-top: 20px; color:#333; 
-    background:#fff; border-radius:10px; padding:10px; max-width:400px; text-align:left;
-}
-#leaderboard li, #withdrawLeaderboard li { margin: 5px 0; font-weight: bold; }
-#cpm { margin: 10px 0; font-size: 1.2rem; }
-.room-buttons { display: flex; justify-content: center; flex-wrap: wrap; margin-bottom:10px; }
-.confetti { position: absolute; width: 10px; height: 10px; z-index: 1000; animation: fall 1s linear forwards; }
-@keyframes fall { 0% { transform: translateY(0px); opacity:1; } 100% { transform: translateY(400px) rotate(360deg); opacity:0; } }
-#usernameInput, #gcashNumber, #withdrawAmount, #adminPass { padding: 10px; border-radius: 10px; border:none; margin-bottom:15px; font-size:16px; }
+body { background: linear-gradient(120deg,#ff9a9e,#fad0c4); font-family:'Comic Sans MS',cursive,sans-serif; text-align:center; padding:20px; color:#fff; }
+h1 { font-size:2rem; margin-bottom:10px; }
+#balance { font-size:2rem; margin:15px 0; }
+button { font-size:18px; padding:12px 25px; margin:5px; border-radius:20px; border:none; cursor:pointer; background:#ffec61; color:#333; box-shadow:0 4px 8px rgba(0,0,0,0.2); transition:0.2s; }
+button:hover { transform:scale(1.05); background:#ffd700; }
+#leaderboard,#withdrawLeaderboard { display:inline-block; text-align:left; margin-top:20px; color:#333; background:#fff; border-radius:10px; padding:10px; max-width:400px; }
+#leaderboard li,#withdrawLeaderboard li { margin:5px 0; font-weight:bold; }
+#cpm { margin:10px 0; font-size:1.2rem; }
+.room-buttons { display:flex; justify-content:center; flex-wrap:wrap; margin-bottom:10px; }
+.confetti { position:absolute; width:10px; height:10px; z-index:1000; animation:fall 1s linear forwards; }
+@keyframes fall { 0%{transform:translateY(0px);opacity:1;} 100%{transform:translateY(400px) rotate(360deg);opacity:0;} }
+#usernameInput,#gcashNumber,#withdrawAmount,#adminPass { padding:10px; border-radius:10px; border:none; margin-bottom:15px; font-size:16px; }
 #adminDashboard { display:none; border:2px solid #fff; padding:10px; margin-top:20px; background:#222; color:#fff; overflow-x:auto; }
 #adminTable { width:100%; border-collapse:collapse; margin-top:10px; color:#333; background:#fff; }
-#adminTable th, #adminTable td { padding:8px; border-bottom:1px solid #ccc; text-align:center; }
-#pendingBadge { display:none; background:red; color:#fff; border-radius:50%; padding:2px 8px; font-size:14px; margin-left:5px; }
+#adminTable th,#adminTable td { padding:8px; border-bottom:1px solid #ccc; text-align:center; }
 </style>
-<script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-app.js";
-import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-database.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-auth.js";
-
-// --- Firebase Config ---
-const firebaseConfig = {
-  apiKey: "AIzaSyDMGU5X7BBp-C6tIl34Uuu5N9MXAVFTn7c",
-  authDomain: "paper-house-inc.firebaseapp.com",
-  databaseURL: "https://paper-house-inc-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "paper-house-inc",
-  storageBucket: "paper-house-inc.firebasestorage.app",
-  messagingSenderId: "658389836376",
-  appId: "1:658389836376:web:513b1ddbebf52849a8e02d"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
-
-let username = localStorage.getItem('username') || '';
-let balance = parseFloat(localStorage.getItem('balance')) || 0;
-let topUsers = {};
-const CONVERSION_RATE = 55;
-const OWNER_PASSWORD = "Propetas6";
-
-// --- UI Elements ---
-const balanceEl=document.getElementById('balance');
-const leaderboardEl=document.getElementById('leaderboard');
-const withdrawLeaderboardEl=document.getElementById('withdrawLeaderboard');
-const pendingEl=document.getElementById('adminTableBody');
-const cpmEl=document.getElementById('cpm');
-const badgeEl=document.getElementById('pendingBadge');
-
-// --- Functions ---
-function updateBalanceUI(){ balanceEl.textContent=`$${balance.toFixed(2)}`; }
-function showConfetti(){ for(let i=0;i<20;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*window.innerWidth+'px'; c.style.background=`hsl(${Math.random()*360},100%,50%)`; document.body.appendChild(c); setTimeout(()=>c.remove(),1000); } }
-function updateLeaderboardUI(){ leaderboardEl.innerHTML=''; Object.keys(topUsers).sort((a,b)=>topUsers[b]-topUsers[a]).forEach(u=>{ const li=document.createElement('li'); li.textContent=`${u} - $${parseFloat(topUsers[u]).toFixed(2)}`; leaderboardEl.appendChild(li); }); }
-function updateWithdrawLeaderboardUI(withdrawals){ withdrawLeaderboardEl.innerHTML=''; withdrawals.slice().sort((a,b)=>b.peso-a.peso).forEach(w=>{ const li=document.createElement('li'); li.textContent=`${w.username} - ₱${w.peso}`; withdrawLeaderboardEl.appendChild(li); }); }
-function updatePendingBadge(withdrawals){ const count = withdrawals.filter(r=>r.status==="Pending").length; if(count>0){ badgeEl.style.display="inline-block"; badgeEl.textContent=count; } else badgeEl.style.display="none"; }
-
-// --- CPM Simulation ---
-setInterval(()=>{ cpmEl.textContent=`Current CPM: $${(Math.random()*2+0.5).toFixed(2)}`; },5000);
-
-// --- Firebase Auth ---
-signInAnonymously(auth).then(userCredential=>{ console.log("Signed in anonymously", userCredential.user.uid); }).catch(err=>console.error(err));
-
-// --- Set Username ---
-document.getElementById('setUsername').addEventListener('click',()=>{
-    const input=document.getElementById('usernameInput').value.trim();
-    if(input.length<3){ alert("Username too short"); return; }
-    username=input;
-    localStorage.setItem('username',username);
-    set(ref(db,'users/'+username), { balance: balance, isAdmin: false });
-    topUsers[username] = balance;
-    updateLeaderboardUI();
-    alert(`Username set: ${username}`);
-});
-
-// --- Ad Rooms ---
-document.querySelectorAll('.adRoom').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-        if(!username){ alert("Set username first!"); return; }
-        btn.disabled=true; const originalText=btn.textContent; btn.textContent="Loading Ad...";
-        show_10337795().then(()=>{
-            const reward=(Math.random()*0.15+0.05).toFixed(2);
-            balance+=parseFloat(reward);
-            localStorage.setItem('balance',balance); topUsers[username]=balance; updateBalanceUI(); updateLeaderboardUI(); showConfetti();
-            set(ref(db,'users/'+username),{balance}); btn.textContent=originalText; btn.disabled=false;
-        }).catch(()=>{ btn.textContent=originalText; btn.disabled=false; });
-    });
-});
-
-// --- Daily Bonus ---
-document.getElementById('dailyBonus').addEventListener('click',()=>{
-    if(!username){ alert("Set username first!"); return; }
-    const today=new Date().toLocaleDateString();
-    if(localStorage.getItem('lastDaily')===today){ alert("Already claimed today!"); return; }
-    show_10337795('pop').then(()=>{
-        const bonus=(Math.random()*0.50+0.50).toFixed(2);
-        balance+=parseFloat(bonus); localStorage.setItem('balance',balance); topUsers[username]=balance; updateBalanceUI(); updateLeaderboardUI();
-        localStorage.setItem('lastDaily',today); alert(`Daily Bonus: $${bonus}`); showConfetti(); set(ref(db,'users/'+username),{balance});
-    }).catch(()=>{});
-});
-
-// --- Withdrawal Request ---
-document.getElementById('requestWithdrawBtn').addEventListener('click',()=>{
-    if(!username){ alert("Set username first!"); return; }
-    const gcashNum = document.getElementById('gcashNumber').value.trim();
-    const amount = parseFloat(document.getElementById('withdrawAmount').value);
-    if(!gcashNum){ alert("Enter GCash number!"); return; }
-    if(!amount || amount<=0 || amount>balance){ alert("Invalid withdraw amount!"); return; }
-    const peso = amount * CONVERSION_RATE;
-    push(ref(db,'withdrawals'),{username, gcash: gcashNum, usd: amount, peso, date:new Date().toLocaleString(), status:"Pending"});
-    alert(`Withdrawal request submitted: $${amount} (₱${peso.toFixed(2)})`);
-});
-
-// --- Admin Dashboard ---
-document.getElementById('adminLoginBtn').addEventListener('click',()=>{
-    const pass = document.getElementById('adminPass').value;
-    if(pass===OWNER_PASSWORD){ document.getElementById('adminDashboard').style.display='block'; alert("Owner access granted"); } else alert("Wrong password");
-});
-
-// --- Real-Time Listeners ---
-onValue(ref(db,'withdrawals'), snapshot=>{
-    const withdrawals = []; snapshot.forEach(snap=>withdrawals.push({id:snap.key, ...snap.val()}));
-    updateWithdrawLeaderboardUI(withdrawals); updatePendingBadge(withdrawals);
-
-    // Admin Table
-    pendingEl.innerHTML=''; withdrawals.slice().reverse().forEach(req=>{
-        const tr=document.createElement('tr');
-        tr.innerHTML=`<td>${req.username}</td><td>${req.gcash}</td><td>$${req.usd}</td><td>₱${req.peso}</td><td>${req.date}</td><td>${req.status}</td>
-        <td><button onclick="approveRequest('${req.id}')" ${req.status==="Approved"?"disabled":""}>Approve</button>
-        <button onclick="denyRequest('${req.id}')" ${req.status==="Denied"?"disabled":""}>Deny</button></td>`;
-        pendingEl.appendChild(tr);
-    });
-
-    // Notify user if their withdrawal approved/denied
-    withdrawals.forEach(req=>{
-        if(req.username===username && req.status==="Approved" && !localStorage.getItem('notified_'+req.id)){
-            alert(`✅ Your withdrawal of $${req.usd} to ${req.gcash} has been APPROVED!`);
-            balance -= req.usd; updateBalanceUI(); topUsers[username]=balance; updateLeaderboardUI();
-            localStorage.setItem('notified_'+req.id,true);
-        }
-        if(req.username===username && req.status==="Denied" && !localStorage.getItem('notified_'+req.id)){
-            alert(`❌ Your withdrawal of $${req.usd} to ${req.gcash} has been DENIED!`);
-            localStorage.setItem('notified_'+req.id,true);
-        }
-    });
-});
-
-// Users leaderboard
-onValue(ref(db,'users'), snapshot=>{ topUsers = snapshot.val() || {}; updateLeaderboardUI(); });
-
-// --- Approve/Deny Functions ---
-window.approveRequest = function(id){ update(ref(db,'withdrawals/'+id), {status:"Approved"}); onValue(ref(db,'withdrawals/'+id), snap=>{ const data = snap.val(); onValue(ref(db,'users/'+data.username), s=>{ const newBalance = s.val().balance - data.usd; set(ref(db,'users/'+data.username),{balance:newBalance}); if(data.username===username){ balance=newBalance; updateBalanceUI(); topUsers[username]=balance; updateLeaderboardUI(); } }); }); }
-window.denyRequest = function(id){ update(ref(db,'withdrawals/'+id), {status:"Denied"}); }
-
-// --- Auto Reward Popups ---
-setInterval(()=>{ if(Math.random()<0.3 && username){ show_10337795('pop').then(()=>{ const bonus=(Math.random()*0.30+0.20).toFixed(2); balance+=parseFloat(bonus); topUsers[username]=balance; updateBalanceUI(); updateLeaderboardUI(); showConfetti(); set(ref(db,'users/'+username),{balance}); }).catch(()=>{}); } },30000);
-
-// --- Monetag In-App Interstitial ---
-show_10337795({type:'inApp', inAppSettings:{frequency:2, capping:0.1, interval:30, timeout:5, everyPage:false}});
-</script>
 </head>
 <body>
 
 <h1>🍍 GLOBAL REWARDS INDIE 🍋</h1>
 
 <div>
-    <input type="text" id="usernameInput" placeholder="Enter your Telegram username" />
-    <button id="setUsername">Set Username</button>
+<input type="text" id="usernameInput" placeholder="Enter Username">
+<button id="setUsernameBtn">Set Username</button>
 </div>
 
-<div>Balance: <span id="balance">$0.00</span></div>
+<div>Balance: $<span id="balance">0.00</span></div>
 <div id="cpm">Current CPM: $0.00</div>
 
 <div class="room-buttons">
-    <button class="adRoom" data-room="1">🍍 Room 1 ($0.05-$0.15)</button>
-    <button class="adRoom" data-room="2">🍋 Room 2 ($0.05-$0.15)</button>
-    <button class="adRoom" data-room="3">🎉 Room 3 ($0.05-$0.20)</button>
+<button class="adRoom" data-reward="0.05">🍍 Room 1 ($0.05-$0.15)</button>
+<button class="adRoom" data-reward="0.1">🍋 Room 2 ($0.05-$0.15)</button>
+<button class="adRoom" data-reward="0.2">🎉 Room 3 ($0.05-$0.20)</button>
 </div>
 
-<button id="dailyBonus">🎁 Daily Bonus</button>
+<button id="dailyBonusBtn">🎁 Daily Bonus</button>
 
 <div>
-    <input type="text" id="gcashNumber" placeholder="Enter your GCash Number" />
-    <input type="number" id="withdrawAmount" placeholder="Amount to withdraw ($)" step="0.01" />
-    <button id="requestWithdrawBtn">💵 Request Withdraw</button>
+<input type="text" id="gcashNumber" placeholder="Enter GCash Number">
+<input type="number" id="withdrawAmount" placeholder="Amount to withdraw ($)" step="0.01">
+<button id="withdrawBtn">💵 Request Withdraw</button>
 </div>
 
-<h2>Top Global Users (Balance)</h2>
+<h2>Leaderboard</h2>
 <ul id="leaderboard"></ul>
 
-<h2>Global Withdrawals (₱) <span id="pendingBadge">0</span></h2>
+<h2>Withdrawals</h2>
 <ul id="withdrawLeaderboard"></ul>
 
 <div id="adminDashboard">
-    <h2>Admin Withdrawal Dashboard</h2>
-    <input type="password" id="adminPass" placeholder="Owner Password" />
-    <button id="adminLoginBtn">Login as Owner</button>
-    <table id="adminTable">
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>GCash Number</th>
-                <th>Amount ($)</th>
-                <th>Amount (₱)</th>
-                <th>Date/Time</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="adminTableBody"></tbody>
-    </table>
+<h2>Admin Withdrawal Dashboard</h2>
+<input type="password" id="adminPass" placeholder="Owner Password">
+<button id="adminLoginBtn">Login as Owner</button>
+<table id="adminTable">
+<thead>
+<tr><th>Username</th><th>GCash</th><th>Amount ($)</th><th>₱</th><th>Date</th><th>Status</th><th>Action</th></tr>
+</thead>
+<tbody id="adminTableBody"></tbody>
+</table>
 </div>
+
+<script>
+const CONVERSION_RATE = 55;
+const OWNER_PASSWORD = "Propetas6";
+
+let username='';
+let balance=0;
+let topUsers={};
+let withdrawals=[];
+
+const balanceEl=document.getElementById('balance');
+const leaderboardEl=document.getElementById('leaderboard');
+const withdrawLeaderboardEl=document.getElementById('withdrawLeaderboard');
+const adminDashboard=document.getElementById('adminDashboard');
+const adminTableBody=document.getElementById('adminTableBody');
+const cpmEl=document.getElementById('cpm');
+
+// --- UI Helpers ---
+function updateBalanceUI(){ balanceEl.textContent=balance.toFixed(2); }
+function showConfetti(){ for(let i=0;i<20;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*window.innerWidth+'px'; c.style.background=`hsl(${Math.random()*360},100%,50%)`; document.body.appendChild(c); setTimeout(()=>c.remove(),1000); } }
+function updateLeaderboardUI(){ leaderboardEl.innerHTML=''; Object.entries(topUsers).sort((a,b)=>b[1]-a[1]).forEach(([u,b])=>{ const li=document.createElement('li'); li.textContent=`${u} - $${b.toFixed(2)}`; leaderboardEl.appendChild(li); }); }
+function updateWithdrawLeaderboardUI(){ withdrawLeaderboardEl.innerHTML=''; withdrawals.slice().reverse().forEach(w=>{ const li=document.createElement('li'); li.textContent=`${w.username} - ₱${w.peso.toFixed(2)} (${w.status})`; withdrawLeaderboardEl.appendChild(li); }); }
+function updateAdminTable(){ adminTableBody.innerHTML=''; withdrawals.slice().reverse().forEach((w,i)=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${w.username}</td><td>${w.gcash}</td><td>$${w.usd}</td><td>₱${w.peso.toFixed(2)}</td><td>${w.date}</td><td>${w.status}</td>
+<td><button onclick="approveRequest(${i})" ${w.status==='Approved'?'disabled':''}>Approve</button>
+<button onclick="denyRequest(${i})" ${w.status==='Denied'?'disabled':''}>Deny</button></td>`; adminTableBody.appendChild(tr); }); }
+
+// --- CPM Simulation ---
+setInterval(()=>{ cpmEl.textContent=`Current CPM: $${(Math.random()*2+0.5).toFixed(2)}`; },5000);
+
+// --- Set Username ---
+document.getElementById('setUsernameBtn').onclick=()=>{
+    const val=document.getElementById('usernameInput').value.trim();
+    if(val.length<3){ alert("Username too short"); return; }
+    username=val;
+    if(!topUsers[username]) topUsers[username]=balance;
+    updateLeaderboardUI();
+    alert(`Username set: ${username}`);
+};
+
+// --- Ad Rooms ---
+document.querySelectorAll('.adRoom').forEach(btn=>{
+    btn.onclick=()=>{
+        if(!username){ alert("Set username first!"); return; }
+        const reward=parseFloat(btn.dataset.reward) + Math.random()*0.1;
+        balance+=reward; topUsers[username]=balance;
+        updateBalanceUI(); updateLeaderboardUI(); showConfetti();
+    };
+});
+
+// --- Daily Bonus ---
+document.getElementById('dailyBonusBtn').onclick=()=>{
+    if(!username){ alert("Set username first!"); return; }
+    const bonus=(Math.random()*0.5+0.5).toFixed(2);
+    balance+=parseFloat(bonus); topUsers[username]=balance;
+    updateBalanceUI(); updateLeaderboardUI(); showConfetti();
+    alert(`Daily bonus: $${bonus}`);
+};
+
+// --- Withdraw Request ---
+document.getElementById('withdrawBtn').onclick=()=>{
+    if(!username){ alert("Set username first!"); return; }
+    const gcash=document.getElementById('gcashNumber').value.trim();
+    const usd=parseFloat(document.getElementById('withdrawAmount').value);
+    if(!gcash || !usd || usd>balance){ alert("Invalid input or insufficient balance"); return; }
+    const peso=usd*CONVERSION_RATE;
+    withdrawals.push({username,gcash,usd,peso,status:"Pending",date:new Date().toLocaleString()});
+    updateWithdrawLeaderboardUI(); updateAdminTable();
+    alert(`Withdrawal requested: $${usd} (₱${peso.toFixed(2)})`);
+};
+
+// --- Admin Login ---
+document.getElementById('adminLoginBtn').onclick=()=>{
+    const pass=document.getElementById('adminPass').value;
+    if(pass===OWNER_PASSWORD){ adminDashboard.style.display='block'; updateAdminTable(); alert("Owner access granted"); } else alert("Wrong password");
+};
+
+// --- Approve / Deny ---
+function approveRequest(idx){
+    const w=withdrawals[idx]; w.status="Approved"; balance-=w.usd; topUsers[w.username]=balance;
+    updateBalanceUI(); updateWithdrawLeaderboardUI(); updateAdminTable();
+    alert(`✅ Approved $${w.usd} to ${w.gcash}`);
+}
+function denyRequest(idx){
+    withdrawals[idx].status="Denied"; updateWithdrawLeaderboardUI(); updateAdminTable();
+    alert(`❌ Denied $${withdrawals[idx].usd} to ${withdrawals[idx].gcash}`);
+}
+
+// --- Initialize ---
+updateBalanceUI(); updateLeaderboardUI(); updateWithdrawLeaderboardUI(); updateAdminTable();
+</script>
 </body>
 </html>

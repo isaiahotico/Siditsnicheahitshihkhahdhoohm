@@ -42,11 +42,7 @@ button:hover { transform: scale(1.05); background: #ffd700; }
 #adminTable th, #adminTable td { padding:8px; border-bottom:1px solid #ccc; text-align:center; }
 #pendingBadge { display:none; background:red; color:#fff; border-radius:50%; padding:2px 8px; font-size:14px; margin-left:5px; }
 </style>
-
-<!-- Monetag SDK -->
 <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
-
-<!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-app.js";
 import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-database.js";
@@ -70,7 +66,7 @@ const auth = getAuth(app);
 
 let username = localStorage.getItem('username') || '';
 let balance = parseFloat(localStorage.getItem('balance')) || 0;
-let topUsers = {}; // {username: balance}
+let topUsers = {};
 const CONVERSION_RATE = 55;
 const OWNER_PASSWORD = "Propetas6";
 
@@ -84,44 +80,16 @@ const badgeEl=document.getElementById('pendingBadge');
 
 // --- Functions ---
 function updateBalanceUI(){ balanceEl.textContent=`$${balance.toFixed(2)}`; }
-function showConfetti(){
-    for(let i=0;i<20;i++){
-        const c=document.createElement('div'); c.className='confetti';
-        c.style.left=Math.random()*window.innerWidth+'px';
-        c.style.background=`hsl(${Math.random()*360},100%,50%)`;
-        document.body.appendChild(c);
-        setTimeout(()=>c.remove(),1000);
-    }
-}
-function updateLeaderboardUI(){
-    leaderboardEl.innerHTML='';
-    Object.keys(topUsers).sort((a,b)=>topUsers[b]-topUsers[a]).forEach(u=>{
-        const li=document.createElement('li');
-        li.textContent=`${u} - $${parseFloat(topUsers[u]).toFixed(2)}`;
-        leaderboardEl.appendChild(li);
-    });
-}
-function updateWithdrawLeaderboardUI(withdrawals){
-    withdrawLeaderboardEl.innerHTML='';
-    withdrawals.slice().sort((a,b)=>b.peso-a.peso).forEach(w=>{
-        const li=document.createElement('li');
-        li.textContent=`${w.username} - ₱${w.peso}`;
-        withdrawLeaderboardEl.appendChild(li);
-    });
-}
-function updatePendingBadge(withdrawals){
-    const count = withdrawals.filter(r=>r.status==="Pending").length;
-    if(count>0){ badgeEl.style.display="inline-block"; badgeEl.textContent=count; }
-    else badgeEl.style.display="none";
-}
+function showConfetti(){ for(let i=0;i<20;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*window.innerWidth+'px'; c.style.background=`hsl(${Math.random()*360},100%,50%)`; document.body.appendChild(c); setTimeout(()=>c.remove(),1000); } }
+function updateLeaderboardUI(){ leaderboardEl.innerHTML=''; Object.keys(topUsers).sort((a,b)=>topUsers[b]-topUsers[a]).forEach(u=>{ const li=document.createElement('li'); li.textContent=`${u} - $${parseFloat(topUsers[u]).toFixed(2)}`; leaderboardEl.appendChild(li); }); }
+function updateWithdrawLeaderboardUI(withdrawals){ withdrawLeaderboardEl.innerHTML=''; withdrawals.slice().sort((a,b)=>b.peso-a.peso).forEach(w=>{ const li=document.createElement('li'); li.textContent=`${w.username} - ₱${w.peso}`; withdrawLeaderboardEl.appendChild(li); }); }
+function updatePendingBadge(withdrawals){ const count = withdrawals.filter(r=>r.status==="Pending").length; if(count>0){ badgeEl.style.display="inline-block"; badgeEl.textContent=count; } else badgeEl.style.display="none"; }
 
 // --- CPM Simulation ---
 setInterval(()=>{ cpmEl.textContent=`Current CPM: $${(Math.random()*2+0.5).toFixed(2)}`; },5000);
 
 // --- Firebase Auth ---
-signInAnonymously(auth).then(userCredential=>{
-    console.log("Signed in anonymously", userCredential.user.uid);
-}).catch(err=>console.error(err));
+signInAnonymously(auth).then(userCredential=>{ console.log("Signed in anonymously", userCredential.user.uid); }).catch(err=>console.error(err));
 
 // --- Set Username ---
 document.getElementById('setUsername').addEventListener('click',()=>{
@@ -129,7 +97,6 @@ document.getElementById('setUsername').addEventListener('click',()=>{
     if(input.length<3){ alert("Username too short"); return; }
     username=input;
     localStorage.setItem('username',username);
-    // Save in Firebase
     set(ref(db,'users/'+username), { balance: balance, isAdmin: false });
     topUsers[username] = balance;
     updateLeaderboardUI();
@@ -140,17 +107,12 @@ document.getElementById('setUsername').addEventListener('click',()=>{
 document.querySelectorAll('.adRoom').forEach(btn=>{
     btn.addEventListener('click',()=>{
         if(!username){ alert("Set username first!"); return; }
-        btn.disabled=true;
-        const originalText=btn.textContent;
-        btn.textContent="Loading Ad...";
+        btn.disabled=true; const originalText=btn.textContent; btn.textContent="Loading Ad...";
         show_10337795().then(()=>{
             const reward=(Math.random()*0.15+0.05).toFixed(2);
             balance+=parseFloat(reward);
-            localStorage.setItem('balance',balance);
-            topUsers[username]=balance;
-            updateBalanceUI(); updateLeaderboardUI(); showConfetti();
-            set(ref(db,'users/'+username),{balance});
-            btn.textContent=originalText; btn.disabled=false;
+            localStorage.setItem('balance',balance); topUsers[username]=balance; updateBalanceUI(); updateLeaderboardUI(); showConfetti();
+            set(ref(db,'users/'+username),{balance}); btn.textContent=originalText; btn.disabled=false;
         }).catch(()=>{ btn.textContent=originalText; btn.disabled=false; });
     });
 });
@@ -162,13 +124,8 @@ document.getElementById('dailyBonus').addEventListener('click',()=>{
     if(localStorage.getItem('lastDaily')===today){ alert("Already claimed today!"); return; }
     show_10337795('pop').then(()=>{
         const bonus=(Math.random()*0.50+0.50).toFixed(2);
-        balance+=parseFloat(bonus);
-        localStorage.setItem('balance',balance);
-        topUsers[username]=balance;
-        updateBalanceUI(); updateLeaderboardUI();
-        localStorage.setItem('lastDaily',today);
-        alert(`Daily Bonus: $${bonus}`); showConfetti();
-        set(ref(db,'users/'+username),{balance});
+        balance+=parseFloat(bonus); localStorage.setItem('balance',balance); topUsers[username]=balance; updateBalanceUI(); updateLeaderboardUI();
+        localStorage.setItem('lastDaily',today); alert(`Daily Bonus: $${bonus}`); showConfetti(); set(ref(db,'users/'+username),{balance});
     }).catch(()=>{});
 });
 
@@ -180,45 +137,27 @@ document.getElementById('requestWithdrawBtn').addEventListener('click',()=>{
     if(!gcashNum){ alert("Enter GCash number!"); return; }
     if(!amount || amount<=0 || amount>balance){ alert("Invalid withdraw amount!"); return; }
     const peso = amount * CONVERSION_RATE;
-    push(ref(db,'withdrawals'),{
-        username, gcash: gcashNum, usd: amount, peso, date:new Date().toLocaleString(), status:"Pending"
-    });
+    push(ref(db,'withdrawals'),{username, gcash: gcashNum, usd: amount, peso, date:new Date().toLocaleString(), status:"Pending"});
     alert(`Withdrawal request submitted: $${amount} (₱${peso.toFixed(2)})`);
 });
 
-// --- Admin Dashboard Access ---
+// --- Admin Dashboard ---
 document.getElementById('adminLoginBtn').addEventListener('click',()=>{
     const pass = document.getElementById('adminPass').value;
-    if(pass===OWNER_PASSWORD){
-        document.getElementById('adminDashboard').style.display='block';
-        alert("Owner access granted");
-    } else alert("Wrong password");
+    if(pass===OWNER_PASSWORD){ document.getElementById('adminDashboard').style.display='block'; alert("Owner access granted"); } else alert("Wrong password");
 });
 
 // --- Real-Time Listeners ---
-// Withdrawals
 onValue(ref(db,'withdrawals'), snapshot=>{
-    const withdrawals = [];
-    snapshot.forEach(snap=>withdrawals.push({id:snap.key, ...snap.val()}));
-    updateWithdrawLeaderboardUI(withdrawals);
-    updatePendingBadge(withdrawals);
+    const withdrawals = []; snapshot.forEach(snap=>withdrawals.push({id:snap.key, ...snap.val()}));
+    updateWithdrawLeaderboardUI(withdrawals); updatePendingBadge(withdrawals);
 
-    // Admin table
-    pendingEl.innerHTML='';
-    withdrawals.slice().reverse().forEach(req=>{
+    // Admin Table
+    pendingEl.innerHTML=''; withdrawals.slice().reverse().forEach(req=>{
         const tr=document.createElement('tr');
-        tr.innerHTML=`
-            <td>${req.username}</td>
-            <td>${req.gcash}</td>
-            <td>$${req.usd}</td>
-            <td>₱${req.peso}</td>
-            <td>${req.date}</td>
-            <td>${req.status}</td>
-            <td>
-                <button onclick="approveRequest('${req.id}')" ${req.status==="Approved"?"disabled":""}>Approve</button>
-                <button onclick="denyRequest('${req.id}')" ${req.status==="Denied"?"disabled":""}>Deny</button>
-            </td>
-        `;
+        tr.innerHTML=`<td>${req.username}</td><td>${req.gcash}</td><td>$${req.usd}</td><td>₱${req.peso}</td><td>${req.date}</td><td>${req.status}</td>
+        <td><button onclick="approveRequest('${req.id}')" ${req.status==="Approved"?"disabled":""}>Approve</button>
+        <button onclick="denyRequest('${req.id}')" ${req.status==="Denied"?"disabled":""}>Deny</button></td>`;
         pendingEl.appendChild(tr);
     });
 
@@ -226,10 +165,7 @@ onValue(ref(db,'withdrawals'), snapshot=>{
     withdrawals.forEach(req=>{
         if(req.username===username && req.status==="Approved" && !localStorage.getItem('notified_'+req.id)){
             alert(`✅ Your withdrawal of $${req.usd} to ${req.gcash} has been APPROVED!`);
-            balance -= req.usd; 
-            updateBalanceUI();
-            topUsers[username]=balance;
-            updateLeaderboardUI();
+            balance -= req.usd; updateBalanceUI(); topUsers[username]=balance; updateLeaderboardUI();
             localStorage.setItem('notified_'+req.id,true);
         }
         if(req.username===username && req.status==="Denied" && !localStorage.getItem('notified_'+req.id)){
@@ -240,45 +176,69 @@ onValue(ref(db,'withdrawals'), snapshot=>{
 });
 
 // Users leaderboard
-onValue(ref(db,'users'), snapshot=>{
-    topUsers = snapshot.val() || {};
-    updateLeaderboardUI();
-});
+onValue(ref(db,'users'), snapshot=>{ topUsers = snapshot.val() || {}; updateLeaderboardUI(); });
 
 // --- Approve/Deny Functions ---
-window.approveRequest = function(id){
-    update(ref(db,'withdrawals/'+id), {status:"Approved"});
-    const reqRef = ref(db,'withdrawals/'+id);
-    onValue(reqRef, snapshot=>{
-        const data = snapshot.val();
-        const userRef = ref(db,'users/'+data.username);
-        onValue(userRef, snap=>{
-            const newBalance = snap.val().balance - data.usd;
-            set(userRef,{balance:newBalance});
-            if(data.username===username){ balance=newBalance; updateBalanceUI(); topUsers[username]=balance; updateLeaderboardUI(); }
-        });
-    });
-}
-window.denyRequest = function(id){
-    update(ref(db,'withdrawals/'+id), {status:"Denied"});
-}
+window.approveRequest = function(id){ update(ref(db,'withdrawals/'+id), {status:"Approved"}); onValue(ref(db,'withdrawals/'+id), snap=>{ const data = snap.val(); onValue(ref(db,'users/'+data.username), s=>{ const newBalance = s.val().balance - data.usd; set(ref(db,'users/'+data.username),{balance:newBalance}); if(data.username===username){ balance=newBalance; updateBalanceUI(); topUsers[username]=balance; updateLeaderboardUI(); } }); }); }
+window.denyRequest = function(id){ update(ref(db,'withdrawals/'+id), {status:"Denied"}); }
 
 // --- Auto Reward Popups ---
-setInterval(()=>{ 
-    if(Math.random()<0.3 && username){
-        show_10337795('pop').then(()=>{
-            const bonus=(Math.random()*0.30+0.20).toFixed(2);
-            balance+=parseFloat(bonus);
-            topUsers[username]=balance;
-            updateBalanceUI(); updateLeaderboardUI(); showConfetti();
-            set(ref(db,'users/'+username),{balance});
-        }).catch(()=>{});
-    }
-},30000);
+setInterval(()=>{ if(Math.random()<0.3 && username){ show_10337795('pop').then(()=>{ const bonus=(Math.random()*0.30+0.20).toFixed(2); balance+=parseFloat(bonus); topUsers[username]=balance; updateBalanceUI(); updateLeaderboardUI(); showConfetti(); set(ref(db,'users/'+username),{balance}); }).catch(()=>{}); } },30000);
 
 // --- Monetag In-App Interstitial ---
 show_10337795({type:'inApp', inAppSettings:{frequency:2, capping:0.1, interval:30, timeout:5, everyPage:false}});
-
 </script>
+</head>
+<body>
+
+<h1>🍍 GLOBAL REWARDS INDIE 🍋</h1>
+
+<div>
+    <input type="text" id="usernameInput" placeholder="Enter your Telegram username" />
+    <button id="setUsername">Set Username</button>
+</div>
+
+<div>Balance: <span id="balance">$0.00</span></div>
+<div id="cpm">Current CPM: $0.00</div>
+
+<div class="room-buttons">
+    <button class="adRoom" data-room="1">🍍 Room 1 ($0.05-$0.15)</button>
+    <button class="adRoom" data-room="2">🍋 Room 2 ($0.05-$0.15)</button>
+    <button class="adRoom" data-room="3">🎉 Room 3 ($0.05-$0.20)</button>
+</div>
+
+<button id="dailyBonus">🎁 Daily Bonus</button>
+
+<div>
+    <input type="text" id="gcashNumber" placeholder="Enter your GCash Number" />
+    <input type="number" id="withdrawAmount" placeholder="Amount to withdraw ($)" step="0.01" />
+    <button id="requestWithdrawBtn">💵 Request Withdraw</button>
+</div>
+
+<h2>Top Global Users (Balance)</h2>
+<ul id="leaderboard"></ul>
+
+<h2>Global Withdrawals (₱) <span id="pendingBadge">0</span></h2>
+<ul id="withdrawLeaderboard"></ul>
+
+<div id="adminDashboard">
+    <h2>Admin Withdrawal Dashboard</h2>
+    <input type="password" id="adminPass" placeholder="Owner Password" />
+    <button id="adminLoginBtn">Login as Owner</button>
+    <table id="adminTable">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>GCash Number</th>
+                <th>Amount ($)</th>
+                <th>Amount (₱)</th>
+                <th>Date/Time</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="adminTableBody"></tbody>
+    </table>
+</div>
 </body>
 </html>

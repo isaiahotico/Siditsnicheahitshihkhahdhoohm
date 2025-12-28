@@ -1,215 +1,98 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GLOBAL REWARDS INDIE</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src='//libtl.com/sdk.js' data-zone='10337795'></script>
 
 <style>
-body{
-  background:linear-gradient(120deg,#ff9a9e,#fad0c4);
-  font-family:'Comic Sans MS',cursive;
-  color:#fff;text-align:center;padding:15px
-}
-button{
-  padding:12px 22px;margin:6px;border:none;border-radius:20px;
-  background:#ffec61;font-size:16px;cursor:pointer
-}
-button:hover{background:#ffd700}
+body{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-family:Comic Sans MS;text-align:center;padding:15px}
+button{padding:12px 20px;border:none;border-radius:18px;background:#ffec61;margin:6px}
 input{padding:10px;border-radius:10px;border:none;margin:4px}
-.room{display:flex;flex-wrap:wrap;justify-content:center}
-.box{
-  background:#fff;color:#333;border-radius:10px;
-  max-width:420px;margin:10px auto;padding:10px;text-align:left
-}
-#admin{display:none;background:#222;padding:10px;margin-top:10px}
-table{width:100%;border-collapse:collapse;background:#fff;color:#333}
-td,th{padding:6px;border-bottom:1px solid #ccc;font-size:14px}
+.box{background:#fff;color:#000;border-radius:12px;padding:10px;margin:10px auto;max-width:400px}
 </style>
-
-<script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
 </head>
+
 <body>
+<h2>🌍 GLOBAL REWARDS INDIE</h2>
+<h3>Wallet: $<span id="balance">0.00</span></h3>
 
-<h1>🍍 GLOBAL REWARDS INDIE 🍋</h1>
+<button onclick="watchAd()">▶ Watch Ad</button>
 
-<input id="usernameInput" placeholder="Telegram Username">
-<button onclick="setUser()">Set Username</button>
-
-<h2>Balance: $<span id="balance">0.00</span></h2>
-<div id="cpm">CPM: $0.00</div>
-
-<h3>🎬 Choose Ads</h3>
-<div class="room">
-  <button class="ad" data-type="quick">⚡ Quick</button>
-  <button class="ad" data-type="power">🔥 Power</button>
-  <button class="ad" data-type="mega">💎 Mega</button>
-  <button class="ad" data-type="surprise">🎁 Surprise</button>
-</div>
-
-<h3>💵 Withdraw</h3>
+<h3>Withdraw</h3>
 <input id="gcash" placeholder="GCash Number">
-<input id="amount" type="number" step="0.01" placeholder="USD Amount">
-<button onclick="requestWithdraw()">Request Withdraw</button>
-
-<div class="box">
-<h3>🏆 Leaderboard</h3>
-<ul id="leaderboard"></ul>
-</div>
-
-<div class="box">
-<h3>💸 Withdrawals</h3>
-<ul id="history"></ul>
-</div>
-
-<h3>👑 Admin</h3>
-<input type="password" id="adminPass" placeholder="Password">
-<button onclick="openAdmin()">Open Dashboard</button>
-
-<div id="admin">
-<h3>Admin Withdrawal Dashboard</h3>
-<table>
-<thead>
-<tr><th>User</th><th>GCash</th><th>$</th><th>₱</th><th>Status</th><th>Action</th></tr>
-</thead>
-<tbody id="adminTable"></tbody>
-</table>
-</div>
+<input id="amount" type="number" placeholder="USD">
+<button onclick="withdraw()">Request</button>
 
 <script>
-/* ===== CONSTANTS ===== */
-const OWNER_PASSWORD="Propetas6";
-const RATE=55;
+/* ================= CONFIG ================= */
+const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_PUBLIC_ANON_KEY";
+const supabase = supabaseJs.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
-/* ===== STORAGE ===== */
-let username=localStorage.username||"";
-let balance=parseFloat(localStorage.balance)||0;
-let users=JSON.parse(localStorage.users||"[]");
-let pending=JSON.parse(localStorage.pending||"[]");
-let history=JSON.parse(localStorage.history||"[]");
+/* ================= TELEGRAM ================= */
+const tg = Telegram.WebApp;
+tg.expand();
+const user = tg.initDataUnsafe.user;
+const username = "telegram_" + user.id;
 
-/* ===== REAL-TIME SYNC (TABS) ===== */
-const bc=new BroadcastChannel("GLOBAL_REWARDS_SYNC");
-function sync(){
-  bc.postMessage({balance,users,pending,history});
-  save(); render();
+/* ================= INIT ================= */
+async function init(){
+  let {data} = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("username",username)
+    .single();
+
+  if(!data){
+    await supabase.from("profiles").insert({username,balance:0});
+  }
+  loadBalance();
 }
-bc.onmessage=e=>{
-  ({balance,users,pending,history}=e.data);
-  save(); render();
-};
-function save(){
-  localStorage.balance=balance;
-  localStorage.users=JSON.stringify(users);
-  localStorage.pending=JSON.stringify(pending);
-  localStorage.history=JSON.stringify(history);
+init();
+
+/* ================= BALANCE ================= */
+async function loadBalance(){
+  const {data} = await supabase
+    .from("profiles")
+    .select("balance")
+    .eq("username",username)
+    .single();
+  balance.textContent = Number(data.balance).toFixed(2);
 }
 
-/* ===== UI ===== */
-function render(){
-  balanceEl.textContent=balance.toFixed(2);
-  leaderboard.innerHTML="";
-  users.sort((a,b)=>b.balance-a.balance)
-    .forEach(u=>leaderboard.innerHTML+=`<li>${u.name}: $${u.balance.toFixed(2)}</li>`);
-  historyEl.innerHTML="";
-  history.forEach(h=>historyEl.innerHTML+=`<li>${h.username} ₱${h.peso}</li>`);
-  adminTable.innerHTML="";
-  pending.forEach((p,i)=>{
-    adminTable.innerHTML+=`
-    <tr>
-      <td>${p.username}</td><td>${p.gcash}</td>
-      <td>$${p.usd}</td><td>₱${p.peso}</td>
-      <td>${p.status}</td>
-      <td>
-        <button onclick="approve(${i})">✔</button>
-        <button onclick="deny(${i})">✖</button>
-      </td>
-    </tr>`;
+/* ================= ADS ================= */
+function watchAd(){
+  show_10337795().then(async ()=>{
+    const earn = Math.random()*0.3+0.1;
+    await supabase.rpc("credit_balance",{
+      username_input:username,
+      amount_input:earn
+    });
+    loadBalance();
   });
 }
-const balanceEl=document.getElementById("balance");
-const leaderboard=document.getElementById("leaderboard");
-const historyEl=document.getElementById("history");
-const adminTable=document.getElementById("adminTable");
 
-/* ===== USER ===== */
-function setUser(){
-  username=usernameInput.value.trim();
-  if(username.length<3) return alert("Invalid username");
-  localStorage.username=username;
-  if(!users.find(u=>u.name===username))
-    users.push({name:username,balance});
-  sync();
-}
+/* ================= WITHDRAW ================= */
+async function withdraw(){
+  const amt = Number(amount.value);
+  if(amt<=0) return alert("Invalid amount");
 
-/* ===== ADS ===== */
-const ADS={
-  quick:{min:.03,max:.08,cd:8000},
-  power:{min:.08,max:.2,cd:15000},
-  mega:{min:.2,max:.5,cd:30000},
-  surprise:{min:.1,max:.6,cd:20000}
-};
-const cd={};
+  const {data:userRow} = await supabase
+    .from("profiles").select("id").eq("username",username).single();
 
-document.querySelectorAll(".ad").forEach(b=>{
-b.onclick=()=>{
-  if(!username) return alert("Set username");
-  const t=b.dataset.type;
-  if(cd[t] && Date.now()-cd[t]<ADS[t].cd) return alert("Cooldown");
-
-  b.disabled=true;
-  show_10337795().then(()=>{
-    const r=Math.random()*(ADS[t].max-ADS[t].min)+ADS[t].min;
-    balance+=r;
-    users.find(u=>u.name===username).balance=balance;
-    cd[t]=Date.now();
-    sync();
-    b.disabled=false;
-  }).catch(()=>b.disabled=false);
-};
-});
-
-/* ===== WITHDRAW (ANTI-DUPLICATE) ===== */
-function requestWithdraw(){
-  const amt=parseFloat(amount.value);
-  if(!username) return;
-  if(amt<=0||amt>balance) return alert("Invalid amount");
-  if(pending.some(p=>p.username===username))
-    return alert("You already have a pending request");
-
-  pending.push({
-    username,gcash:gcash.value,
-    usd:amt,peso:(amt*RATE).toFixed(2),
-    status:"Pending"
+  await supabase.from("withdrawals").insert({
+    user_id:userRow.id,
+    amount:amt,
+    method:"gcash",
+    account_info:gcash.value
   });
-  sync();
-}
 
-/* ===== ADMIN ===== */
-function openAdmin(){
-  if(adminPass.value===OWNER_PASSWORD){
-    admin.style.display="block";
-    render();
-  }else alert("Wrong password");
+  alert("Withdrawal Requested");
 }
-function approve(i){
-  const r=pending[i];
-  r.status="Approved";
-  history.push(r);
-  users.find(u=>u.name===r.username).balance-=r.usd;
-  pending.splice(i,1);
-  sync();
-}
-function deny(i){
-  pending[i].status="Denied";
-  sync();
-}
-
-/* ===== CPM SIM ===== */
-setInterval(()=>cpm.textContent="CPM: $"+(Math.random()*2+.5).toFixed(2),5000);
-
-/* ===== INIT ===== */
-render();
 </script>
 </body>
 </html>

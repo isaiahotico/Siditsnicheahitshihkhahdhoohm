@@ -3,242 +3,202 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monetag Telegram Leaderboard Dashboard</title>
+<title>GLOBAL REWARDS INDIE - Real-Time Username</title>
 <style>
-body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
-h2, h3 { text-align: center; }
-#loginContainer { text-align:center; margin-bottom:20px; }
-nav { text-align: center; margin-bottom: 20px; }
-nav button { padding: 8px 16px; margin: 0 5px; background:#2196F3; color:white; border:none; border-radius:5px; cursor:pointer;}
-nav button.active { background:#0b79d0; }
-table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-th, td { padding: 12px; text-align: center; border-bottom: 1px solid #ddd; }
-th { background: #4CAF50; color: white; }
-button { padding: 6px 12px; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer; }
-button:hover { background: #e68900; }
-.reward-popup { position: absolute; font-weight: bold; color: #4CAF50; font-size: 18px; pointer-events: none; animation: pop 1s ease-out forwards; }
-@keyframes pop { 0% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(-50px); } }
-#wallet { font-size: 20px; text-align:center; margin-bottom:10px; }
-#dailyBonus { text-align:center; margin-bottom:20px; }
-#leaderboard { margin-top:20px; }
+body {
+    background: linear-gradient(120deg, #ff9a9e, #fad0c4);
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+}
+h1 { font-size: 2rem; margin-bottom: 10px; }
+#balance { font-size: 2rem; margin: 15px 0; }
+button {
+    font-size: 18px;
+    padding: 12px 25px;
+    margin: 10px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    background: #ffec61;
+    color: #333;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+button:hover { transform: scale(1.1); background: #ffd700; }
+#leaderboard { text-align: left; display: inline-block; margin-top: 20px; }
+#leaderboard li { margin: 5px 0; font-weight: bold; }
+#cpm { margin: 10px 0; font-size: 1.2rem; }
+.room-buttons { display: flex; justify-content: center; flex-wrap: wrap; }
+.confetti { position: absolute; width: 10px; height: 10px; z-index: 1000; animation: fall 1s linear forwards; }
+@keyframes fall { 0% { transform: translateY(0px); opacity:1; } 100% { transform: translateY(400px) rotate(360deg); opacity:0; } }
+#usernameInput { padding: 10px; border-radius: 10px; border:none; margin-bottom:15px; font-size:16px; }
 </style>
+
+<!-- Monetag SDK -->
+<script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
 </head>
 <body>
 
-<h2>Monetag Telegram Leaderboard Dashboard</h2>
+<h1>🍍 GLOBAL REWARDS INDIE 🍋</h1>
 
-<div id="loginContainer">
-    <script async src="https://telegram.org/js/telegram-widget.js?7"
-        data-telegram-login="YourBotUsername"
-        data-size="large"
-        data-userpic="false"
-        data-request-access="write"
-        data-onauth="onTelegramAuth(user)">
-    </script>
+<!-- Username input -->
+<div>
+    <input type="text" id="usernameInput" placeholder="Enter your Telegram username" />
+    <button id="setUsername">Set Username</button>
 </div>
 
-<div id="userContainer" style="display:none;">
-    <div id="wallet">Wallet: <span id="walletBalance">0</span> points</div>
-    <div id="dailyBonus"><button id="dailySignIn">Daily Sign-In Bonus</button></div>
+<div>Balance: <span id="balance">$0.00</span></div>
+<div id="cpm">Current CPM: $0.00</div>
 
-    <nav id="roomNav">
-        <button class="active" data-room="1">Room 1</button>
-        <button data-room="2">Room 2</button>
-    </nav>
-
-    <h3>Top Global CPM: $<span id="topCPM">0.00</span></h3>
-
-    <table id="adTable">
-        <thead>
-            <tr>
-                <th>Ad Type</th>
-                <th>Zone ID</th>
-                <th>CPM (USD)</th>
-                <th>Status</th>
-                <th>Reward</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="adTableBody"></tbody>
-    </table>
-
-    <h3>Leaderboard</h3>
-    <table id="leaderboard">
-        <thead>
-            <tr>
-                <th>Telegram Username</th>
-                <th>Total Rewards</th>
-                <th>Top CPM</th>
-            </tr>
-        </thead>
-        <tbody id="leaderboardBody"></tbody>
-    </table>
+<div class="room-buttons">
+    <button class="adRoom" data-room="1">🍍 Room 1 (Reward $0.05-$0.15)</button>
+    <button class="adRoom" data-room="2">🍋 Room 2 (Reward $0.05-$0.15)</button>
+    <button class="adRoom" data-room="3">🎉 Room 3 (Reward $0.05-$0.20)</button>
 </div>
 
-<script src="//libtl.com/sdk.js" data-zone="10337795" data-sdk="show_10337795"></script>
+<button id="dailyBonus">🎁 Daily Bonus</button>
+
+<h2>Top Global Users</h2>
+<ul id="leaderboard"></ul>
+
 <script>
-// === CONFIG ===
-const adRooms = {
-    1: [
-        { type: 'Rewarded Interstitial', zone: '10337795', reward: 50 },
-        { type: 'Rewarded Popup', zone: '10337795', reward: 30 }
-    ],
-    2: [
-        { type: 'In-App Interstitial', zone: '10337795', reward: 20, settings: { frequency:2, capping:0.1, interval:30, timeout:5 } },
-        { type: 'Rewarded Interstitial', zone: '10337795', reward: 40 }
-    ]
-};
+// --- User Setup ---
+let username = localStorage.getItem('username') || '';
+if(username) document.getElementById('usernameInput').value = username;
 
-// === GLOBALS ===
-let wallet = 0;
-let lastSignIn = null;
-let username = null;
-const tableBody = document.getElementById('adTableBody');
-const walletEl = document.getElementById('walletBalance');
-const topCPMEl = document.getElementById('topCPM');
-const roomNav = document.getElementById('roomNav');
-const dailyBtn = document.getElementById('dailySignIn');
-const leaderboardBody = document.getElementById('leaderboardBody');
-const userContainer = document.getElementById('userContainer');
+// --- Local Storage Balance ---
+let balance = parseFloat(localStorage.getItem('balance')) || 0;
+const balanceEl = document.getElementById('balance');
+function updateBalanceUI(){ balanceEl.textContent=`$${balance.toFixed(2)}`; }
+updateBalanceUI();
 
-// === TELEGRAM AUTH ===
-function onTelegramAuth(user) {
-    username = user.username;
-    console.log('Logged in as:', username);
-    userContainer.style.display = 'block';
-    document.getElementById('loginContainer').style.display = 'none';
+// --- CPM Simulation ---
+const cpmEl=document.getElementById('cpm');
+function updateCPM(){ cpmEl.textContent=`Current CPM: $${(Math.random()*2+0.5).toFixed(2)}`; }
+setInterval(updateCPM,5000); updateCPM();
 
-    // Load user data from localStorage
-    const data = JSON.parse(localStorage.getItem('user_'+username)) || { wallet:0, lastSignIn:null, topCPM:0 };
-    wallet = data.wallet;
-    lastSignIn = data.lastSignIn;
-    walletEl.innerText = wallet;
-
-    loadRoom(1);
-    updateLeaderboard();
-}
-
-// === UTILITIES ===
-function showRewardPopup(text, row) {
-    const popup = document.createElement('div');
-    popup.className = 'reward-popup';
-    popup.innerText = text;
-    const rect = row.getBoundingClientRect();
-    popup.style.left = rect.left + window.scrollX + rect.width/2 + 'px';
-    popup.style.top = rect.top + window.scrollY - 20 + 'px';
-    document.body.appendChild(popup);
-    setTimeout(() => document.body.removeChild(popup), 1000);
-}
-
-function saveUserData(cpm = 0) {
-    const data = JSON.parse(localStorage.getItem('user_'+username)) || { wallet:0, lastSignIn:null, topCPM:0 };
-    data.wallet = wallet;
-    data.topCPM = Math.max(cpm, data.topCPM || 0);
-    data.lastSignIn = lastSignIn;
-    localStorage.setItem('user_'+username, JSON.stringify(data));
-    updateLeaderboard();
-}
-
-function updateLeaderboard() {
-    leaderboardBody.innerHTML = '';
-    for(let key in localStorage) {
-        if(key.startsWith('user_')) {
-            const u = JSON.parse(localStorage.getItem(key));
-            const row = document.createElement('tr');
-            row.innerHTML = `<td>@${key.replace('user_','')}</td><td>${u.wallet}</td><td>$${u.topCPM.toFixed(2)}</td>`;
-            leaderboardBody.appendChild(row);
-        }
-    }
-}
-
-// === LOAD ROOM ===
-function loadRoom(roomId) {
-    tableBody.innerHTML = '';
-    adRooms[roomId].forEach(ad => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${ad.type}</td>
-            <td>${ad.zone}</td>
-            <td>$0.00</td>
-            <td>Pending</td>
-            <td>0</td>
-            <td><button>Show Ad</button></td>
-        `;
-        const btn = row.querySelector('button');
-        btn.addEventListener('click', () => showAd(ad, row));
-        tableBody.appendChild(row);
+// --- Leaderboard ---
+let topUsers=[{name:"Alice",balance:12.34},{name:"Bob",balance:10.50},{name:"Carol",balance:8.75},{name:"Dave",balance:6.20},{name:"Eve",balance:5.00}];
+const leaderboardEl=document.getElementById('leaderboard');
+function updateLeaderboard(){
+    leaderboardEl.innerHTML='';
+    topUsers.slice().sort((a,b)=>b.balance-a.balance).forEach(u=>{
+        const li=document.createElement('li');
+        li.textContent=`${u.name} - $${u.balance.toFixed(2)}`;
+        leaderboardEl.appendChild(li);
     });
 }
+setInterval(()=>{
+    topUsers.forEach(u=>u.balance+=(Math.random()*0.2).toFixed(2)*1);
+    updateLeaderboard();
+},5000);
+updateLeaderboard();
 
-// === SHOW AD ===
-function showAd(ad, row) {
-    let showFn = typeof show_10337795 === 'function' ? show_10337795 : () => Promise.reject('SDK not loaded');
-    const handleSuccess = () => {
-        const newCPM = parseFloat((Math.random()*0.5 + 0.1).toFixed(2));
-        row.cells[2].innerText = `$${newCPM}`;
-        row.cells[3].innerText = '✅ Played';
-        row.cells[4].innerText = `+${ad.reward}`;
-        wallet += ad.reward;
-        walletEl.innerText = wallet;
-        saveUserData(newCPM);
-        showRewardPopup(`+${ad.reward} points`, row);
-        updateTopCPM();
-    };
-    const handleError = () => row.cells[3].innerText = '❌ Error';
-
-    if(ad.type === 'Rewarded Interstitial') showFn().then(handleSuccess).catch(handleError);
-    else if(ad.type === 'Rewarded Popup') showFn('pop').then(handleSuccess).catch(handleError);
-    else if(ad.type === 'In-App Interstitial') showFn({ type:'inApp', inAppSettings: ad.settings }).then(handleSuccess).catch(handleError);
+// --- Confetti ---
+function showConfetti(){
+    for(let i=0;i<20;i++){
+        const c=document.createElement('div'); c.className='confetti';
+        c.style.left=Math.random()*window.innerWidth+'px';
+        c.style.background=`hsl(${Math.random()*360},100%,50%)`;
+        document.body.appendChild(c);
+        setTimeout(()=>c.remove(),1000);
+    }
 }
 
-// === DAILY SIGN-IN ===
-dailyBtn.addEventListener('click', () => {
-    const today = new Date().toDateString();
-    if(lastSignIn !== today) {
-        const bonus = 100;
-        wallet += bonus;
-        walletEl.innerText = wallet;
-        lastSignIn = today;
-        alert(`Daily sign-in successful! +${bonus} points`);
-        saveUserData();
-    } else {
-        alert('You already claimed your daily bonus today!');
-    }
+// --- Set Username Button ---
+document.getElementById('setUsername').addEventListener('click',()=>{
+    const input=document.getElementById('usernameInput').value.trim();
+    if(input.length<3){ alert("Username too short"); return; }
+    username=input;
+    localStorage.setItem('username',username);
+    alert(`Username set: ${username}`);
+    // Add user to leaderboard if not exists
+    if(!topUsers.find(u=>u.name===username)) topUsers.push({name:username,balance:balance});
+    updateLeaderboard();
 });
 
-// === ROOM NAVIGATION ===
-roomNav.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => {
-        roomNav.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-        loadRoom(btn.dataset.room);
+// --- Ad Room Logic (Rewarded Interstitial) ---
+document.querySelectorAll('.adRoom').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+        if(!username){ alert("Set your username first!"); return; }
+        btn.disabled=true;
+        const originalText=btn.textContent;
+        btn.textContent="Loading Ad...";
+        show_10337795().then(()=>{
+            const reward=(Math.random()*0.15+0.05).toFixed(2);
+            balance+=parseFloat(reward);
+            localStorage.setItem('balance',balance);
+            // Update leaderboard for this user
+            const user=topUsers.find(u=>u.name===username);
+            if(user) user.balance=balance;
+            updateBalanceUI();
+            updateLeaderboard();
+            showConfetti();
+            btn.textContent=originalText;
+            btn.disabled=false;
+        }).catch(()=>{ alert('Ad failed to load'); btn.textContent=originalText; btn.disabled=false; });
     });
 });
 
-// === LIVE CPM UPDATE EVERY 5 SECONDS ===
-setInterval(() => {
-    if(username) {
-        Array.from(tableBody.rows).forEach(row => {
-            if(row.cells[3].innerText === '✅ Played') {
-                const newCPM = parseFloat((Math.random()*0.5 + 0.1).toFixed(2));
-                row.cells[2].innerText = `$${newCPM}`;
-                saveUserData(newCPM);
-            }
-        });
-        updateTopCPM();
-    }
-}, 5000);
+// --- Daily Bonus (Rewarded Popup) ---
+document.getElementById('dailyBonus').addEventListener('click',()=>{
+    if(!username){ alert("Set your username first!"); return; }
+    const today=new Date().toLocaleDateString();
+    const lastClaim=localStorage.getItem('lastDaily')||'';
+    if(lastClaim===today){ alert("🎁 Already claimed today!"); return; }
+    show_10337795('pop').then(()=>{
+        const bonus=(Math.random()*0.50+0.50).toFixed(2);
+        balance+=parseFloat(bonus);
+        localStorage.setItem('balance',balance);
+        localStorage.setItem('lastDaily',today);
+        const user=topUsers.find(u=>u.name===username);
+        if(user) user.balance=balance;
+        updateBalanceUI();
+        updateLeaderboard();
+        alert(`🎉 Daily Bonus: $${bonus} added!`);
+        showConfetti();
+    }).catch(()=>{ alert("Ad failed or closed. Bonus not granted."); });
+});
 
-// === TOP CPM ===
-function updateTopCPM() {
-    let maxCPM = 0;
-    Array.from(tableBody.rows).forEach(row => {
-        const cpm = parseFloat(row.cells[2].innerText.replace('$','')) || 0;
-        if(cpm > maxCPM) maxCPM = cpm;
-    });
-    topCPMEl.innerText = maxCPM.toFixed(2);
-}
+// --- Auto Reward Popups ---
+setInterval(()=>{
+    if(Math.random()<0.3 && username){ // 30% chance every 30s
+        show_10337795('pop').then(()=>{
+            const bonus=(Math.random()*0.30+0.20).toFixed(2);
+            balance+=parseFloat(bonus);
+            localStorage.setItem('balance',balance);
+            const user=topUsers.find(u=>u.name===username);
+            if(user) user.balance=balance;
+            updateBalanceUI();
+            updateLeaderboard();
+            showConfetti();
+        }).catch(()=>{});
+    }
+},30000);
+
+// --- Monetag In-App Interstitial ---
+show_10337795({
+    type:'inApp',
+    inAppSettings:{
+        frequency:2,
+        capping:0.1,
+        interval:30,
+        timeout:5,
+        everyPage:false
+    }
+});
+
+// --- Simulated Live Users Joining ---
+setInterval(()=>{
+    const names=['UserX','StarGazer','PixelKing','NeoWave','Luna','CryptoCat','GlitchMaster','EchoBot'];
+    const randName=names[Math.floor(Math.random()*names.length)];
+    if(!topUsers.find(u=>u.name===randName)) topUsers.push({name:randName,balance:(Math.random()*20+1).toFixed(2)});
+    if(topUsers.length>15) topUsers.shift();
+    updateLeaderboard();
+},15000);
+
 </script>
-
 </body>
 </html>

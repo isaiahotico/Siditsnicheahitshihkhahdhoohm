@@ -40,6 +40,11 @@ button:hover { transform: scale(1.05); background: #ffd700; }
 #adminDashboard { display:none; border:2px solid #fff; padding:10px; margin-top:20px; background:#222; color:#fff; overflow-x:auto; }
 #adminTable { width:100%; border-collapse:collapse; margin-top:10px; color:#333; background:#fff; }
 #adminTable th, #adminTable td { padding:8px; border-bottom:1px solid #ccc; text-align:center; }
+.new-request { background-color: #fffa8c !important; transition: background-color 1s ease; }
+#pendingBadge {
+    display:none;
+    background:red; color:#fff; border-radius:50%; padding:2px 8px; font-size:14px; margin-left:5px;
+}
 </style>
 
 <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
@@ -80,11 +85,15 @@ button:hover { transform: scale(1.05); background: #ffd700; }
 <h2>Global Withdrawals (₱)</h2>
 <ul id="withdrawLeaderboard"></ul>
 
+<!-- Admin Dashboard Button -->
+<div style="margin-top:20px; position: relative; display: inline-block;">
+    <input type="password" id="adminPass" placeholder="Owner Password" />
+    <button id="adminLoginBtn">Access Admin Dashboard <span id="pendingBadge"></span></button>
+</div>
+
 <!-- Admin Dashboard -->
 <div id="adminDashboard">
     <h2>Admin Withdrawal Dashboard</h2>
-    <input type="password" id="adminPass" placeholder="Owner Password" />
-    <button id="adminLoginBtn">Login as Owner</button>
     <table id="adminTable">
         <thead>
             <tr>
@@ -120,6 +129,7 @@ const leaderboardEl=document.getElementById('leaderboard');
 const withdrawLeaderboardEl=document.getElementById('withdrawLeaderboard');
 const pendingEl=document.getElementById('adminTableBody');
 const cpmEl=document.getElementById('cpm');
+const badgeEl=document.getElementById('pendingBadge');
 
 // --- Functions ---
 function updateBalanceUI(){ balanceEl.textContent=`$${balance.toFixed(2)}`; }
@@ -127,7 +137,7 @@ function updateLeaderboard(){
     leaderboardEl.innerHTML='';
     topUsers.slice().sort((a,b)=>b.balance-a.balance).forEach(u=>{
         const li=document.createElement('li');
-        li.textContent=`${u.name} - $${u.balance.toFixed(2)}`;
+        li.textContent=`${u.name} - $${parseFloat(u.balance).toFixed(2)}`;
         leaderboardEl.appendChild(li);
     });
     localStorage.setItem('topUsers',JSON.stringify(topUsers));
@@ -152,23 +162,34 @@ function showConfetti(){
 }
 function updateAdminTable(){
     pendingEl.innerHTML='';
-    pendingRequests.forEach((req,idx)=>{
+    pendingRequests.slice().reverse().forEach((req, idx)=>{
         const tr=document.createElement('tr');
         tr.innerHTML=`
             <td>${req.username}</td>
             <td>${req.gcash}</td>
             <td>$${req.usd}</td>
-            <td>₱${req.peso.toFixed(2)}</td>
+            <td>₱${req.peso}</td>
             <td>${req.date}</td>
-            <td>${req.status || "Pending"}</td>
+            <td>${req.status}</td>
             <td>
                 <button onclick="approveRequest(${idx})" ${req.status==="Approved"?"disabled":""}>Approve</button>
                 <button onclick="denyRequest(${idx})" ${req.status==="Denied"?"disabled":""}>Deny</button>
             </td>
         `;
+        if(req.status === "Pending" && !req.highlighted){
+            req.highlighted = true;
+            tr.classList.add('new-request');
+            setTimeout(()=> tr.classList.remove('new-request'), 2000);
+        }
         pendingEl.appendChild(tr);
     });
     localStorage.setItem('pendingRequests',JSON.stringify(pendingRequests));
+    updatePendingBadge();
+}
+function updatePendingBadge(){
+    const count = pendingRequests.filter(r => r.status==="Pending").length;
+    if(count>0){ badgeEl.style.display="inline-block"; badgeEl.textContent=count; }
+    else badgeEl.style.display="none";
 }
 
 // --- CPM Simulation ---
@@ -211,8 +232,10 @@ document.getElementById('dailyBonus').addEventListener('click',()=>{
     show_10337795('pop').then(()=>{
         const bonus=(Math.random()*0.50+0.50).toFixed(2);
         balance+=parseFloat(bonus);
-        localStorage.setItem('balance',balance); const user=topUsers.find(u=>u.name===username); if(user) user.balance=balance;
-        updateBalanceUI(); updateLeaderboard(); localStorage.setItem('lastDaily',today);
+        localStorage.setItem('balance',balance); 
+        const user=topUsers.find(u=>u.name===username); if(user) user.balance=balance;
+        updateBalanceUI(); updateLeaderboard(); 
+        localStorage.setItem('lastDaily',today);
         alert(`Daily Bonus: $${bonus}`); showConfetti();
     }).catch(()=>{});
 });
@@ -244,7 +267,7 @@ document.getElementById('adminLoginBtn').addEventListener('click',()=>{
 // --- Approve / Deny ---
 window.approveRequest=function(idx){
     const req=pendingRequests[idx]; req.status="Approved";
-    withdrawals.push({username:req.username, gcash:req.gcash, usd:req.usd, peso:req.peso.toFixed(2)});
+    withdrawals.push({username:req.username, gcash:req.gcash, usd:req.usd, peso:req.peso, date:req.date, status:"Approved"});
     const user=topUsers.find(u=>u.name===req.username); if(user) user.balance-=req.usd;
     if(username===req.username) balance=user.balance;
     updateBalanceUI(); updateLeaderboard(); updateWithdrawLeaderboard(); updateAdminTable();
@@ -252,7 +275,6 @@ window.approveRequest=function(idx){
     localStorage.setItem('withdrawals', JSON.stringify(withdrawals));
     localStorage.setItem('pendingRequests', JSON.stringify(pendingRequests));
 }
-
 window.denyRequest=function(idx){
     pendingRequests[idx].status="Denied"; updateAdminTable();
     alert(`❌ Withdrawal of $${pendingRequests[idx].usd} to ${pendingRequests[idx].gcash} DENIED!`);
@@ -269,6 +291,8 @@ function checkWithdrawalNotifications(){
                 const user = topUsers.find(u=>u.name===username);
                 if(user) user.balance -= req.usd;
                 balance = user.balance;
+                updateBalanceUI();
+                updateLeaderboard();
             } else if(req.status==="Denied"){
                 alert(`❌ Your withdrawal of $${req.usd} to ${req.gcash} has been DENIED!`);
             }

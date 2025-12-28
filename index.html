@@ -3,51 +3,59 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SENTINEL KAYEE - Global Indie Ads</title>
+<title>🎬 SENTINEL KAYEE - Global Indie Ads 🎬</title>
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <!-- Monetag SDK -->
 <script src="//libtl.com/sdk.js" data-zone="10337795" data-sdk="show_10337795"></script>
 <style>
-/* --- Indie Theme --- */
-body { background: linear-gradient(135deg,#ff9a9e,#fad0c4); font-family: 'Comic Sans MS', cursive; text-align:center; color:#fff; margin:0; padding:0; }
-header { padding:20px; }
-h1 { font-size:2rem; }
-button { padding:10px 20px; margin:10px; border:none; border-radius:12px; background: linear-gradient(135deg,#667eea,#764ba2); color:#fff; cursor:pointer; font-size:1rem; }
-button:hover { transform: scale(1.05); }
-section { padding:20px; }
-input { padding:8px; margin:5px; border-radius:8px; border:none; }
-table { width:90%; margin:auto; border-collapse:collapse; color:#000; background:#fff; border-radius:10px; overflow:hidden; margin-bottom:30px;}
-th, td { padding:10px; border-bottom:1px solid #ddd; }
-a { color:#fff; text-decoration:none; background:#764ba2; padding:8px 12px; border-radius:10px; display:inline-block; margin-top:10px;}
+/* ===================== GLOBAL STYLE ===================== */
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Comic Sans MS', cursive; background: linear-gradient(135deg,#ff9a9e,#fad0c4); color:#fff; text-align:center; overflow-x:hidden; }
+header { padding:30px; background:rgba(0,0,0,0.2); border-bottom:2px solid #fff; animation:fadeIn 1s ease; }
+h1 { font-size:3rem; text-shadow:2px 2px #333; animation:slideIn 1s ease; }
+h2,h3 { margin:20px 0; font-weight:bold; letter-spacing:1px; }
+button { padding:12px 25px; margin:10px; border:none; border-radius:15px; background: linear-gradient(135deg,#667eea,#764ba2); color:#fff; cursor:pointer; font-size:1.2rem; transition: transform 0.2s, box-shadow 0.3s; box-shadow:0 5px 15px rgba(0,0,0,0.3); }
+button:hover { transform: scale(1.1); box-shadow:0 8px 20px rgba(0,0,0,0.5); }
+input { padding:10px; margin:5px; border-radius:10px; border:none; font-size:1rem; text-align:center; }
+section { padding:30px 10px; }
+table { width:95%; margin:auto; border-collapse:collapse; background:#fff; border-radius:15px; overflow:hidden; margin-bottom:40px; box-shadow:0 5px 15px rgba(0,0,0,0.3); color:#000; }
+th, td { padding:12px; border-bottom:1px solid #ddd; }
+th { background:linear-gradient(120deg,#667eea,#764ba2); color:#fff; font-size:1rem; }
+tr:hover { background:rgba(0,0,0,0.1); transition:0.3s; }
+a { color:#fff; text-decoration:none; background:#764ba2; padding:10px 15px; border-radius:12px; display:inline-block; margin-top:10px; }
+@keyframes fadeIn { 0% {opacity:0;} 100% {opacity:1;} }
+@keyframes slideIn { 0% {transform:translateY(-50px); opacity:0;} 100% {transform:translateY(0); opacity:1;} }
 </style>
 </head>
 <body>
 
 <header>
 <h1>🎬 SENTINEL KAYEE 🎬</h1>
-<p>Watch ads, earn Peso rewards!</p>
+<p style="font-size:1.2rem; letter-spacing:1px;">Global Indie Ads Platform — Earn Peso Rewards!</p>
 </header>
 
 <section id="ads-section">
-<h2>Watch Ads</h2>
+<h2>Watch Ads & Earn ₱</h2>
+<p style="font-size:1rem; margin-bottom:15px;">Click any button below to watch ads. Rewards are instantly added to your wallet!</p>
 <button id="rewardedInterstitial">🎯 Rewarded Interstitial</button>
 <button id="rewardedPopup">💥 Rewarded Popup</button>
 <button id="inAppInterstitial">📱 In-App Interstitial</button>
 </section>
 
 <section id="wallet-section">
-<h2>Wallet: ₱<span id="userBalance">0</span></h2>
+<h2>💰 Wallet Balance: ₱<span id="userBalance">0</span></h2>
 <h3>Withdraw Funds</h3>
 <form id="withdrawForm">
-<input type="number" id="withdrawAmount" placeholder="Amount ₱" required min="50">
-<input type="text" id="gcashNumber" placeholder="Gcash Number" required>
-<button type="submit">Withdraw</button>
+<input type="number" id="withdrawAmount" placeholder="Enter Amount ₱" required min="50">
+<input type="text" id="gcashNumber" placeholder="Enter GCash Number" required>
+<br>
+<button type="submit">💸 Request Withdrawal</button>
 </form>
 </section>
 
 <section id="admin-section">
-<h2>Admin Dashboard 🔑</h2>
+<h2>🔑 Admin Dashboard</h2>
 <div id="loginDiv">
 <input type="password" id="adminPass" placeholder="Enter Admin Password">
 <button onclick="loginAdmin()">Login</button>
@@ -55,68 +63,86 @@ a { color:#fff; text-decoration:none; background:#764ba2; padding:8px 12px; bord
 <div id="dashboard" style="display:none;">
 <h3>All Withdrawals</h3>
 <table id="withdrawalsTable">
-<thead><tr><th>User</th><th>Amount</th><th>Gcash</th><th>Status</th><th>Action</th></tr></thead>
+<thead>
+<tr><th>User</th><th>Amount</th><th>GCash</th><th>Status</th><th>Action</th></tr>
+</thead>
 <tbody></tbody>
 </table>
 </div>
 </section>
 
 <script>
-// --- Supabase Setup ---
+// ===================== SUPABASE SETUP =====================
 const SUPABASE_URL = 'https://YOUR_SUPABASE_URL.supabase.co';
-const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = supabase.createClient(SUPABASE_URL, ''); // JWT set dynamically
 
-// --- Telegram WebApp ---
 let username = null;
 let userBalance = 0;
+let isAdmin = false;
 
-function initTelegram() {
+// ===================== INIT TELEGRAM WEBAPP =====================
+async function initTelegram() {
+    if(!window.Telegram || !window.Telegram.WebApp){
+        alert('Please open inside Telegram WebApp'); return;
+    }
     const tg = window.Telegram.WebApp;
     tg.expand();
     username = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.id;
+    isAdmin = (username === 'YOUR_ADMIN_USERNAME');
 
-    // Create user profile if not exists
-    supabase.from('profiles').upsert({username, balance:0}).then(() => loadBalance());
+    try {
+        const res = await fetch(`/get_jwt?username=${username}&is_admin=${isAdmin}`);
+        const data = await res.json();
+        if(data.access_token){
+            supabase.auth.setAuth(data.access_token);
+            await ensureProfile();
+        } else { alert('Failed to authenticate user'); }
+    } catch(e){
+        console.error(e); alert('Error authenticating user');
+    }
 }
 
-// --- Load Balance ---
-async function loadBalance() {
+// ===================== ENSURE USER PROFILE =====================
+async function ensureProfile(){
+    await supabase.from('profiles').upsert({username, balance:0});
+    await loadBalance();
+}
+
+// ===================== LOAD BALANCE =====================
+async function loadBalance(){
     const { data } = await supabase.from('profiles').select('balance').eq('username', username).single();
     if(data) userBalance = data.balance || 0;
     document.getElementById('userBalance').innerText = userBalance.toFixed(2);
 }
 
-// --- Reward User ---
+// ===================== REWARD USER =====================
 async function rewardUser(amount){
     userBalance += amount;
     document.getElementById('userBalance').innerText = userBalance.toFixed(2);
     await supabase.from('profiles').upsert({username, balance:userBalance}, {onConflict:'username'});
 }
 
-// --- Ads Events ---
-document.getElementById('rewardedInterstitial').addEventListener('click',()=>{
-    show_10337795().then(()=>rewardUser(50));
+// ===================== MONETAG ADS =====================
+document.getElementById('rewardedInterstitial').addEventListener('click', ()=>{
+    show_10337795({type:'inApp'}).then(()=>rewardUser(50));
 });
-document.getElementById('rewardedPopup').addEventListener('click',()=>{
-    show_10337795('pop').then(()=>rewardUser(50)).catch(e=>console.error(e));
+document.getElementById('rewardedPopup').addEventListener('click', ()=>{
+    show_10337795({type:'inApp'}).then(()=>rewardUser(50)).catch(e=>console.error(e));
 });
-document.getElementById('inAppInterstitial').addEventListener('click',()=>{
+document.getElementById('inAppInterstitial').addEventListener('click', ()=>{
     show_10337795({
         type:'inApp',
         inAppSettings:{frequency:2, capping:0.1, interval:30, timeout:5, everyPage:false}
     }).then(()=>rewardUser(50));
 });
 
-// --- Withdrawal Form ---
+// ===================== WITHDRAWAL =====================
 document.getElementById('withdrawForm').addEventListener('submit', async e=>{
     e.preventDefault();
     const amount = parseFloat(document.getElementById('withdrawAmount').value);
     const gcash = document.getElementById('gcashNumber').value;
-
     if(amount>userBalance){ alert('Insufficient balance'); return; }
 
-    // Insert withdrawal request directly to Supabase
     await supabase.from('withdrawals').insert({username, amount, gcash_number:gcash, status:'pending'});
     userBalance -= amount;
     await supabase.from('profiles').upsert({username, balance:userBalance});
@@ -124,17 +150,17 @@ document.getElementById('withdrawForm').addEventListener('submit', async e=>{
     alert('Withdrawal requested successfully!');
 });
 
-// --- Admin Login ---
+// ===================== ADMIN DASHBOARD =====================
 function loginAdmin(){
     const pass = document.getElementById('adminPass').value;
     if(pass==='Propetas6'){
         document.getElementById('loginDiv').style.display='none';
         document.getElementById('dashboard').style.display='block';
         loadWithdrawals();
-    } else alert('Incorrect password!');
+    } else { alert('Incorrect password!'); }
 }
 
-// Load withdrawals for admin
+// Load Withdrawals for Admin
 async function loadWithdrawals(){
     const { data } = await supabase.from('withdrawals').select('*');
     const tbody = document.querySelector('#withdrawalsTable tbody');
@@ -155,18 +181,15 @@ async function loadWithdrawals(){
     });
 }
 
-// Update withdrawal status
+// Update Withdrawal Status
 async function updateStatus(id,status){
     await supabase.from('withdrawals').update({status}).eq('id',id);
     loadWithdrawals();
 }
 
-// Initialize Telegram WebApp
-if(window.Telegram && window.Telegram.WebApp){
-    initTelegram();
-} else {
-    alert('Please open inside Telegram WebApp');
-}
+// ===================== INITIALIZE =====================
+initTelegram();
 </script>
+
 </body>
 </html>

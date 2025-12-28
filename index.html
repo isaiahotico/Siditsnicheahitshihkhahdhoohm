@@ -3,283 +3,169 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GLOBAL REWARDS INDIE</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
-
+<title>SENTINEL KAYEE - Global Indie Ads</title>
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<!-- Monetag SDK -->
+<script src="//libtl.com/sdk.js" data-zone="10337795" data-sdk="show_10337795"></script>
 <style>
-body{
-  background:linear-gradient(135deg,#667eea,#764ba2);
-  font-family:'Comic Sans MS',cursive;
-  color:#fff;text-align:center;padding:15px
-}
-button{
-  padding:12px 22px;margin:6px;border:none;border-radius:20px;
-  background:#ffec61;font-size:15px;cursor:pointer
-}
-button:hover{background:#ffd700}
-input{padding:10px;border-radius:10px;border:none;margin:4px}
-.roomWrap{display:flex;flex-wrap:wrap;justify-content:center}
-.roomBtn{background:#00ffd5}
-.box{
-  background:#fff;color:#333;border-radius:12px;
-  max-width:440px;margin:12px auto;padding:12px;text-align:left
-}
-#admin{display:none;background:#111;padding:10px}
-table{width:100%;border-collapse:collapse}
-td,th{padding:6px;border-bottom:1px solid #ccc;font-size:13px}
-.hidden{display:none}
+/* --- Indie Theme --- */
+body { background: linear-gradient(135deg,#ff9a9e,#fad0c4); font-family: 'Comic Sans MS', cursive; text-align:center; color:#fff; margin:0; padding:0; }
+header { padding:20px; }
+h1 { font-size:2rem; }
+button { padding:10px 20px; margin:10px; border:none; border-radius:12px; background: linear-gradient(135deg,#667eea,#764ba2); color:#fff; cursor:pointer; font-size:1rem; }
+button:hover { transform: scale(1.05); }
+section { padding:20px; }
+input { padding:8px; margin:5px; border-radius:8px; border:none; }
+table { width:90%; margin:auto; border-collapse:collapse; color:#000; background:#fff; border-radius:10px; overflow:hidden; margin-bottom:30px;}
+th, td { padding:10px; border-bottom:1px solid #ddd; }
+a { color:#fff; text-decoration:none; background:#764ba2; padding:8px 12px; border-radius:10px; display:inline-block; margin-top:10px;}
 </style>
 </head>
-
 <body>
 
-<h1>🌍 GLOBAL REWARDS INDIE</h1>
+<header>
+<h1>🎬 SENTINEL KAYEE 🎬</h1>
+<p>Watch ads, earn Peso rewards!</p>
+</header>
 
-<!-- Telegram ID input -->
-<input id="telegramID" placeholder="Telegram ID (numeric)">
-<button onclick="setUserFromTelegram()">Set Username</button>
+<section id="ads-section">
+<h2>Watch Ads</h2>
+<button id="rewardedInterstitial">🎯 Rewarded Interstitial</button>
+<button id="rewardedPopup">💥 Rewarded Popup</button>
+<button id="inAppInterstitial">📱 In-App Interstitial</button>
+</section>
 
-<h2>Wallet: $<span id="balance">0.00</span></h2>
-<div id="cpm">CPM: $0.00</div>
+<section id="wallet-section">
+<h2>Wallet: ₱<span id="userBalance">0</span></h2>
+<h3>Withdraw Funds</h3>
+<form id="withdrawForm">
+<input type="number" id="withdrawAmount" placeholder="Amount ₱" required min="50">
+<input type="text" id="gcashNumber" placeholder="Gcash Number" required>
+<button type="submit">Withdraw</button>
+</form>
+</section>
 
-<h3>🌐 Global Ad Rooms</h3>
-<div class="roomWrap">
-  <button class="roomBtn" onclick="openRoom('global')">🌎 Global</button>
-  <button class="roomBtn" onclick="openRoom('asia')">🌏 Asia</button>
-  <button class="roomBtn" onclick="openRoom('europe')">🌍 Europe</button>
-  <button class="roomBtn" onclick="openRoom('america')">🌎 America</button>
-  <button class="roomBtn" onclick="openRoom('vip')">🌌 VIP</button>
+<section id="admin-section">
+<h2>Admin Dashboard 🔑</h2>
+<div id="loginDiv">
+<input type="password" id="adminPass" placeholder="Enter Admin Password">
+<button onclick="loginAdmin()">Login</button>
 </div>
-
-<div id="adsBox" class="box hidden">
-<h3 id="roomTitle"></h3>
-<button onclick="watchAd()">▶ Watch Global Ad</button>
-</div>
-
-<h3>💵 Withdraw</h3>
-<input id="gcash" placeholder="GCash Number">
-<input id="amount" type="number" step="0.01" placeholder="USD Amount">
-<button onclick="requestWithdraw()">Request Withdraw</button>
-
-<h3>👑 Admin</h3>
-<input type="password" id="adminPass" placeholder="Password">
-<button onclick="openAdmin()">Open</button>
-
-<div id="admin">
-<h3>Withdrawal Dashboard</h3>
-<table>
-<thead>
-<tr>
-<th>User</th><th>GCash</th><th>$</th><th>₱</th><th>Status</th><th>Action</th>
-</tr>
-</thead>
-<tbody id="adminTable"></tbody>
+<div id="dashboard" style="display:none;">
+<h3>All Withdrawals</h3>
+<table id="withdrawalsTable">
+<thead><tr><th>User</th><th>Amount</th><th>Gcash</th><th>Status</th><th>Action</th></tr></thead>
+<tbody></tbody>
 </table>
 </div>
+</section>
 
 <script>
-/* ===== CONFIG ===== */
-const OWNER_PASSWORD="Propetas6";
-const RATE=55;
+// --- Supabase Setup ---
+const SUPABASE_URL = 'https://YOUR_SUPABASE_URL.supabase.co';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const SUPABASE_URL="https://YOUR_PROJECT.supabase.co";
-const SUPABASE_KEY="YOUR_PUBLIC_ANON_KEY";
-const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
+// --- Telegram WebApp ---
+let username = null;
+let userBalance = 0;
 
-/* ===== ROOMS ===== */
-const ROOMS={
- global:{name:"🌎 Global",min:.05,max:.12,cd:8000},
- asia:{name:"🌏 Asia",min:.08,max:.2,cd:12000},
- europe:{name:"🌍 Europe",min:.15,max:.35,cd:18000},
- america:{name:"🌎 America",min:.25,max:.6,cd:25000},
- vip:{name:"🌌 VIP",min:.5,max:1.2,cd:45000}
-};
+function initTelegram() {
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    username = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.id;
 
-let username="";
-let balance=0;
-let currentRoom=null;
-let cooldowns={};
-
-/* ===== USER ===== */
-async function setUserFromTelegram(){
-    const telegram_id = telegramID.value.trim();
-    if(!telegram_id) return alert("Invalid Telegram ID");
-
-    username = `telegram_${telegram_id}`;
-
-    const { data } = await supabase
-        .from("profiles")
-        .select()
-        .eq("username", username)
-        .single();
-
-    if(!data){
-        await supabase.from("profiles").insert({ username, balance: 0 });
-        balance = 0;
-    } else {
-        balance = data.balance;
-    }
-
-    render();
-    setupRealtime(); // start real-time updates
+    // Create user profile if not exists
+    supabase.from('profiles').upsert({username, balance:0}).then(() => loadBalance());
 }
 
-/* ===== ROOMS ===== */
-function openRoom(r){
- if(!username) return alert("Set Telegram ID first");
- currentRoom=r;
- roomTitle.textContent=ROOMS[r].name;
- adsBox.classList.remove("hidden");
+// --- Load Balance ---
+async function loadBalance() {
+    const { data } = await supabase.from('profiles').select('balance').eq('username', username).single();
+    if(data) userBalance = data.balance || 0;
+    document.getElementById('userBalance').innerText = userBalance.toFixed(2);
 }
 
-/* ===== ADS ===== */
-async function watchAd(){
- const r=ROOMS[currentRoom];
- const last=cooldowns[currentRoom]||0;
- if(Date.now()-last<r.cd) return alert("Cooldown active");
-
- show_10337795().then(async()=>{
-  const earn=Math.random()*(r.max-r.min)+r.min;
-  balance+=earn;
-  cooldowns[currentRoom]=Date.now();
-
-  await supabase.from("profiles")
-   .update({ balance })
-   .eq("username",username);
-
-  render();
- });
+// --- Reward User ---
+async function rewardUser(amount){
+    userBalance += amount;
+    document.getElementById('userBalance').innerText = userBalance.toFixed(2);
+    await supabase.from('profiles').upsert({username, balance:userBalance}, {onConflict:'username'});
 }
 
-/* ===== WITHDRAW ===== */
-async function requestWithdraw(){
-    const amt = parseFloat(amount.value);
-    if(amt <= 0 || amt > balance) return alert("Invalid amount");
+// --- Ads Events ---
+document.getElementById('rewardedInterstitial').addEventListener('click',()=>{
+    show_10337795().then(()=>rewardUser(50));
+});
+document.getElementById('rewardedPopup').addEventListener('click',()=>{
+    show_10337795('pop').then(()=>rewardUser(50)).catch(e=>console.error(e));
+});
+document.getElementById('inAppInterstitial').addEventListener('click',()=>{
+    show_10337795({
+        type:'inApp',
+        inAppSettings:{frequency:2, capping:0.1, interval:30, timeout:5, everyPage:false}
+    }).then(()=>rewardUser(50));
+});
 
-    const { data: pending } = await supabase
-        .from("withdrawals")
-        .select()
-        .eq("username", username)
-        .eq("status", "pending");
+// --- Withdrawal Form ---
+document.getElementById('withdrawForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const amount = parseFloat(document.getElementById('withdrawAmount').value);
+    const gcash = document.getElementById('gcashNumber').value;
 
-    if(pending.length) return alert("You already have a pending withdrawal");
+    if(amount>userBalance){ alert('Insufficient balance'); return; }
 
-    // Deduct balance immediately
-    balance -= amt;
-    await supabase.from("profiles")
-        .update({ balance })
-        .eq("username", username);
+    // Insert withdrawal request directly to Supabase
+    await supabase.from('withdrawals').insert({username, amount, gcash_number:gcash, status:'pending'});
+    userBalance -= amount;
+    await supabase.from('profiles').upsert({username, balance:userBalance});
+    document.getElementById('userBalance').innerText = userBalance.toFixed(2);
+    alert('Withdrawal requested successfully!');
+});
 
-    // Insert withdrawal record
-    await supabase.from("withdrawals").insert({
-        username,
-        gcash: gcash.value,
-        usd: amt,
-        peso: (amt*RATE).toFixed(2),
-        status: 'pending'
+// --- Admin Login ---
+function loginAdmin(){
+    const pass = document.getElementById('adminPass').value;
+    if(pass==='Propetas6'){
+        document.getElementById('loginDiv').style.display='none';
+        document.getElementById('dashboard').style.display='block';
+        loadWithdrawals();
+    } else alert('Incorrect password!');
+}
+
+// Load withdrawals for admin
+async function loadWithdrawals(){
+    const { data } = await supabase.from('withdrawals').select('*');
+    const tbody = document.querySelector('#withdrawalsTable tbody');
+    tbody.innerHTML='';
+    data.forEach(w=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML=`
+            <td>${w.username}</td>
+            <td>₱${w.amount}</td>
+            <td>${w.gcash_number}</td>
+            <td>${w.status}</td>
+            <td>
+                <button onclick="updateStatus('${w.id}','approved')">✅ Approve</button>
+                <button onclick="updateStatus('${w.id}','denied')">❌ Deny</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
     });
-
-    alert("Withdrawal requested. Balance updated!");
-    render();
 }
 
-/* ===== ADMIN ===== */
-async function openAdmin(){
- if(adminPass.value!==OWNER_PASSWORD) return;
- admin.style.display="block";
- loadAdmin();
- setupAdminRealtime();
+// Update withdrawal status
+async function updateStatus(id,status){
+    await supabase.from('withdrawals').update({status}).eq('id',id);
+    loadWithdrawals();
 }
 
-async function loadAdmin(){
- const { data } = await supabase
-  .from("withdrawals")
-  .select()
-  .order("created_at",{ascending:false});
-
- adminTable.innerHTML="";
- data.forEach(w=>{
-  adminTable.innerHTML+=`
-   <tr>
-    <td>${w.username}</td>
-    <td>${w.gcash}</td>
-    <td>$${w.usd}</td>
-    <td>₱${w.peso}</td>
-    <td>${w.status}</td>
-    <td>
-     <button onclick="approve('${w.id}')">✔</button>
-     <button onclick="deny('${w.id}')">✖</button>
-    </td>
-   </tr>`;
- });
-}
-
-async function approve(id){
- await supabase.from("withdrawals")
-  .update({status:"approved"})
-  .eq("id",id);
-
- loadAdmin();
-}
-
-async function deny(id){
- const { data: withdrawal } = await supabase
-  .from("withdrawals")
-  .select("username, usd")
-  .eq("id",id)
-  .single();
-
- if(withdrawal){
-   const { data: profile } = await supabase
-     .from("profiles")
-     .select("balance")
-     .eq("username",withdrawal.username)
-     .single();
-
-   await supabase.from("profiles")
-     .update({ balance: profile.balance + withdrawal.usd })
-     .eq("username", withdrawal.username);
- }
-
- await supabase.from("withdrawals")
-   .update({ status:"denied" })
-   .eq("id", id);
-
- loadAdmin();
-}
-
-/* ===== UI ===== */
-function render(){
- balanceSpan=document.getElementById("balance");
- balanceSpan.textContent=balance.toFixed(2);
-}
-
-/* ===== CPM ===== */
-setInterval(()=>cpm.textContent=
- "CPM: $"+(Math.random()*3+.5).toFixed(2),4000);
-
-/* ===== REALTIME SETUP ===== */
-function setupRealtime(){
-  // User balance realtime
-  supabase
-    .channel('profiles-'+username)
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `username=eq.${username}` }, payload => {
-      balance = payload.new.balance;
-      render();
-    })
-    .subscribe();
-}
-
-// Admin dashboard realtime
-function setupAdminRealtime(){
-  supabase
-    .channel('withdrawals')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'withdrawals' }, payload => {
-      loadAdmin();
-    })
-    .subscribe();
+// Initialize Telegram WebApp
+if(window.Telegram && window.Telegram.WebApp){
+    initTelegram();
+} else {
+    alert('Please open inside Telegram WebApp');
 }
 </script>
 </body>

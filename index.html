@@ -4,156 +4,274 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GLOBAL REWARDS INDIE - Full System</title>
+
 <style>
-body { background: linear-gradient(120deg,#ff9a9e,#fad0c4); font-family:'Comic Sans MS',cursive,sans-serif; text-align:center; padding:20px; color:#fff; }
-h1 { font-size:2rem; margin-bottom:10px; }
-#balance { font-size:2rem; margin:15px 0; }
-button { font-size:18px; padding:12px 25px; margin:5px; border-radius:20px; border:none; cursor:pointer; background:#ffec61; color:#333; box-shadow:0 4px 8px rgba(0,0,0,0.2); transition:0.2s; }
-button:hover { transform:scale(1.05); background:#ffd700; }
-#leaderboard,#withdrawLeaderboard { display:inline-block; text-align:left; margin-top:20px; color:#333; background:#fff; border-radius:10px; padding:10px; max-width:400px; }
-#leaderboard li,#withdrawLeaderboard li { margin:5px 0; font-weight:bold; }
-#cpm { margin:10px 0; font-size:1.2rem; }
-.room-buttons { display:flex; justify-content:center; flex-wrap:wrap; margin-bottom:10px; }
-.confetti { position:absolute; width:10px; height:10px; z-index:1000; animation:fall 1s linear forwards; }
-@keyframes fall { 0%{transform:translateY(0px);opacity:1;} 100%{transform:translateY(400px) rotate(360deg);opacity:0;} }
-#usernameInput,#gcashNumber,#withdrawAmount,#adminPass { padding:10px; border-radius:10px; border:none; margin-bottom:15px; font-size:16px; }
-#adminDashboard { display:none; border:2px solid #fff; padding:10px; margin-top:20px; background:#222; color:#fff; overflow-x:auto; }
-#adminTable { width:100%; border-collapse:collapse; margin-top:10px; color:#333; background:#fff; }
-#adminTable th,#adminTable td { padding:8px; border-bottom:1px solid #ccc; text-align:center; }
+body{
+    background:linear-gradient(120deg,#ff9a9e,#fad0c4);
+    font-family:'Comic Sans MS',cursive;
+    text-align:center;
+    padding:20px;
+    color:#fff;
+}
+button{
+    padding:12px 25px;
+    border:none;
+    border-radius:20px;
+    background:#ffec61;
+    font-size:16px;
+    cursor:pointer;
+}
+button:hover{background:#ffd700}
+input{
+    padding:10px;
+    border-radius:10px;
+    border:none;
+    margin:5px;
+}
+#leaderboard,#withdrawLeaderboard{
+    background:#fff;
+    color:#333;
+    padding:10px;
+    border-radius:10px;
+    display:inline-block;
+    max-width:400px;
+    text-align:left;
+}
+#adminDashboard{
+    display:none;
+    background:#222;
+    padding:15px;
+    margin-top:20px;
+    border-radius:10px;
+}
+#adminTable{
+    width:100%;
+    background:#fff;
+    color:#333;
+    border-collapse:collapse;
+}
+#adminTable th,#adminTable td{
+    padding:6px;
+    border-bottom:1px solid #ccc;
+}
+.new-request{background:#fffa8c}
 </style>
+
+<script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
 </head>
+
 <body>
 
 <h1>🍍 GLOBAL REWARDS INDIE 🍋</h1>
 
-<div>
-<input type="text" id="usernameInput" placeholder="Enter Username">
-<button id="setUsernameBtn">Set Username</button>
-</div>
+<input id="usernameInput" placeholder="Telegram Username">
+<button id="setUsername">Set Username</button>
 
-<div>Balance: $<span id="balance">0.00</span></div>
+<h2>Balance: <span id="balance">$0.00</span></h2>
 <div id="cpm">Current CPM: $0.00</div>
 
-<div class="room-buttons">
-<button class="adRoom" data-reward="0.05">🍍 Room 1 ($0.05-$0.15)</button>
-<button class="adRoom" data-reward="0.1">🍋 Room 2 ($0.05-$0.15)</button>
-<button class="adRoom" data-reward="0.2">🎉 Room 3 ($0.05-$0.20)</button>
-</div>
-
-<button id="dailyBonusBtn">🎁 Daily Bonus</button>
-
 <div>
-<input type="text" id="gcashNumber" placeholder="Enter GCash Number">
-<input type="number" id="withdrawAmount" placeholder="Amount to withdraw ($)" step="0.01">
-<button id="withdrawBtn">💵 Request Withdraw</button>
+<button class="adRoom">🍍 Watch Ad</button>
+<button id="dailyBonus">🎁 Daily Bonus</button>
 </div>
 
-<h2>Leaderboard</h2>
+<h3>Withdraw</h3>
+<input id="gcashNumber" placeholder="GCash Number">
+<input id="withdrawAmount" type="number" step="0.01" placeholder="USD Amount">
+<button id="requestWithdrawBtn">Request Withdraw</button>
+
+<h3>Top Users</h3>
 <ul id="leaderboard"></ul>
 
-<h2>Withdrawals</h2>
+<h3>Withdrawals</h3>
 <ul id="withdrawLeaderboard"></ul>
+
+<hr>
+
+<input id="adminPass" type="password" placeholder="Owner Password">
+<button id="adminLoginBtn">Admin Dashboard</button>
 
 <div id="adminDashboard">
 <h2>Admin Withdrawal Dashboard</h2>
-<input type="password" id="adminPass" placeholder="Owner Password">
-<button id="adminLoginBtn">Login as Owner</button>
 <table id="adminTable">
 <thead>
-<tr><th>Username</th><th>GCash</th><th>Amount ($)</th><th>₱</th><th>Date</th><th>Status</th><th>Action</th></tr>
+<tr>
+<th>User</th><th>GCash</th><th>$</th><th>₱</th><th>Date</th><th>Status</th><th>Action</th>
+</tr>
 </thead>
 <tbody id="adminTableBody"></tbody>
 </table>
 </div>
 
 <script>
-const CONVERSION_RATE = 55;
-const OWNER_PASSWORD = "Propetas6";
+/* ================== CONSTANTS ================== */
+const OWNER_PASSWORD="Propetas6";
+const CONVERSION_RATE=55;
+const WITHDRAW_COOLDOWN=5*60*1000;
 
-let username='';
-let balance=0;
-let topUsers={};
-let withdrawals=[];
+/* ================== STORAGE ================== */
+let username=localStorage.getItem("username")||"";
+let balance=parseFloat(localStorage.getItem("balance"))||0;
+let topUsers=JSON.parse(localStorage.getItem("topUsers"))||[];
+let withdrawals=JSON.parse(localStorage.getItem("withdrawals"))||[];
+let pendingRequests=JSON.parse(localStorage.getItem("pendingRequests"))||[];
 
-const balanceEl=document.getElementById('balance');
-const leaderboardEl=document.getElementById('leaderboard');
-const withdrawLeaderboardEl=document.getElementById('withdrawLeaderboard');
-const adminDashboard=document.getElementById('adminDashboard');
-const adminTableBody=document.getElementById('adminTableBody');
-const cpmEl=document.getElementById('cpm');
+/* ================== SYNC ENGINE ================== */
+const syncChannel=new BroadcastChannel("GLOBAL_REWARDS_SYNC");
 
-// --- UI Helpers ---
-function updateBalanceUI(){ balanceEl.textContent=balance.toFixed(2); }
-function showConfetti(){ for(let i=0;i<20;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*window.innerWidth+'px'; c.style.background=`hsl(${Math.random()*360},100%,50%)`; document.body.appendChild(c); setTimeout(()=>c.remove(),1000); } }
-function updateLeaderboardUI(){ leaderboardEl.innerHTML=''; Object.entries(topUsers).sort((a,b)=>b[1]-a[1]).forEach(([u,b])=>{ const li=document.createElement('li'); li.textContent=`${u} - $${b.toFixed(2)}`; leaderboardEl.appendChild(li); }); }
-function updateWithdrawLeaderboardUI(){ withdrawLeaderboardEl.innerHTML=''; withdrawals.slice().reverse().forEach(w=>{ const li=document.createElement('li'); li.textContent=`${w.username} - ₱${w.peso.toFixed(2)} (${w.status})`; withdrawLeaderboardEl.appendChild(li); }); }
-function updateAdminTable(){ adminTableBody.innerHTML=''; withdrawals.slice().reverse().forEach((w,i)=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${w.username}</td><td>${w.gcash}</td><td>$${w.usd}</td><td>₱${w.peso.toFixed(2)}</td><td>${w.date}</td><td>${w.status}</td>
-<td><button onclick="approveRequest(${i})" ${w.status==='Approved'?'disabled':''}>Approve</button>
-<button onclick="denyRequest(${i})" ${w.status==='Denied'?'disabled':''}>Deny</button></td>`; adminTableBody.appendChild(tr); }); }
+function syncAll(){
+    localStorage.setItem("balance",balance);
+    localStorage.setItem("topUsers",JSON.stringify(topUsers));
+    localStorage.setItem("withdrawals",JSON.stringify(withdrawals));
+    localStorage.setItem("pendingRequests",JSON.stringify(pendingRequests));
 
-// --- CPM Simulation ---
-setInterval(()=>{ cpmEl.textContent=`Current CPM: $${(Math.random()*2+0.5).toFixed(2)}`; },5000);
-
-// --- Set Username ---
-document.getElementById('setUsernameBtn').onclick=()=>{
-    const val=document.getElementById('usernameInput').value.trim();
-    if(val.length<3){ alert("Username too short"); return; }
-    username=val;
-    if(!topUsers[username]) topUsers[username]=balance;
-    updateLeaderboardUI();
-    alert(`Username set: ${username}`);
-};
-
-// --- Ad Rooms ---
-document.querySelectorAll('.adRoom').forEach(btn=>{
-    btn.onclick=()=>{
-        if(!username){ alert("Set username first!"); return; }
-        const reward=parseFloat(btn.dataset.reward) + Math.random()*0.1;
-        balance+=reward; topUsers[username]=balance;
-        updateBalanceUI(); updateLeaderboardUI(); showConfetti();
-    };
-});
-
-// --- Daily Bonus ---
-document.getElementById('dailyBonusBtn').onclick=()=>{
-    if(!username){ alert("Set username first!"); return; }
-    const bonus=(Math.random()*0.5+0.5).toFixed(2);
-    balance+=parseFloat(bonus); topUsers[username]=balance;
-    updateBalanceUI(); updateLeaderboardUI(); showConfetti();
-    alert(`Daily bonus: $${bonus}`);
-};
-
-// --- Withdraw Request ---
-document.getElementById('withdrawBtn').onclick=()=>{
-    if(!username){ alert("Set username first!"); return; }
-    const gcash=document.getElementById('gcashNumber').value.trim();
-    const usd=parseFloat(document.getElementById('withdrawAmount').value);
-    if(!gcash || !usd || usd>balance){ alert("Invalid input or insufficient balance"); return; }
-    const peso=usd*CONVERSION_RATE;
-    withdrawals.push({username,gcash,usd,peso,status:"Pending",date:new Date().toLocaleString()});
-    updateWithdrawLeaderboardUI(); updateAdminTable();
-    alert(`Withdrawal requested: $${usd} (₱${peso.toFixed(2)})`);
-};
-
-// --- Admin Login ---
-document.getElementById('adminLoginBtn').onclick=()=>{
-    const pass=document.getElementById('adminPass').value;
-    if(pass===OWNER_PASSWORD){ adminDashboard.style.display='block'; updateAdminTable(); alert("Owner access granted"); } else alert("Wrong password");
-};
-
-// --- Approve / Deny ---
-function approveRequest(idx){
-    const w=withdrawals[idx]; w.status="Approved"; balance-=w.usd; topUsers[w.username]=balance;
-    updateBalanceUI(); updateWithdrawLeaderboardUI(); updateAdminTable();
-    alert(`✅ Approved $${w.usd} to ${w.gcash}`);
-}
-function denyRequest(idx){
-    withdrawals[idx].status="Denied"; updateWithdrawLeaderboardUI(); updateAdminTable();
-    alert(`❌ Denied $${withdrawals[idx].usd} to ${withdrawals[idx].gcash}`);
+    syncChannel.postMessage({
+        balance,topUsers,withdrawals,pendingRequests
+    });
 }
 
-// --- Initialize ---
-updateBalanceUI(); updateLeaderboardUI(); updateWithdrawLeaderboardUI(); updateAdminTable();
+syncChannel.onmessage=e=>{
+    balance=e.data.balance;
+    topUsers=e.data.topUsers;
+    withdrawals=e.data.withdrawals;
+    pendingRequests=e.data.pendingRequests;
+    updateUI();
+};
+
+/* ================== HELPERS ================== */
+function updateUI(){
+    balanceEl.textContent=`$${balance.toFixed(2)}`;
+    leaderboardEl.innerHTML="";
+    topUsers.sort((a,b)=>b.balance-a.balance).forEach(u=>{
+        leaderboardEl.innerHTML+=`<li>${u.name} - $${u.balance.toFixed(2)}</li>`;
+    });
+    withdrawLeaderboardEl.innerHTML="";
+    withdrawals.forEach(w=>{
+        withdrawLeaderboardEl.innerHTML+=`<li>${w.username} - ₱${w.peso}</li>`;
+    });
+    updateAdminTable();
+}
+
+function hasPending(u){
+    return pendingRequests.some(r=>r.username===u&&r.status==="Pending");
+}
+function cooldown(u){
+    const t=localStorage.getItem("lastWithdraw_"+u);
+    return t && Date.now()-t<WITHDRAW_COOLDOWN;
+}
+
+/* ================== UI ELEMENTS ================== */
+const balanceEl=document.getElementById("balance");
+const leaderboardEl=document.getElementById("leaderboard");
+const withdrawLeaderboardEl=document.getElementById("withdrawLeaderboard");
+const adminBody=document.getElementById("adminTableBody");
+
+/* ================== USER ================== */
+document.getElementById("setUsername").onclick=()=>{
+    const u=usernameInput.value.trim();
+    if(!u) return alert("Enter username");
+    username=u;
+    localStorage.setItem("username",u);
+    if(!topUsers.find(x=>x.name===u)) topUsers.push({name:u,balance});
+    syncAll();
+};
+
+/* ================== ADS ================== */
+document.querySelector(".adRoom").onclick=()=>{
+    if(!username) return alert("Set username");
+    show_10337795().then(()=>{
+        const r=Math.random()*0.15+0.05;
+        balance+=r;
+        const u=topUsers.find(x=>x.name===username);
+        if(u) u.balance=balance;
+        syncAll();
+    });
+};
+
+/* ================== DAILY ================== */
+dailyBonus.onclick=()=>{
+    if(!username) return;
+    show_10337795().then(()=>{
+        const b=Math.random()*0.5+0.5;
+        balance+=b;
+        const u=topUsers.find(x=>x.name===username);
+        if(u) u.balance=balance;
+        syncAll();
+    });
+};
+
+/* ================== WITHDRAW ================== */
+requestWithdrawBtn.onclick=()=>{
+    if(!username) return alert("Set username");
+    if(hasPending(username)) return alert("Pending withdrawal exists");
+    if(cooldown(username)) return alert("Please wait before retry");
+
+    const g=gcashNumber.value.trim();
+    const a=parseFloat(withdrawAmount.value);
+    if(!g||!a||a>balance) return alert("Invalid");
+
+    pendingRequests.push({
+        id:crypto.randomUUID(),
+        username,
+        gcash:g,
+        usd:a,
+        peso:a*CONVERSION_RATE,
+        date:new Date().toLocaleString(),
+        status:"Pending"
+    });
+
+    localStorage.setItem("lastWithdraw_"+username,Date.now());
+    syncAll();
+};
+
+/* ================== ADMIN ================== */
+adminLoginBtn.onclick=()=>{
+    if(adminPass.value===OWNER_PASSWORD){
+        adminDashboard.style.display="block";
+        updateAdminTable();
+    }else alert("Wrong password");
+};
+
+function updateAdminTable(){
+    adminBody.innerHTML="";
+    pendingRequests.forEach((r,i)=>{
+        adminBody.innerHTML+=`
+        <tr class="${r.status==="Pending"?"new-request":""}">
+        <td>${r.username}</td>
+        <td>${r.gcash}</td>
+        <td>$${r.usd}</td>
+        <td>₱${r.peso}</td>
+        <td>${r.date}</td>
+        <td>${r.status}</td>
+        <td>
+        <button onclick="approve(${i})">✔</button>
+        <button onclick="deny(${i})">✖</button>
+        </td>
+        </tr>`;
+    });
+}
+
+window.approve=i=>{
+    if(pendingRequests[i].status!=="Pending")return;
+    pendingRequests[i].status="Approved";
+    withdrawals.push(pendingRequests[i]);
+    const u=topUsers.find(x=>x.name===pendingRequests[i].username);
+    if(u) u.balance-=pendingRequests[i].usd;
+    if(username===u?.name) balance=u.balance;
+    syncAll();
+};
+
+window.deny=i=>{
+    if(pendingRequests[i].status!=="Pending")return;
+    pendingRequests[i].status="Denied";
+    syncAll();
+};
+
+/* ================== CPM ================== */
+setInterval(()=>cpm.textContent="Current CPM: $"+(Math.random()*2+0.5).toFixed(2),5000);
+
+/* INIT */
+updateUI();
 </script>
 </body>
 </html>

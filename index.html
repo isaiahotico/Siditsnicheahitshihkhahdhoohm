@@ -2,299 +2,222 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>INDIE WONDER ADS</title>
+<title>🌈 WONDER ADS – Realtime Full Indie System</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Monetag -->
+<script src="//libtl.com/sdk.js" data-zone="10337795" data-sdk="show_10337795"></script>
 
 <!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- Telegram -->
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-<!-- Monetag -->
-<script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
-
 <style>
-body{
-  margin:0;
-  font-family:'Segoe UI',sans-serif;
-  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-  color:#fff;
-  text-align:center;
-}
-.card{
-  background:rgba(255,255,255,.12);
-  backdrop-filter:blur(12px);
-  margin:14px;
-  padding:18px;
-  border-radius:22px;
-}
-button{
-  padding:14px 26px;
-  border-radius:30px;
-  border:none;
-  background:linear-gradient(45deg,#00ffcc,#00ccff);
-  font-size:16px;
-  cursor:pointer;
-}
-input{
-  padding:12px;
-  width:90%;
-  border-radius:16px;
-  border:none;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:14px;
-}
-td,th{
-  border:1px solid rgba(255,255,255,.2);
-  padding:6px;
-}
-.hidden{display:none}
-.status-pending{color:#ffcc00}
-.status-approved{color:#00ff88}
-.status-denied{color:#ff5555}
+body{margin:0;font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#ff9a9e,#fad0c4);color:#fff;text-align:center;}
+.card{background: rgba(0,0,0,.2); margin:15px; padding:25px; border-radius:20px; box-shadow:0 10px 25px rgba(0,0,0,.25);}
+button{padding:10px 20px;margin:5px;border:none;border-radius:25px;font-weight:bold;cursor:pointer;background:linear-gradient(135deg,#ffdd00,#ff9900);}
+input{padding:10px;border-radius:10px;border:none;margin:5px;width:90%;}
+table{width:100%;border-collapse:collapse;margin-top:15px;}
+th,td{padding:10px;border-bottom:1px solid #fff;text-align:center;}
+.status-pending{color:#ffdd00;font-weight:bold;}
+.status-approved{color:#00ff7f;font-weight:bold;}
+.status-denied{color:#ff4500;font-weight:bold;}
+.admin-card{display:none;background:rgba(0,0,0,0.3);padding:20px;border-radius:20px;margin:15px;}
+.balance{font-size:28px;font-weight:bold;margin:10px 0;}
 </style>
 </head>
-
 <body>
 
-<h2>🌟 INDIE WONDER ADS</h2>
+<h1>🌈 WONDER ADS – Realtime Indie System</h1>
 
 <div class="card">
-  👤 <b id="user">Loading...</b>
+  <p>👤 User</p>
+  <div id="user">Loading...</div>
 </div>
 
 <div class="card">
-  💰 Balance
-  <h2 id="usd">$0.00</h2>
-  <div id="php">₱0.00</div>
+  <p>💰 Balance</p>
+  <div>₱<span id="balance">0.00</span></div>
 </div>
 
 <div class="card">
-  <button onclick="watchAd()">▶ WATCH AD</button>
+  <h3>📺 Watch Ads & Earn</h3>
+  <button onclick="watchInterstitial()">🎬 Rewarded Interstitial</button>
+  <button onclick="watchPopup()">🎁 Rewarded Popup</button>
 </div>
 
 <div class="card">
-  <h3>🏧 Withdraw (GCash)</h3>
-  <input id="gcash" placeholder="GCash Number"><br><br>
-  <input id="amount" placeholder="USD Amount"><br><br>
-  <button onclick="withdraw()">REQUEST WITHDRAWAL</button>
+  <h3>💸 Withdraw</h3>
+  <input id="gcash" placeholder="GCash Number">
+  <input id="amount" type="number" placeholder="Amount (₱)">
+  <button onclick="withdraw()">🚀 Request Withdraw</button>
 </div>
 
 <div class="card">
-  <h3>📜 My Withdrawals</h3>
-  <table id="userTable">
-    <tr><th>USD</th><th>PHP</th><th>Status</th></tr>
+  <h3>📃 Your Withdrawals</h3>
+  <table id="withdrawalsTable">
+    <thead>
+      <tr><th>Amount (₱)</th><th>GCash</th><th>Status</th><th>Created</th></tr>
+    </thead>
+    <tbody></tbody>
   </table>
 </div>
 
-<div class="card">
-  <small onclick="toggleAdmin()">⚙️ Admin</small>
-</div>
-
-<div id="adminLogin" class="card hidden">
-  <input id="adminPass" type="password" placeholder="Admin Password"><br><br>
-  <button onclick="adminLogin()">LOGIN</button>
-</div>
-
-<div id="adminPanel" class="card hidden">
-  <h3>📋 Withdrawal Dashboard</h3>
-  <table id="adminTable">
-    <tr>
-      <th>User</th>
-      <th>USD</th>
-      <th>PHP</th>
-      <th>GCash</th>
-      <th>Status</th>
-      <th>Action</th>
-    </tr>
+<div class="admin-card" id="adminDashboard">
+  <h2>💼 Owner Dashboard</h2>
+  <table id="adminWithdrawals">
+    <thead>
+      <tr><th>User</th><th>Amount</th><th>GCash</th><th>Status</th><th>Action</th></tr>
+    </thead>
+    <tbody></tbody>
   </table>
 </div>
 
 <script>
-/* ================= CONFIG ================= */
-const SUPABASE_URL = "https://vuykmtapfjvxjdbixiad.supabase.co";
-const SUPABASE_KEY = "sb_publishable_fRjfaQ2QgrTGkP5dQh95tA_8Ms1-5Qy";
-
-const ADMIN_PASSWORD = "Propetas6";
-const USD_TO_PHP = 56;
-
-/* ================= INIT ================= */
+const SUPABASE_URL = "https://dbjsbjkwrjftueybmzqc.supabase.co";
+const SUPABASE_KEY = "sb_publishable_UeA-oqhmpeDQ1oh72U5afA_Lx9z7kWi";
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const tg = Telegram.WebApp;
-tg.expand();
-
-const tgUser = tg.initDataUnsafe.user;
-const username = "telegram_" + tgUser.id;
+// =====================================
+// USER SETUP
+// =====================================
+const telegramId = Math.floor(Math.random()*999999);
+const username = "telegram_" + telegramId;
 document.getElementById("user").innerText = username;
 
-/* ================= USER INIT ================= */
-async function initUser(){
-  const { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("username",username)
-    .single();
+let balance = 0;
 
-  if(!data){
-    await supabase.from("profiles").insert({username});
-    updateBalance(0);
-  }else{
-    updateBalance(Number(data.balance));
-  }
-
+// Initialize profile
+async function initProfile(){
+  const { data } = await supabase.from("profiles").select("*").eq("username", username).single();
+  if(!data){await supabase.from("profiles").insert({username});}
+  loadBalance();
   loadUserWithdrawals();
 }
-initUser();
+initProfile();
 
-function updateBalance(usd){
-  document.getElementById("usd").innerText = "$" + usd.toFixed(2);
-  document.getElementById("php").innerText = "₱" + (usd * USD_TO_PHP).toFixed(2);
+// =====================================
+// BALANCE
+// =====================================
+async function loadBalance(){
+  const { data } = await supabase.from("profiles").select("balance").eq("username", username).single();
+  balance = data?.balance || 0;
+  document.getElementById("balance").innerText = parseFloat(balance).toFixed(2);
 }
 
-/* ================= ADS ================= */
-async function watchAd(){
-  show_10337795();
-  await new Promise(r=>setTimeout(r,6000));
+// =====================================
+// ADS SYSTEM
+// =====================================
+const EARNING_PESO = 0.5;
 
-  const reward = 0.05;
-
-  const { data } = await supabase
-    .from("profiles")
-    .select("balance")
-    .eq("username",username)
-    .single();
-
-  const newBal = Number(data.balance) + reward;
-
-  await supabase
-    .from("profiles")
-    .update({balance:newBal})
-    .eq("username",username);
-
-  updateBalance(newBal);
+async function rewardUser(dollars = 0){
+  const pesos = dollars * 50 || EARNING_PESO;
+  await supabase.rpc("increment_balance",{uname: username, amt: pesos});
 }
 
-/* ================= WITHDRAW ================= */
+// Rewarded Interstitial
+function watchInterstitial(){
+  show_10337795().then(()=>rewardUser()).catch(e=>console.log(e));
+}
+
+// Rewarded Popup
+function watchPopup(){
+  show_10337795('pop').then(()=>rewardUser()).catch(e=>console.log(e));
+}
+
+// In-App Interstitial auto every 1 min
+let lastInApp = 0;
+function showInAppAd(){
+  const now = Date.now();
+  if(now - lastInApp > 60_000){
+    show_10337795({type:'inApp',inAppSettings:{frequency:1,capping:0.1,interval:30,timeout:5,everyPage:false}})
+      .then(()=>rewardUser()).catch(e=>console.log(e));
+    lastInApp = now;
+  }
+}
+setInterval(showInAppAd, 30_000);
+
+// =====================================
+// WITHDRAWAL SYSTEM
+// =====================================
 async function withdraw(){
-  const usd = Number(document.getElementById("amount").value);
+  const amount = Number(document.getElementById("amount").value);
   const gcash = document.getElementById("gcash").value;
-
-  if(!gcash || usd <= 0){
-    alert("Invalid withdrawal");
-    return;
-  }
-
-  const { data } = await supabase
-    .from("profiles")
-    .select("balance")
-    .eq("username",username)
-    .single();
-
-  if(usd > data.balance){
-    alert("Insufficient balance");
-    return;
-  }
-
-  const php = usd * USD_TO_PHP;
-
-  await supabase.from("withdrawals").insert({
-    username, usd, php, gcash, status:"pending"
-  });
-
-  await supabase
-    .from("profiles")
-    .update({balance:data.balance - usd})
-    .eq("username",username);
+  if(!amount || !gcash){return alert("Enter valid input");}
+  if(balance < amount){return alert("Insufficient balance");}
+  await supabase.from("profiles").update({balance: balance - amount}).eq("username", username);
+  await supabase.from("withdrawals").insert({username, amount, gcash});
 }
 
-/* ================= REALTIME USER ================= */
-supabase.channel("user-sync")
-  .on("postgres_changes",
-    {event:"*",schema:"public",table:"withdrawals",filter:`username=eq.${username}`},
-    () => loadUserWithdrawals()
-  ).subscribe();
-
-async function loadUserWithdrawals(){
-  const { data } = await supabase
-    .from("withdrawals")
-    .select("*")
-    .eq("username",username)
-    .order("created_at",{ascending:false});
-
-  const tbl = document.getElementById("userTable");
-  tbl.innerHTML = "<tr><th>USD</th><th>PHP</th><th>Status</th></tr>";
-
+// =====================================
+// USER WITHDRAWALS TABLE
+// =====================================
+function renderUserWithdrawals(data){
+  const tbody = document.querySelector("#withdrawalsTable tbody");
+  tbody.innerHTML = "";
   data.forEach(w=>{
-    tbl.innerHTML += `
-      <tr>
-        <td>$${w.usd}</td>
-        <td>₱${w.php}</td>
-        <td class="status-${w.status}">${w.status}</td>
-      </tr>`;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${w.amount}</td><td>${w.gcash}</td><td class="status-${w.status}">${w.status}</td><td>${new Date(w.created_at).toLocaleString()}</td>`;
+    tbody.appendChild(tr);
   });
 }
 
-/* ================= ADMIN ================= */
-function toggleAdmin(){
-  document.getElementById("adminLogin").classList.toggle("hidden");
+// =====================================
+// ADMIN DASHBOARD
+// =====================================
+let adminPassword = prompt("Enter owner password for admin dashboard:");
+if(adminPassword === "Propetas6"){
+  document.getElementById("adminDashboard").style.display="block";
 }
 
-function adminLogin(){
-  if(document.getElementById("adminPass").value !== ADMIN_PASSWORD){
-    alert("Wrong password");
-    return;
-  }
-  document.getElementById("adminPanel").classList.remove("hidden");
-  loadAdmin();
-}
-
-/* ================= REALTIME ADMIN ================= */
-supabase.channel("admin-sync")
-  .on("postgres_changes",
-    {event:"*",schema:"public",table:"withdrawals"},
-    () => loadAdmin()
-  ).subscribe();
-
-async function loadAdmin(){
-  const { data } = await supabase
-    .from("withdrawals")
-    .select("*")
-    .order("created_at",{ascending:false});
-
-  const tbl = document.getElementById("adminTable");
-  tbl.innerHTML = `
-    <tr>
-      <th>User</th><th>USD</th><th>PHP</th>
-      <th>GCash</th><th>Status</th><th>Action</th>
-    </tr>`;
-
+function renderAdminWithdrawals(data){
+  const tbody = document.querySelector("#adminWithdrawals tbody");
+  tbody.innerHTML = "";
   data.forEach(w=>{
-    tbl.innerHTML += `
-      <tr>
-        <td>${w.username}</td>
-        <td>$${w.usd}</td>
-        <td>₱${w.php}</td>
-        <td>${w.gcash}</td>
-        <td class="status-${w.status}">${w.status}</td>
-        <td>
-          <button onclick="setStatus('${w.id}','approved')">✔</button>
-          <button onclick="setStatus('${w.id}','denied')">✖</button>
-        </td>
-      </tr>`;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${w.username}</td><td>${w.amount}</td><td>${w.gcash}</td>
+      <td class="status-${w.status}">${w.status}</td>
+      <td>${w.status==='pending'?`<button onclick="updateStatus('${w.id}','approved')">✅ Approve</button><button onclick="updateStatus('${w.id}','denied')">❌ Deny</button>`:""}</td>`;
+    tbody.appendChild(tr);
   });
 }
 
-async function setStatus(id,status){
-  await supabase
-    .from("withdrawals")
-    .update({status})
-    .eq("id",id);
+async function updateStatus(id,status){
+  await supabase.from("withdrawals").update({status}).eq("id",id);
 }
+
+// =====================================
+// REALTIME SUBSCRIPTIONS
+// =====================================
+supabase
+  .channel('profiles-channel')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `username=eq.${username}` }, payload => {
+    loadBalance();
+  })
+  .subscribe();
+
+supabase
+  .channel('withdrawals-channel')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'withdrawals' }, payload => {
+    loadUserWithdrawalsRealtime();
+    loadAdminWithdrawalsRealtime();
+  })
+  .subscribe();
+
+async function loadUserWithdrawalsRealtime(){
+  const { data } = await supabase.from("withdrawals").select("*").eq("username", username).order("created_at",{ascending:false});
+  renderUserWithdrawals(data);
+}
+
+async function loadAdminWithdrawalsRealtime(){
+  if(document.getElementById("adminDashboard").style.display!=="block") return;
+  const { data } = await supabase.from("withdrawals").select("*").order("created_at",{ascending:false});
+  renderAdminWithdrawals(data);
+}
+
+// Initial load
+loadUserWithdrawalsRealtime();
+loadAdminWithdrawalsRealtime();
+loadBalance();
 </script>
 
 </body>

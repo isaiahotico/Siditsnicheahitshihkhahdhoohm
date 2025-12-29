@@ -2,220 +2,160 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>🌈 WONDER ADS – Realtime Full Indie System</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!-- Monetag SDK -->
-<script src="//libtl.com/sdk.js" data-zone="10337795" data-sdk="show_10337795"></script>
-
-<!-- Supabase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+<title>TKGAH - Watch Ads & Earn GCash</title>
 <style>
-body{margin:0;font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#ff9a9e,#fad0c4);color:#fff;text-align:center;}
-.card{background: rgba(0,0,0,.2); margin:15px; padding:25px; border-radius:20px; box-shadow:0 10px 25px rgba(0,0,0,.25);}
-button{padding:10px 20px;margin:5px;border:none;border-radius:25px;font-weight:bold;cursor:pointer;background:linear-gradient(135deg,#ffdd00,#ff9900);}
-input{padding:10px;border-radius:10px;border:none;margin:5px;width:90%;}
-table{width:100%;border-collapse:collapse;margin-top:15px;}
-th,td{padding:10px;border-bottom:1px solid #fff;text-align:center;}
-.status-pending{color:#ffdd00;font-weight:bold;}
-.status-approved{color:#00ff7f;font-weight:bold;}
-.status-denied{color:#ff4500;font-weight:bold;}
-.admin-card{display:none;background:rgba(0,0,0,0.3);padding:20px;border-radius:20px;margin:15px;}
-.balance{font-size:28px;font-weight:bold;margin:10px 0;}
+    /* --- Base Styles --- */
+    body {
+        font-family: 'Poppins', sans-serif;
+        background: linear-gradient(135deg,#667eea,#764ba2);
+        color: #fff;
+        text-align: center;
+        padding: 20px;
+    }
+    h1 { font-size: 2.5rem; margin-bottom: 5px; }
+    h2 { font-weight: 400; margin-bottom: 20px; }
+
+    /* --- Balance Card --- */
+    .balance-card {
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(10px);
+        padding: 20px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        max-width: 400px;
+        margin-left:auto;
+        margin-right:auto;
+    }
+    .balance-card span {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #ffd700;
+    }
+
+    /* --- Ads Container (optional for future ad cards) --- */
+    .ads-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+    .ad-card {
+        background: rgba(255,255,255,0.1);
+        padding: 15px;
+        border-radius: 15px;
+        width: 250px;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .ad-card:hover { transform: translateY(-5px); }
+    .ad-card button {
+        background: #ffd700;
+        color: #764ba2;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+
+    /* --- Withdraw Button --- */
+    .withdraw-btn {
+        background: #00ff90;
+        color: #333;
+        padding: 12px 25px;
+        border-radius: 15px;
+        font-size: 1rem;
+        font-weight: bold;
+        border: none;
+        cursor: pointer;
+        margin-top: 20px;
+        transition: background 0.2s;
+    }
+    .withdraw-btn:hover { background: #00e07f; }
 </style>
 </head>
 <body>
 
-<h1>🌈 WONDER ADS – Realtime Indie System</h1>
+<h1>TKGAH</h1>
+<h2>Watch Ads & Earn GCash Peso!</h2>
 
-<div class="card">
-  <p>👤 User</p>
-  <div id="user">Loading...</div>
+<div class="balance-card">
+    <p>Your Balance:</p>
+    <span id="balance">₱0.00</span>
 </div>
 
-<div class="card">
-  <p>💰 Balance</p>
-  <div>₱<span id="balance">0.00</span></div>
+<div class="ads-container">
+    <!-- Optional ad cards if you want manual ads -->
 </div>
 
-<div class="card">
-  <h3>📺 Watch Ads & Earn</h3>
-  <button id="interstitialBtn">🎬 Rewarded Interstitial</button>
-  <button id="popupBtn">🎁 Rewarded Popup</button>
-</div>
+<button class="withdraw-btn" onclick="autoWithdraw()">Auto Withdraw to GCash</button>
 
-<div class="card">
-  <h3>💸 Withdraw</h3>
-  <input id="gcash" placeholder="GCash Number">
-  <input id="amount" type="number" placeholder="Amount (₱)">
-  <button onclick="withdraw()">🚀 Request Withdraw</button>
-</div>
+<footer style="margin-top:40px; color:rgba(255,255,255,0.7);">
+    TKGAH &copy; 2025 | Earn easily via GCash
+</footer>
 
-<div class="card">
-  <h3>📃 Your Withdrawals</h3>
-  <table id="withdrawalsTable">
-    <thead>
-      <tr><th>Amount (₱)</th><th>GCash</th><th>Status</th><th>Created</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
-
-<div class="admin-card" id="adminDashboard">
-  <h2>💼 Owner Dashboard</h2>
-  <table id="adminWithdrawals">
-    <thead>
-      <tr><th>User</th><th>Amount</th><th>GCash</th><th>Status</th><th>Action</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
+<!-- Monetag SDK -->
+<script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
 
 <script>
-const SUPABASE_URL = "https://dbjsbjkwrjftueybmzqc.supabase.co";
-const SUPABASE_KEY = "sb_publishable_UeA-oqhmpeDQ1oh72U5afA_Lx9z7kWi";
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// =====================================
-// USER SETUP
-// =====================================
-const telegramId = Math.floor(Math.random()*999999);
-const username = "telegram_" + telegramId;
-
-// Show username immediately
-document.getElementById("user").innerText = username;
-
+/* --- Variables --- */
 let balance = 0;
 
-// Initialize profile asynchronously
-async function initProfile(){
-  const { data } = await supabase.from("profiles").select("*").eq("username", username).single();
-  if(!data){await supabase.from("profiles").insert({username});}
-  loadBalance();
-  loadUserWithdrawals();
-}
-initProfile();
-
-// =====================================
-// BALANCE
-// =====================================
-async function loadBalance(){
-  const { data } = await supabase.from("profiles").select("balance").eq("username", username).single();
-  balance = data?.balance || 0;
-  document.getElementById("balance").innerText = parseFloat(balance).toFixed(2);
+/* --- Reward Function --- */
+function rewardUser(amount) {
+    balance += amount;
+    document.getElementById('balance').innerText = `₱${balance.toFixed(2)}`;
+    console.log(`User earned ₱${amount}`);
 }
 
-// =====================================
-// ADS SYSTEM
-// =====================================
-const EARNING_PESO = 0.5;
-
-async function rewardUser(dollars = 0){
-  const pesos = dollars * 50 || EARNING_PESO;
-  await supabase.rpc("increment_balance",{uname: username, amt: pesos});
+/* --- Auto Withdraw Simulation --- */
+function autoWithdraw() {
+    if(balance <= 0) {
+        alert("You don't have enough balance to withdraw!");
+        return;
+    }
+    // Replace this with real GCash integration API
+    alert(`Success! ₱${balance.toFixed(2)} withdrawn to your GCash.`);
+    balance = 0;
+    document.getElementById('balance').innerText = `₱0.00`;
 }
 
-// Wrap Monetag ad calls in user click
-document.getElementById("interstitialBtn").addEventListener("click", ()=>{
-  if(!window.show_10337795){alert("Ad SDK not loaded yet"); return;}
-  show_10337795().then(()=>rewardUser()).catch(e=>console.log(e));
-});
+/* --- Automatic Rewarded Ads --- */
 
-document.getElementById("popupBtn").addEventListener("click", ()=>{
-  if(!window.show_10337795){alert("Ad SDK not loaded yet"); return;}
-  show_10337795('pop').then(()=>rewardUser()).catch(e=>console.log(e));
-});
-
-// Auto in-app ads every 1 min
-setInterval(()=>{
-  if(!window.show_10337795) return;
-  show_10337795({type:'inApp', inAppSettings:{frequency:1,capping:0.1,interval:30,timeout:5,everyPage:false}})
-    .then(()=>rewardUser()).catch(e=>console.log(e));
-}, 60_000);
-
-// =====================================
-// WITHDRAWAL SYSTEM
-// =====================================
-async function withdraw(){
-  const amount = Number(document.getElementById("amount").value);
-  const gcash = document.getElementById("gcash").value;
-  if(!amount || !gcash){return alert("Enter valid input");}
-  if(balance < amount){return alert("Insufficient balance");}
-  await supabase.from("profiles").update({balance: balance - amount}).eq("username", username);
-  await supabase.from("withdrawals").insert({username, amount, gcash});
+// Rewarded interstitial ad
+function showInterstitialAd() {
+    show_10337795({
+        type: 'inApp',
+        inAppSettings: {
+            frequency: 2,
+            capping: 0.1,
+            interval: 30,
+            timeout: 5,
+            everyPage: false
+        }
+    }).then(() => {
+        rewardUser(10); // reward ₱10 per interstitial ad
+    }).catch(e => console.log('Interstitial ad error:', e));
 }
 
-// =====================================
-// USER WITHDRAWALS TABLE
-// =====================================
-function renderUserWithdrawals(data){
-  const tbody = document.querySelector("#withdrawalsTable tbody");
-  tbody.innerHTML = "";
-  data.forEach(w=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${w.amount}</td><td>${w.gcash}</td><td class="status-${w.status}">${w.status}</td><td>${new Date(w.created_at).toLocaleString()}</td>`;
-    tbody.appendChild(tr);
-  });
+// Rewarded popup ad
+function showPopupAd() {
+    show_10337795('pop').then(() => {
+        rewardUser(5); // reward ₱5 per popup ad
+    }).catch(e => console.log('Popup ad error:', e));
 }
 
-// =====================================
-// ADMIN DASHBOARD
-// =====================================
-let adminPassword = prompt("Enter owner password for admin dashboard:");
-if(adminPassword === "Propetas6"){
-  document.getElementById("adminDashboard").style.display="block";
-}
+// Initialize automatic ads
+setInterval(showInterstitialAd, 2 * 60 * 1000); // every 2 minutes
+setInterval(showPopupAd, 3 * 60 * 1000);         // every 3 minutes
 
-function renderAdminWithdrawals(data){
-  const tbody = document.querySelector("#adminWithdrawals tbody");
-  tbody.innerHTML = "";
-  data.forEach(w=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${w.username}</td><td>${w.amount}</td><td>${w.gcash}</td>
-      <td class="status-${w.status}">${w.status}</td>
-      <td>${w.status==='pending'?`<button onclick="updateStatus('${w.id}','approved')">✅ Approve</button><button onclick="updateStatus('${w.id}','denied')">❌ Deny</button>`:""}</td>`;
-    tbody.appendChild(tr);
-  });
-}
+// Show first ads immediately
+showInterstitialAd();
+showPopupAd();
 
-async function updateStatus(id,status){
-  await supabase.from("withdrawals").update({status}).eq("id",id);
-}
-
-// =====================================
-// REALTIME SUBSCRIPTIONS
-// =====================================
-supabase
-  .channel('profiles-channel')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `username=eq.${username}` }, payload => {
-    loadBalance();
-  })
-  .subscribe();
-
-supabase
-  .channel('withdrawals-channel')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'withdrawals' }, payload => {
-    loadUserWithdrawalsRealtime();
-    loadAdminWithdrawalsRealtime();
-  })
-  .subscribe();
-
-async function loadUserWithdrawalsRealtime(){
-  const { data } = await supabase.from("withdrawals").select("*").eq("username", username).order("created_at",{ascending:false});
-  renderUserWithdrawals(data);
-}
-
-async function loadAdminWithdrawalsRealtime(){
-  if(document.getElementById("adminDashboard").style.display!=="block") return;
-  const { data } = await supabase.from("withdrawals").select("*").order("created_at",{ascending:false});
-  renderAdminWithdrawals(data);
-}
-
-// Initial load
-loadUserWithdrawalsRealtime();
-loadAdminWithdrawalsRealtime();
-loadBalance();
 </script>
 
 </body>

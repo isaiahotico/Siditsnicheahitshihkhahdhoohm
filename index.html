@@ -5,10 +5,10 @@
 <title>🌈 WONDER ADS – Realtime Full Indie System</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Monetag -->
+<!-- Monetag SDK -->
 <script src="//libtl.com/sdk.js" data-zone="10337795" data-sdk="show_10337795"></script>
 
-<!-- Supabase -->
+<!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -41,8 +41,8 @@ th,td{padding:10px;border-bottom:1px solid #fff;text-align:center;}
 
 <div class="card">
   <h3>📺 Watch Ads & Earn</h3>
-  <button onclick="watchInterstitial()">🎬 Rewarded Interstitial</button>
-  <button onclick="watchPopup()">🎁 Rewarded Popup</button>
+  <button id="interstitialBtn">🎬 Rewarded Interstitial</button>
+  <button id="popupBtn">🎁 Rewarded Popup</button>
 </div>
 
 <div class="card">
@@ -82,11 +82,13 @@ const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // =====================================
 const telegramId = Math.floor(Math.random()*999999);
 const username = "telegram_" + telegramId;
+
+// Show username immediately
 document.getElementById("user").innerText = username;
 
 let balance = 0;
 
-// Initialize profile
+// Initialize profile asynchronously
 async function initProfile(){
   const { data } = await supabase.from("profiles").select("*").eq("username", username).single();
   if(!data){await supabase.from("profiles").insert({username});}
@@ -114,27 +116,23 @@ async function rewardUser(dollars = 0){
   await supabase.rpc("increment_balance",{uname: username, amt: pesos});
 }
 
-// Rewarded Interstitial
-function watchInterstitial(){
+// Wrap Monetag ad calls in user click
+document.getElementById("interstitialBtn").addEventListener("click", ()=>{
+  if(!window.show_10337795){alert("Ad SDK not loaded yet"); return;}
   show_10337795().then(()=>rewardUser()).catch(e=>console.log(e));
-}
+});
 
-// Rewarded Popup
-function watchPopup(){
+document.getElementById("popupBtn").addEventListener("click", ()=>{
+  if(!window.show_10337795){alert("Ad SDK not loaded yet"); return;}
   show_10337795('pop').then(()=>rewardUser()).catch(e=>console.log(e));
-}
+});
 
-// In-App Interstitial auto every 1 min
-let lastInApp = 0;
-function showInAppAd(){
-  const now = Date.now();
-  if(now - lastInApp > 60_000){
-    show_10337795({type:'inApp',inAppSettings:{frequency:1,capping:0.1,interval:30,timeout:5,everyPage:false}})
-      .then(()=>rewardUser()).catch(e=>console.log(e));
-    lastInApp = now;
-  }
-}
-setInterval(showInAppAd, 30_000);
+// Auto in-app ads every 1 min
+setInterval(()=>{
+  if(!window.show_10337795) return;
+  show_10337795({type:'inApp', inAppSettings:{frequency:1,capping:0.1,interval:30,timeout:5,everyPage:false}})
+    .then(()=>rewardUser()).catch(e=>console.log(e));
+}, 60_000);
 
 // =====================================
 // WITHDRAWAL SYSTEM

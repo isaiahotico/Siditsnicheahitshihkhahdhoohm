@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Daily Login (Merged)</title>
+<title>Auto In-App Interstitial</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Monetag SDK -->
-<script src='//libtl.com/sdk.js'
-        data-zone='10337795'
-        data-sdk='show_10337795'></script>
+<!-- Monetag SDK (do NOT async/defer) -->
+<script src="//libtl.com/sdk.js"
+        data-zone="10337795"
+        data-sdk="show_10337795"></script>
 
 <style>
 body{
@@ -19,104 +19,88 @@ body{
   height:100vh;
   font-family:Arial, sans-serif;
 }
-#dailyBtn{
-  width:190px;
+
+#statusBtn{
+  width:220px;
   height:65px;
-  background:linear-gradient(135deg,#4facfe,#00f2fe);
+  background:linear-gradient(135deg,#ff9800,#ff5722);
   border:none;
-  border-radius:15px;
+  border-radius:16px;
   color:white;
   font-size:15px;
   font-weight:bold;
-  cursor:pointer;
   box-shadow:0 10px 25px rgba(0,0,0,.45);
 }
-#dailyBtn:disabled{
-  background:#444;
-  cursor:not-allowed;
-}
-#cooldown{
+
+#timer{
   font-size:12px;
-  opacity:.9;
   margin-top:4px;
+  opacity:.9;
 }
 </style>
 </head>
 
 <body>
 
-<button id="dailyBtn">
-  🎁 Daily Login
-  <div id="cooldown">Ready</div>
+<button id="statusBtn">
+  📺 In-App Ad Status
+  <div id="timer">Initializing…</div>
 </button>
 
 <script>
-const COOLDOWN = 15 * 60 * 1000; // 15 minutes
-const KEY = "daily_login_merged";
+const INTERVAL = 15 * 60 * 1000; // 15 minutes
+const KEY = "auto_inapp_last";
 
-const btn = document.getElementById("dailyBtn");
-const cd  = document.getElementById("cooldown");
+const timer = document.getElementById("timer");
 
-function updateCooldown(){
-  const last = localStorage.getItem(KEY);
-  if(!last){
-    btn.disabled = false;
-    cd.textContent = "Ready";
-    return;
-  }
-  const diff = Date.now() - last;
-  if(diff >= COOLDOWN){
-    btn.disabled = false;
-    cd.textContent = "Ready";
-  } else {
-    btn.disabled = true;
-    const r = COOLDOWN - diff;
-    const m = Math.floor(r/60000);
-    const s = Math.floor((r%60000)/1000);
-    cd.textContent = `${m}:${s.toString().padStart(2,'0')}`;
-  }
+function monetagReady(){
+  return typeof window.show_10337795 === "function";
 }
 
-setInterval(updateCooldown, 1000);
-updateCooldown();
+function showInApp(){
+  if(!monetagReady()) return;
 
-async function showRewarded(){
-  // Rewarded Interstitial (primary)
-  await show_10337795();
-  // ✅ reward only if completed
-  alert("✅ Reward granted!");
-}
-
-function showInAppFallback(){
-  // In-App Interstitial (fallback)
-  show_10337795({
-    type: 'inApp',
+  window.show_10337795({
+    type: "inApp",
     inAppSettings: {
-      frequency: 2,
-      capping: 0.1,
+      frequency: 1,
+      capping: 0.25,      // 15 minutes
       interval: 30,
       timeout: 5,
       everyPage: false
     }
   });
+
+  localStorage.setItem(KEY, Date.now());
 }
 
-btn.onclick = async () => {
-  btn.disabled = true;
-  cd.textContent = "Loading ad...";
+function updateTimer(){
+  const last = localStorage.getItem(KEY);
 
-  try {
-    await showRewarded();        // try rewarded first
-    localStorage.setItem(KEY, Date.now());
-  } catch (e) {
-    // If rewarded fails, show in-app interstitial (no reward)
-    showInAppFallback();
-    alert("ℹ️ Ad shown (no reward)");
-    localStorage.setItem(KEY, Date.now());
+  if(!last){
+    timer.textContent = "Showing ad now…";
+    showInApp();
+    return;
   }
 
-  updateCooldown();
-};
+  const diff = Date.now() - last;
+
+  if(diff >= INTERVAL){
+    timer.textContent = "Showing ad now…";
+    showInApp();
+  } else {
+    const r = INTERVAL - diff;
+    const m = Math.floor(r / 60000);
+    const s = Math.floor((r % 60000) / 1000);
+    timer.textContent = `Next ad in ${m}:${s.toString().padStart(2,'0')}`;
+  }
+}
+
+// Check every second
+setInterval(updateTimer, 1000);
+
+// Initial delay to allow SDK load
+setTimeout(updateTimer, 1500);
 </script>
 
 </body>

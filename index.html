@@ -2,13 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Monetag Immediate Ads</title>
+<title>Telegram Monetag Ads</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Monetag SDK (NO async / NO defer) -->
-<script src="//libtl.com/sdk.js"
+<!-- Monetag SDK (NO async / defer) -->
+<script src="https://libtl.com/sdk.js"
         data-zone="10337795"
         data-sdk="show_10337795"></script>
+
+<!-- Telegram WebApp -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 body{
@@ -22,8 +25,8 @@ body{
   height:100vh;
 }
 .btn{
-  width:230px;
-  height:65px;
+  width:240px;
+  height:68px;
   border:none;
   border-radius:16px;
   color:#fff;
@@ -53,7 +56,7 @@ body{
 </button>
 
 <button id="inapp" class="btn orange">
-📺 Interstitial
+📺 In-App Interstitial
 <div class="time" id="t_inapp">Ready</div>
 </button>
 
@@ -63,87 +66,96 @@ body{
 </button>
 
 <script>
-const cooldowns = {
-  daily: 900000,
-  gift: 900000,
-  inapp: 300000,
-  popup: 300000
+// Telegram expand
+if (window.Telegram && Telegram.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+}
+
+// Cooldowns
+const CD = {
+  daily: 15 * 60 * 1000,
+  gift: 15 * 60 * 1000,
+  inapp: 5 * 60 * 1000,
+  popup: 5 * 60 * 1000
 };
 
-function ready(){
+function monetagReady(){
   return typeof window.show_10337795 === "function";
 }
 
 function update(btn, label, key, ms){
   const last = localStorage.getItem(key);
   if(!last){ btn.disabled=false; label.textContent="Ready"; return; }
-  const d = Date.now()-last;
-  if(d>=ms){ btn.disabled=false; label.textContent="Ready"; }
-  else{
+  const d = Date.now() - last;
+  if(d >= ms){
+    btn.disabled=false;
+    label.textContent="Ready";
+  }else{
     btn.disabled=true;
-    const r=ms-d;
-    const m=Math.floor(r/60000);
-    const s=Math.floor((r%60000)/1000);
-    label.textContent=`${m}:${s.toString().padStart(2,'0')}`;
+    const r = ms - d;
+    const m = Math.floor(r/60000);
+    const s = Math.floor((r%60000)/1000);
+    label.textContent = `${m}:${s.toString().padStart(2,'0')}`;
   }
 }
 
 setInterval(()=>{
-  update(daily,t_daily,"cd_daily",cooldowns.daily);
-  update(gift,t_gift,"cd_gift",cooldowns.gift);
-  update(inapp,t_inapp,"cd_inapp",cooldowns.inapp);
-  update(popup,t_popup,"cd_popup",cooldowns.popup);
+  update(daily,t_daily,"cd_daily",CD.daily);
+  update(gift,t_gift,"cd_gift",CD.gift);
+  update(inapp,t_inapp,"cd_inapp",CD.inapp);
+  update(popup,t_popup,"cd_popup",CD.popup);
 },1000);
 
-// 🔁 BACKUP CHAIN
-async function showWithBackup(reward=true){
+// BACKUP AD CHAIN (BEST PRACTICE)
+async function showWithBackup(reward){
   try{
-    await show_10337795(); // Rewarded interstitial
-    if(reward) alert("✅ Reward granted");
+    await show_10337795(); // Rewarded Interstitial
+    if(reward) Telegram.WebApp.showAlert("✅ Reward granted");
     return true;
-  }catch(e1){
+  }catch{
     try{
-      await show_10337795('pop'); // Rewarded popup
-      if(reward) alert("🎁 Popup reward");
+      await show_10337795('pop'); // Rewarded Popup
+      if(reward) Telegram.WebApp.showAlert("🎁 Popup reward");
       return true;
-    }catch(e2){
+    }catch{
       try{
         show_10337795({
           type:'inApp',
           inAppSettings:{
             frequency:1,
-            capping:0.1,
+            capping:1,
             interval:30,
             timeout:5,
             everyPage:false
           }
         });
         return true;
-      }catch(e3){
-        alert("❌ No ad available");
+      }catch{
+        Telegram.WebApp.showAlert("❌ No ad available");
         return false;
       }
     }
   }
 }
 
-// BUTTON HANDLERS
+// BUTTONS
 daily.onclick = async ()=>{
-  if(!ready()) return alert("Ad not ready");
+  if(!monetagReady()) return Telegram.WebApp.showAlert("SDK not ready");
   daily.disabled=true; t_daily.textContent="Loading...";
   if(await showWithBackup(true))
     localStorage.setItem("cd_daily",Date.now());
 };
 
 gift.onclick = async ()=>{
-  if(!ready()) return alert("Ad not ready");
+  if(!monetagReady()) return Telegram.WebApp.showAlert("SDK not ready");
   gift.disabled=true; t_gift.textContent="Loading...";
   if(await showWithBackup(true))
     localStorage.setItem("cd_gift",Date.now());
 };
 
-inapp.onclick = async ()=>{
-  if(!ready()) return alert("Ad not ready");
+inapp.onclick = ()=>{
+  if(!monetagReady()) return Telegram.WebApp.showAlert("SDK not ready");
   inapp.disabled=true; t_inapp.textContent="Showing...";
   show_10337795({
     type:'inApp',
@@ -159,16 +171,16 @@ inapp.onclick = async ()=>{
 };
 
 popup.onclick = async ()=>{
-  if(!ready()) return alert("Ad not ready");
+  if(!monetagReady()) return Telegram.WebApp.showAlert("SDK not ready");
   popup.disabled=true; t_popup.textContent="Loading...";
   try{
     await show_10337795('pop');
-    alert("🎉 Popup reward");
+    Telegram.WebApp.showAlert("🎉 Popup reward");
     localStorage.setItem("cd_popup",Date.now());
-  }catch(e){
+  }catch{
     show_10337795({
       type:'inApp',
-      inAppSettings:{frequency:1,capping:0.1,interval:30,timeout:5,everyPage:false}
+      inAppSettings:{frequency:1,capping:1,interval:30,timeout:5,everyPage:false}
     });
     localStorage.setItem("cd_popup",Date.now());
   }

@@ -2,201 +2,122 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<title>Daily Login (Merged)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TKGAH - Watch Ads & Earn GCash</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
+
+<!-- Monetag SDK -->
+<script src='//libtl.com/sdk.js'
+        data-zone='10337795'
+        data-sdk='show_10337795'></script>
+
 <style>
-body { font-family:'Poppins',sans-serif; background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; text-align:center; padding:20px;}
-h1{font-size:2.5rem;margin-bottom:5px;}
-h2{font-weight:400;margin-bottom:20px;}
-.balance-card{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:20px;border-radius:15px;margin-bottom:30px;max-width:400px;margin:auto;}
-.balance-card span{font-size:2rem;font-weight:bold;color:#ffd700;}
-.ads-container{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;margin-bottom:20px;}
-.ad-card{background:rgba(255,255,255,0.1);padding:15px;border-radius:15px;width:250px;cursor:pointer;transition: transform 0.2s;}
-.ad-card:hover{transform:translateY(-5px);}
-.ad-card button{background:#ffd700;color:#764ba2;border:none;padding:10px 20px;border-radius:10px;font-weight:bold;cursor:pointer;margin-top:10px;}
-.withdraw-btn{background:#00ff90;color:#333;padding:12px 25px;border-radius:15px;font-size:1rem;font-weight:bold;border:none;cursor:pointer;margin-top:20px;transition:background 0.2s;}
-.withdraw-btn:hover{background:#00e07f;}
-table{width:100%;border-collapse:collapse;margin-top:20px;color:#fff;}
-table th, table td{border:1px solid rgba(255,255,255,0.3);padding:8px;}
-button.approve{background:#00ff90;color:#333;padding:5px 10px;border:none;border-radius:5px;cursor:pointer;}
-button.deny{background:#ff4d4d;color:#fff;padding:5px 10px;border:none;border-radius:5px;}
-#owner-dashboard{display:none;}
+body{
+  background:#0e1220;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  font-family:Arial, sans-serif;
+}
+#dailyBtn{
+  width:190px;
+  height:65px;
+  background:linear-gradient(135deg,#4facfe,#00f2fe);
+  border:none;
+  border-radius:15px;
+  color:white;
+  font-size:15px;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 10px 25px rgba(0,0,0,.45);
+}
+#dailyBtn:disabled{
+  background:#444;
+  cursor:not-allowed;
+}
+#cooldown{
+  font-size:12px;
+  opacity:.9;
+  margin-top:4px;
+}
 </style>
 </head>
+
 <body>
 
-<h1>TKGAH</h1>
-<h2>Watch Ads & Earn GCash Peso!</h2>
-
-<div class="balance-card">
-<p>Your Balance (<span id="username">Guest</span>):</p>
-<span id="balance">₱0.00</span>
-</div>
-
-<div class="ads-container">
-<div class="ad-card">
-<p>Watch an ad to earn ₱5</p>
-<button onclick="watchRewardedInterstitial(5)">Watch Ad</button>
-</div>
-<div class="ad-card">
-<p>Watch an ad to earn ₱10</p>
-<button onclick="watchRewardedPopup(10)">Watch Ad</button>
-</div>
-<div class="ad-card">
-<p>Watch an ad to earn ₱15</p>
-<button onclick="watchInAppInterstitial(15)">Watch Ad</button>
-</div>
-</div>
-
-<button class="withdraw-btn" onclick="requestWithdrawal()">Request Withdrawal</button>
-
-<h2>Owner Dashboard</h2>
-<input type="password" id="owner-password" placeholder="Enter Owner Password">
-<button onclick="checkOwnerPassword()">Login</button>
-
-<div id="owner-dashboard">
-<table id="withdrawals-table">
-<thead>
-<tr>
-<th>ID</th><th>User</th><th>Amount</th><th>GCash</th><th>Status</th><th>Actions</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
-</div>
+<button id="dailyBtn">
+  🎁 Daily Login
+  <div id="cooldown">Ready</div>
+</button>
 
 <script>
-// --- Supabase Config ---
-const supabaseUrl = 'https://dbjsbjkwrjftueybmzqc.supabase.co';
-const supabaseKey = 'sb_publishable_UeA-oqhmpeDQ1oh72U5afA_Lx9z7kWi';
-const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+const COOLDOWN = 15 * 60 * 1000; // 15 minutes
+const KEY = "daily_login_merged";
 
-// --- User Info ---
-let username = prompt("Enter your username:") || 'Guest';
-document.getElementById('username').innerText=username;
-const userId = 'user_'+username; 
-let balance = 0;
+const btn = document.getElementById("dailyBtn");
+const cd  = document.getElementById("cooldown");
 
-// --- Owner Password ---
-const OWNER_PASSWORD = 'Propetas6';
-
-// --- Initialize User Profile ---
-async function initProfile(){
-    await supabase.from('profiles').upsert({id:userId,username:username,balance:0},{onConflict:'id'});
-    fetchBalance();
+function updateCooldown(){
+  const last = localStorage.getItem(KEY);
+  if(!last){
+    btn.disabled = false;
+    cd.textContent = "Ready";
+    return;
+  }
+  const diff = Date.now() - last;
+  if(diff >= COOLDOWN){
+    btn.disabled = false;
+    cd.textContent = "Ready";
+  } else {
+    btn.disabled = true;
+    const r = COOLDOWN - diff;
+    const m = Math.floor(r/60000);
+    const s = Math.floor((r%60000)/1000);
+    cd.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  }
 }
 
-// --- Balance ---
-async function fetchBalance(){
-    const { data } = await supabase.from('profiles').select('balance').eq('id',userId).single();
-    balance = data?.balance||0;
-    updateBalance();
-}
-function updateBalance(){ document.getElementById('balance').innerText=`₱${balance.toFixed(2)}`; }
+setInterval(updateCooldown, 1000);
+updateCooldown();
 
-// --- Real-time User Balance Updates ---
-function subscribeBalance(){
-    supabase.channel('public:profiles')
-        .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:`id=eq.${userId}`},payload=>{
-            balance = payload.new.balance;
-            updateBalance();
-        })
-        .subscribe();
+async function showRewarded(){
+  // Rewarded Interstitial (primary)
+  await show_10337795();
+  // ✅ reward only if completed
+  alert("✅ Reward granted!");
 }
 
-// --- Ads Integration Monetag #2 ---
-
-// Rewarded Interstitial
-function watchRewardedInterstitial(amount){
-    show_10337795().then(()=>{
-        rewardUser(amount);
-    }).catch(e=>console.log(e));
+function showInAppFallback(){
+  // In-App Interstitial (fallback)
+  show_10337795({
+    type: 'inApp',
+    inAppSettings: {
+      frequency: 2,
+      capping: 0.1,
+      interval: 30,
+      timeout: 5,
+      everyPage: false
+    }
+  });
 }
 
-// Rewarded Popup
-function watchRewardedPopup(amount){
-    show_10337795('pop').then(()=>{
-        rewardUser(amount);
-    }).catch(e=>console.log(e));
-}
+btn.onclick = async () => {
+  btn.disabled = true;
+  cd.textContent = "Loading ad...";
 
-// In-App Interstitial
-function watchInAppInterstitial(amount){
-    show_10337795({
-        type: 'inApp',
-        inAppSettings: {frequency:2,capping:0.1,interval:30,timeout:5,everyPage:false}
-    }).then(()=>{
-        rewardUser(amount);
-    }).catch(e=>console.log(e));
-}
+  try {
+    await showRewarded();        // try rewarded first
+    localStorage.setItem(KEY, Date.now());
+  } catch (e) {
+    // If rewarded fails, show in-app interstitial (no reward)
+    showInAppFallback();
+    alert("ℹ️ Ad shown (no reward)");
+    localStorage.setItem(KEY, Date.now());
+  }
 
-// Automatic ads for passive earning
-setInterval(()=>watchInAppInterstitial(10), 2*60*1000);
-setInterval(()=>watchRewardedPopup(5), 3*60*1000);
-
-// Reward User
-async function rewardUser(amount){
-    await supabase.from('profiles').upsert({id:userId,balance:balance+amount},{onConflict:'id'});
-    alert(`You earned ₱${amount}!`);
-}
-
-// --- Withdrawals ---
-async function requestWithdrawal(){
-    if(balance<=0){ alert("Not enough balance!"); return; }
-    const gcash = prompt("Enter your GCash number:");
-    if(!gcash){ return; }
-    await supabase.from('withdrawals').insert({user_id:userId,username:username,amount:balance,gcash_number:gcash,status:'pending',created_at:new Date()});
-    balance = 0;
-    updateBalance();
-}
-
-// --- Owner Dashboard ---
-const ownerDashboard = document.getElementById('owner-dashboard');
-async function fetchWithdrawals(){
-    const { data } = await supabase.from('withdrawals').select('*').order('created_at',{ascending:false});
-    renderWithdrawals(data);
-}
-function renderWithdrawals(data){
-    const tbody = document.querySelector('#withdrawals-table tbody');
-    tbody.innerHTML='';
-    data.forEach(w=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML=`<td>${w.id}</td><td>${w.username}</td><td>₱${w.amount}</td><td>${w.gcash_number}</td><td>${w.status}</td>
-        <td>${w.status==='pending'?`<button class="approve" onclick="updateStatus(${w.id},'paid')">Approve</button>
-        <button class="deny" onclick="updateStatus(${w.id},'denied')">Deny</button>`:''}</td>`;
-        tbody.appendChild(tr);
-    });
-}
-async function updateStatus(id,status){
-    await supabase.from('withdrawals').update({status}).eq('id',id);
-}
-
-// Owner login
-function checkOwnerPassword(){
-    const input = document.getElementById('owner-password').value;
-    if(input === OWNER_PASSWORD){
-        ownerDashboard.style.display='block';
-        document.getElementById('owner-password').style.display='none';
-        event.target.style.display='none';
-        subscribeWithdrawals();
-    }else{ alert("Incorrect password!"); }
-}
-
-// --- Real-time dashboard updates ---
-function subscribeWithdrawals(){
-    supabase.channel('public:withdrawals')
-        .on('postgres_changes',{event:'*',schema:'public',table:'withdrawals'},payload=>{
-            fetchWithdrawals();
-        })
-        .subscribe();
-}
-
-// --- Initialize ---
-initProfile();
-subscribeBalance();
-fetchWithdrawals();
+  updateCooldown();
+};
 </script>
+
 </body>
 </html>

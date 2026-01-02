@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Auto In-App Interstitial</title>
+<title>Monetag Immediate Ads</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Monetag SDK (do NOT async/defer) -->
+<!-- Monetag SDK (NO async / NO defer) -->
 <script src="//libtl.com/sdk.js"
         data-zone="10337795"
         data-sdk="show_10337795"></script>
@@ -13,94 +13,166 @@
 <style>
 body{
   background:#0e1220;
+  font-family:Arial, sans-serif;
   display:flex;
+  flex-direction:column;
+  gap:14px;
   justify-content:center;
   align-items:center;
   height:100vh;
-  font-family:Arial, sans-serif;
 }
-
-#statusBtn{
-  width:220px;
+.btn{
+  width:230px;
   height:65px;
-  background:linear-gradient(135deg,#ff9800,#ff5722);
   border:none;
   border-radius:16px;
-  color:white;
-  font-size:15px;
+  color:#fff;
   font-weight:bold;
+  cursor:pointer;
   box-shadow:0 10px 25px rgba(0,0,0,.45);
 }
-
-#timer{
-  font-size:12px;
-  margin-top:4px;
-  opacity:.9;
-}
+.btn:disabled{background:#444;cursor:not-allowed;}
+.blue{background:linear-gradient(135deg,#4facfe,#00f2fe);}
+.green{background:linear-gradient(135deg,#43e97b,#38f9d7);}
+.orange{background:linear-gradient(135deg,#ff9800,#ff5722);}
+.purple{background:linear-gradient(135deg,#a18cd1,#fbc2eb);}
+.time{font-size:12px;opacity:.9;margin-top:4px;}
 </style>
 </head>
 
 <body>
 
-<button id="statusBtn">
-  📺 In-App Ad Status
-  <div id="timer">Initializing…</div>
+<button id="daily" class="btn blue">
+🎁 Daily Login
+<div class="time" id="t_daily">Ready</div>
+</button>
+
+<button id="gift" class="btn green">
+🎁 Gift
+<div class="time" id="t_gift">Ready</div>
+</button>
+
+<button id="inapp" class="btn orange">
+📺 Interstitial
+<div class="time" id="t_inapp">Ready</div>
+</button>
+
+<button id="popup" class="btn purple">
+🎉 Rewarded Popup
+<div class="time" id="t_popup">Ready</div>
 </button>
 
 <script>
-const INTERVAL = 15 * 60 * 1000; // 15 minutes
-const KEY = "auto_inapp_last";
+const cooldowns = {
+  daily: 900000,
+  gift: 900000,
+  inapp: 300000,
+  popup: 300000
+};
 
-const timer = document.getElementById("timer");
-
-function monetagReady(){
+function ready(){
   return typeof window.show_10337795 === "function";
 }
 
-function showInApp(){
-  if(!monetagReady()) return;
+function update(btn, label, key, ms){
+  const last = localStorage.getItem(key);
+  if(!last){ btn.disabled=false; label.textContent="Ready"; return; }
+  const d = Date.now()-last;
+  if(d>=ms){ btn.disabled=false; label.textContent="Ready"; }
+  else{
+    btn.disabled=true;
+    const r=ms-d;
+    const m=Math.floor(r/60000);
+    const s=Math.floor((r%60000)/1000);
+    label.textContent=`${m}:${s.toString().padStart(2,'0')}`;
+  }
+}
 
-  window.show_10337795({
-    type: "inApp",
-    inAppSettings: {
-      frequency: 1,
-      capping: 0.25,      // 15 minutes
-      interval: 30,
-      timeout: 5,
-      everyPage: false
+setInterval(()=>{
+  update(daily,t_daily,"cd_daily",cooldowns.daily);
+  update(gift,t_gift,"cd_gift",cooldowns.gift);
+  update(inapp,t_inapp,"cd_inapp",cooldowns.inapp);
+  update(popup,t_popup,"cd_popup",cooldowns.popup);
+},1000);
+
+// 🔁 BACKUP CHAIN
+async function showWithBackup(reward=true){
+  try{
+    await show_10337795(); // Rewarded interstitial
+    if(reward) alert("✅ Reward granted");
+    return true;
+  }catch(e1){
+    try{
+      await show_10337795('pop'); // Rewarded popup
+      if(reward) alert("🎁 Popup reward");
+      return true;
+    }catch(e2){
+      try{
+        show_10337795({
+          type:'inApp',
+          inAppSettings:{
+            frequency:1,
+            capping:0.1,
+            interval:30,
+            timeout:5,
+            everyPage:false
+          }
+        });
+        return true;
+      }catch(e3){
+        alert("❌ No ad available");
+        return false;
+      }
+    }
+  }
+}
+
+// BUTTON HANDLERS
+daily.onclick = async ()=>{
+  if(!ready()) return alert("Ad not ready");
+  daily.disabled=true; t_daily.textContent="Loading...";
+  if(await showWithBackup(true))
+    localStorage.setItem("cd_daily",Date.now());
+};
+
+gift.onclick = async ()=>{
+  if(!ready()) return alert("Ad not ready");
+  gift.disabled=true; t_gift.textContent="Loading...";
+  if(await showWithBackup(true))
+    localStorage.setItem("cd_gift",Date.now());
+};
+
+inapp.onclick = async ()=>{
+  if(!ready()) return alert("Ad not ready");
+  inapp.disabled=true; t_inapp.textContent="Showing...";
+  show_10337795({
+    type:'inApp',
+    inAppSettings:{
+      frequency:2,
+      capping:0.1,
+      interval:30,
+      timeout:5,
+      everyPage:false
     }
   });
+  localStorage.setItem("cd_inapp",Date.now());
+};
 
-  localStorage.setItem(KEY, Date.now());
-}
-
-function updateTimer(){
-  const last = localStorage.getItem(KEY);
-
-  if(!last){
-    timer.textContent = "Showing ad now…";
-    showInApp();
-    return;
+popup.onclick = async ()=>{
+  if(!ready()) return alert("Ad not ready");
+  popup.disabled=true; t_popup.textContent="Loading...";
+  try{
+    await show_10337795('pop');
+    alert("🎉 Popup reward");
+    localStorage.setItem("cd_popup",Date.now());
+  }catch(e){
+    show_10337795({
+      type:'inApp',
+      inAppSettings:{frequency:1,capping:0.1,interval:30,timeout:5,everyPage:false}
+    });
+    localStorage.setItem("cd_popup",Date.now());
   }
-
-  const diff = Date.now() - last;
-
-  if(diff >= INTERVAL){
-    timer.textContent = "Showing ad now…";
-    showInApp();
-  } else {
-    const r = INTERVAL - diff;
-    const m = Math.floor(r / 60000);
-    const s = Math.floor((r % 60000) / 1000);
-    timer.textContent = `Next ad in ${m}:${s.toString().padStart(2,'0')}`;
-  }
-}
-
-// Check every second
-setInterval(updateTimer, 1000);
-
-// Initial delay to allow SDK load
-setTimeout(updateTimer, 1500);
+};
 </script>
 
 </body>

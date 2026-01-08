@@ -2,189 +2,278 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Telegram Monetag Ads</title>
+<title>Evergrow – Global Garden</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!-- Monetag SDK (NO async / defer) -->
-<script src="https://libtl.com/sdk.js"
-        data-zone="10337795"
-        data-sdk="show_10337795"></script>
-
-<!-- Telegram WebApp -->
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 body{
-  background:#0e1220;
+  margin:0;
   font-family:Arial, sans-serif;
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-}
-.btn{
-  width:240px;
-  height:68px;
-  border:none;
-  border-radius:16px;
+  background:linear-gradient(135deg,#4caf50,#1b5e20);
   color:#fff;
-  font-weight:bold;
-  cursor:pointer;
-  box-shadow:0 10px 25px rgba(0,0,0,.45);
+  text-align:center;
 }
-.btn:disabled{background:#444;cursor:not-allowed;}
-.blue{background:linear-gradient(135deg,#4facfe,#00f2fe);}
-.green{background:linear-gradient(135deg,#43e97b,#38f9d7);}
-.orange{background:linear-gradient(135deg,#ff9800,#ff5722);}
-.purple{background:linear-gradient(135deg,#a18cd1,#fbc2eb);}
-.time{font-size:12px;opacity:.9;margin-top:4px;}
+.container{
+  max-width:480px;
+  margin:auto;
+  padding:10px;
+}
+.card{
+  background:rgba(0,0,0,0.25);
+  border-radius:14px;
+  padding:10px;
+  margin-bottom:10px;
+}
+.top-aide{
+  font-weight:bold;
+  padding:8px;
+}
+.stats{
+  display:flex;
+  justify-content:space-between;
+  font-size:14px;
+}
+button{
+  width:100%;
+  padding:10px;
+  margin:4px 0;
+  border:none;
+  border-radius:12px;
+  font-size:15px;
+  cursor:pointer;
+}
+.green{background:#81c784}
+.yellow{background:#ffd54f}
+.purple{background:#ba68c8}
+.orange{background:#ff8a65}
+.progress{
+  height:14px;
+  background:#1b5e20;
+  border-radius:8px;
+  overflow:hidden;
+}
+.bar{
+  height:100%;
+  width:0%;
+  background:#a5d6a7;
+}
+.garden{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:6px;
+  font-size:24px;
+}
+.plant{
+  background:rgba(0,0,0,0.3);
+  border-radius:10px;
+  padding:6px;
+}
+.small{
+  font-size:12px;
+  opacity:.9;
+}
 </style>
 </head>
 
 <body>
+<div class="container">
 
-<button id="daily" class="btn blue">
-🎁 Daily Login
-<div class="time" id="t_daily">Ready</div>
-</button>
+<div class="card top-aide" id="aide">
+🌱 Plant seeds to begin
+</div>
 
-<button id="gift" class="btn green">
-🎁 Gift
-<div class="time" id="t_gift">Ready</div>
-</button>
+<div class="card stats">
+  <div>🌾 Seeds: <span id="seeds">0</span></div>
+  <div>🌳 Roots: <span id="roots">0</span></div>
+</div>
 
-<button id="inapp" class="btn orange">
-📺 In-App Interstitial
-<div class="time" id="t_inapp">Ready</div>
-</button>
+<div class="card stats">
+  <div>🧬 MP: <span id="mp">0</span></div>
+  <div>🕰️ Era: <span id="era">0</span></div>
+</div>
 
-<button id="popup" class="btn purple">
-🎉 Rewarded Popup
-<div class="time" id="t_popup">Ready</div>
-</button>
+<div class="card">
+  <button class="green" onclick="plant()">Plant 🌱</button>
+  <button class="yellow" onclick="harvest()">Harvest 🌾</button>
+  <button class="purple" onclick="mergeAll()">Merge All 🧩</button>
+  <button class="orange" onclick="prestigeSeason()">Prestige 🔁</button>
+</div>
+
+<div class="card">
+Growth
+<div class="progress"><div class="bar" id="bar"></div></div>
+</div>
+
+<div class="card">
+<h3>🌼 Garden</h3>
+<div id="garden" class="garden"></div>
+</div>
+
+<div class="card small">
+Evolution: <span id="evoName">Seed</span>
+</div>
+
+</div>
 
 <script>
-// Telegram expand
-if (window.Telegram && Telegram.WebApp) {
+/* TELEGRAM */
+if (window.Telegram?.WebApp) {
   Telegram.WebApp.ready();
   Telegram.WebApp.expand();
 }
 
-// Cooldowns
-const CD = {
-  daily: 15 * 60 * 1000,
-  gift: 15 * 60 * 1000,
-  inapp: 5 * 60 * 1000,
-  popup: 5 * 60 * 1000
+/* CORE STATE */
+let seeds = 0;
+let roots = 0;
+let growth = 0;
+let lifetimeSeeds = 0;
+let eraLevel = 0;
+let mutationPoints = 0;
+
+/* PLANT TIERS */
+const fusionMult = [1,3,9,27,81,250];
+const evoStages = [
+  {icon:"🌱",name:"Seed",mult:1},
+  {icon:"🌿",name:"Sprout",mult:1.5},
+  {icon:"🌳",name:"Tree",mult:2.2},
+  {icon:"🌸",name:"Bloom",mult:3.5},
+  {icon:"🌺",name:"Mythic",mult:6},
+  {icon:"🌍🌳",name:"World Tree",mult:10}
+];
+let plantTiers = [0,0,0,0,0,0];
+
+/* MUTATIONS (SIMPLIFIED CORE) */
+let mutations = {
+  growth:0,
+  yield:0
 };
 
-function monetagReady(){
-  return typeof window.show_10337795 === "function";
+/* HELPERS */
+function totalPlants(){
+  return plantTiers.reduce((a,b)=>a+b,0);
 }
 
-function update(btn, label, key, ms){
-  const last = localStorage.getItem(key);
-  if(!last){ btn.disabled=false; label.textContent="Ready"; return; }
-  const d = Date.now() - last;
-  if(d >= ms){
-    btn.disabled=false;
-    label.textContent="Ready";
-  }else{
-    btn.disabled=true;
-    const r = ms - d;
-    const m = Math.floor(r/60000);
-    const s = Math.floor((r%60000)/1000);
-    label.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+function globalMultiplier(){
+  return 1 + roots * 0.15;
+}
+
+function eraMultiplier(){
+  return 1 + eraLevel * 0.5;
+}
+
+function getEvolution(){
+  return Math.min(
+    evoStages.length-1,
+    Math.floor(Math.log10(lifetimeSeeds+1))
+  );
+}
+
+function fusionYield(){
+  let total=0;
+  for(let i=0;i<plantTiers.length;i++){
+    total+=plantTiers[i]*fusionMult[i];
   }
+  return total;
 }
 
-setInterval(()=>{
-  update(daily,t_daily,"cd_daily",CD.daily);
-  update(gift,t_gift,"cd_gift",CD.gift);
-  update(inapp,t_inapp,"cd_inapp",CD.inapp);
-  update(popup,t_popup,"cd_popup",CD.popup);
-},1000);
+/* ACTIONS */
+function plant(){
+  let cost = Math.floor(10 * Math.pow(1.25, totalPlants()));
+  if(seeds>=cost){
+    seeds-=cost;
+    plantTiers[0]++;
+    setAide("🌱 Planted");
+    update();
+  } else setAide("Not enough seeds");
+}
 
-// BACKUP AD CHAIN (BEST PRACTICE)
-async function showWithBackup(reward){
-  try{
-    await show_10337795(); // Rewarded Interstitial
-    if(reward) Telegram.WebApp.showAlert("✅ Reward granted");
-    return true;
-  }catch{
-    try{
-      await show_10337795('pop'); // Rewarded Popup
-      if(reward) Telegram.WebApp.showAlert("🎁 Popup reward");
-      return true;
-    }catch{
-      try{
-        show_10337795({
-          type:'inApp',
-          inAppSettings:{
-            frequency:1,
-            capping:1,
-            interval:30,
-            timeout:5,
-            everyPage:false
-          }
-        });
-        return true;
-      }catch{
-        Telegram.WebApp.showAlert("❌ No ad available");
-        return false;
-      }
+function harvest(){
+  if(growth<100){ setAide("Not ready"); return; }
+
+  let evo = getEvolution();
+  let gain =
+    fusionYield()
+    * evoStages[evo].mult
+    * (1 + mutations.yield*0.25)
+    * globalMultiplier()
+    * eraMultiplier();
+
+  gain=Math.floor(gain);
+  seeds+=gain;
+  lifetimeSeeds+=gain;
+  growth=0;
+  setAide("🌾 Harvest +" + gain);
+  update();
+}
+
+function mergeAll(){
+  for(let t=0;t<plantTiers.length-1;t++){
+    let pairs=Math.floor(plantTiers[t]/2);
+    if(pairs>0){
+      plantTiers[t]-=pairs*2;
+      plantTiers[t+1]+=pairs;
     }
   }
+  setAide("🧩 Plants merged");
+  update();
 }
 
-// BUTTONS
-daily.onclick = async ()=>{
-  if(!monetagReady()) return Telegram.WebApp.showAlert("SDK not ready");
-  daily.disabled=true; t_daily.textContent="Loading...";
-  if(await showWithBackup(true))
-    localStorage.setItem("cd_daily",Date.now());
-};
+function prestigeSeason(){
+  if(seeds<1000){ setAide("Need 1000 seeds"); return; }
 
-gift.onclick = async ()=>{
-  if(!monetagReady()) return Telegram.WebApp.showAlert("SDK not ready");
-  gift.disabled=true; t_gift.textContent="Loading...";
-  if(await showWithBackup(true))
-    localStorage.setItem("cd_gift",Date.now());
-};
+  let earnedRoots=Math.floor(Math.sqrt(seeds/1000));
+  let earnedMP=Math.floor(Math.sqrt(lifetimeSeeds/10000));
 
-inapp.onclick = ()=>{
-  if(!monetagReady()) return Telegram.WebApp.showAlert("SDK not ready");
-  inapp.disabled=true; t_inapp.textContent="Showing...";
-  show_10337795({
-    type:'inApp',
-    inAppSettings:{
-      frequency:2,
-      capping:0.1,
-      interval:30,
-      timeout:5,
-      everyPage:false
+  roots+=earnedRoots;
+  mutationPoints+=earnedMP;
+  seeds=0;
+  growth=0;
+  plantTiers=[0,0,0,0,0,0];
+
+  setAide(`🔁 Prestige +${earnedRoots} Roots +${earnedMP} MP`);
+  update();
+}
+
+/* UI */
+function setAide(t){
+  document.getElementById("aide").innerText=t;
+}
+
+function renderGarden(){
+  let g=document.getElementById("garden");
+  g.innerHTML="";
+  plantTiers.forEach((c,t)=>{
+    for(let i=0;i<c;i++){
+      let d=document.createElement("div");
+      d.className="plant";
+      d.innerText=evoStages[t]?.icon||"🌱";
+      g.appendChild(d);
     }
   });
-  localStorage.setItem("cd_inapp",Date.now());
-};
+}
 
-popup.onclick = async ()=>{
-  if(!monetagReady()) return Telegram.WebApp.showAlert("SDK not ready");
-  popup.disabled=true; t_popup.textContent="Loading...";
-  try{
-    await show_10337795('pop');
-    Telegram.WebApp.showAlert("🎉 Popup reward");
-    localStorage.setItem("cd_popup",Date.now());
-  }catch{
-    show_10337795({
-      type:'inApp',
-      inAppSettings:{frequency:1,capping:1,interval:30,timeout:5,everyPage:false}
-    });
-    localStorage.setItem("cd_popup",Date.now());
+function update(){
+  document.getElementById("seeds").innerText=Math.floor(seeds);
+  document.getElementById("roots").innerText=roots;
+  document.getElementById("mp").innerText=mutationPoints;
+  document.getElementById("era").innerText=eraLevel;
+  document.getElementById("bar").style.width=growth+"%";
+  let evo=getEvolution();
+  document.getElementById("evoName").innerText=evoStages[evo].name;
+  renderGarden();
+}
+
+/* IDLE TICK */
+setInterval(()=>{
+  if(totalPlants()>0){
+    growth += (0.6 + totalPlants()*0.15)
+      * (1+mutations.growth*0.2)
+      * globalMultiplier()
+      * eraMultiplier();
+    if(growth>100) growth=100;
   }
-};
+  update();
+},1000);
 </script>
 
 </body>

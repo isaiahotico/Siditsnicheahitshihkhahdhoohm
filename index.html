@@ -6,135 +6,139 @@
     <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
     <!-- Monetag SDK -->
     <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
-    
+
     <style>
         :root {
-            --gold: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
-            --dark: #0f0f0f;
+            --gold: linear-gradient(135deg, #ffecb3 0%, #ffca28 25%, #ffb300 50%, #ffa000 75%, #ff8f00 100%);
+            --shine: linear-gradient(120deg, transparent 0%, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%, transparent 100%);
         }
-        body { background-color: var(--dark); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: hidden; }
-        .gold-text { background: var(--gold); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
-        .gold-bg { background: var(--gold); color: black; font-weight: bold; }
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 15px; }
+        body { background: #000; color: #fff; font-family: 'sans-serif'; overflow-x: hidden; }
+        .gold-card { background: rgba(20, 20, 20, 0.9); border: 1px solid #ffca28; border-radius: 15px; position: relative; overflow: hidden; }
+        .gold-text { background: var(--gold); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; }
+        .gold-btn { background: var(--gold); color: #000; font-weight: bold; transition: 0.3s; position: relative; overflow: hidden; }
+        .gold-btn:active { transform: scale(0.95); }
+        .gold-btn::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: var(--shine); transition: 0.5s; }
+        .gold-btn:hover::after { left: 100%; }
         .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .cooldown { filter: grayscale(1); pointer-events: none; opacity: 0.5; }
-        .chat-msg { margin: 5px; padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.1); }
-        input { background: rgba(0,0,0,0.5) !important; color: gold !important; border: 1px solid gold !important; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .disabled { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+        #chat-box::-webkit-scrollbar { width: 4px; }
+        #chat-box::-webkit-scrollbar-thumb { background: #ffca28; border-radius: 10px; }
     </style>
 </head>
-<body>
+<body class="max-w-md mx-auto">
 
-    <!-- Login Overlay -->
-    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-black p-4">
-        <div class="glass p-8 w-full max-w-md text-center">
-            <h1 class="text-3xl gold-text mb-6">🎖 PAPERHOUSE INC 🎖</h1>
-            <input type="text" id="login-user" placeholder="Username" class="w-full p-3 mb-4 rounded">
-            <input type="number" id="login-gcash" placeholder="GCash Number" class="w-full p-3 mb-4 rounded">
-            <button onclick="handleLogin()" class="gold-bg w-full py-3 rounded uppercase tracking-widest">Enter House</button>
+    <!-- LOGIN SECTION -->
+    <div id="login-page" class="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6">
+        <div class="gold-card p-8 w-full text-center">
+            <h1 class="text-2xl gold-text mb-6">🎖 PAPERHOUSE INC 🎖</h1>
+            <input type="text" id="login-user" placeholder="Username" class="w-full bg-zinc-900 border border-yellow-600 p-3 rounded mb-4 text-white">
+
+            <input type="number" id="login-gcash" placeholder="GCash Number" class="w-full bg-zinc-900 border border-yellow-600 p-3 rounded mb-6 text-white">
+            <button onclick="authStep1()" class="gold-btn w-full py-3 rounded-xl uppercase">Login / Register</button>
         </div>
     </div>
 
-    <!-- Referral Modal -->
-    <div id="ref-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-90 hidden p-4">
-        <div class="glass p-8 w-full max-w-md text-center">
-            <h2 class="text-xl gold-text mb-4">REFERRAL CODE REQUIRED</h2>
-
-            <p class="text-sm mb-4">Enter a code for a bonus or skip to proceed.</p>
-            <input type="text" id="ref-input" placeholder="Referral Username (Optional)" class="w-full p-3 mb-4 rounded">
-            <button onclick="submitReferral()" class="gold-bg w-full py-3 rounded mb-2">CLAIM 8% BONUS</button>
-            <button onclick="closeRef()" class="text-gray-400 underline">I don't have a code</button>
+    <!-- REFERRAL POPUP -->
+    <div id="ref-modal" class="fixed inset-0 z-[60] bg-black bg-opacity-90 hidden flex items-center justify-center p-6">
+        <div class="gold-card p-8 w-full text-center border-2 shadow-[0_0_20px_rgba(255,202,40,0.3)]">
+            <h2 class="text-xl gold-text mb-4">ENTER REFERRAL CODE</h2>
+            <p class="text-gray-400 text-xs mb-4">Get 8% Bonus Auto-Credit</p>
+            <input type="text" id="ref-code" placeholder="Referral Username" class="w-full bg-zinc-900 border border-yellow-600 p-3 rounded mb-4 text-white">
+            <button onclick="processReferral()" class="gold-btn w-full py-3 rounded-xl mb-3">CLAIM 8% BONUS</button>
+            <button onclick="skipReferral()" class="text-gray-500 text-sm underline">Skip to Main Page</button>
         </div>
     </div>
 
-    <!-- Main App -->
-    <div id="app" class="hidden pb-20">
-        <header class="p-4 glass sticky top-0 z-40 flex justify-between items-center">
+    <!-- MAIN APP -->
+    <div id="app-content" class="hidden">
+        <header class="p-4 gold-card m-2 flex justify-between items-center shadow-lg">
             <div>
-                <p class="text-xs text-gray-400">Welcome, <span id="display-name" class="gold-text"></span></p>
-                <p class="text-lg">₱ <span id="user-balance">0.000</span></p>
+                <p class="text-[10px] text-yellow-500 uppercase">Balance</p>
+                <h2 class="text-xl font-bold">₱ <span id="val-balance">0.000</span></h2>
             </div>
             <div class="text-right">
-                <p class="text-xs text-gray-400">Chat Points</p>
-                <p id="user-points" class="text-lg gold-text">0</p>
+                <p class="text-[10px] text-yellow-500 uppercase">Chat Points</p>
+                <h2 class="text-xl font-bold gold-text" id="val-points">0</h2>
             </div>
         </header>
 
-        <!-- Navigation Tabs -->
-        <main class="p-4">
+        <main class="p-2 mb-24">
             <!-- EARN TAB -->
             <section id="earn" class="tab-content active space-y-4">
-                <div class="glass p-6 text-center">
-                    <h3 class="gold-text mb-2">VIDEO ADS</h3>
-                    <p class="text-xs mb-4">Earn 1 Chat Point every 1 minute</p>
-                    <button id="btn-video" onclick="watchVideoAd()" class="gold-bg px-8 py-3 rounded-full">WATCH VIDEO</button>
-                    <p id="timer-video" class="mt-2 text-red-500 font-mono"></p>
+                <div class="gold-card p-6 text-center">
+                    <i class="fas fa-video text-3xl gold-text mb-2"></i>
+                    <h3 class="font-bold">Video Rewards</h3>
+                    <p class="text-xs text-gray-400 mb-4">Earn 1 Chat Point (60s Cooldown)</p>
+                    <button id="btn-video" onclick="handleVideoAd()" class="gold-btn px-10 py-3 rounded-full">WATCH VIDEO</button>
+                    <p id="cd-video" class="text-red-500 mt-2 text-sm font-mono"></p>
                 </div>
 
-                <div class="glass p-6 text-center">
-                    <h3 class="gold-text mb-2">BONUS ADS</h3>
-                    <p class="text-xs mb-4">Earn 1 Chat Point every 45 seconds</p>
-                    <button id="btn-bonus" onclick="watchBonusAd()" class="gold-bg px-8 py-3 rounded-full">CLAIM BONUS</button>
-                    <p id="timer-bonus" class="mt-2 text-red-500 font-mono"></p>
+                <div class="gold-card p-6 text-center">
+                    <i class="fas fa-gift text-3xl gold-text mb-2"></i>
+                    <h3 class="font-bold">Bonus Rewards</h3>
+                    <p class="text-xs text-gray-400 mb-4">Earn 1 Chat Point (45s Cooldown)</p>
+                    <button id="btn-bonus" onclick="handleBonusAd()" class="gold-btn px-10 py-3 rounded-full">CLAIM BONUS</button>
+                    <p id="cd-bonus" class="text-red-500 mt-2 text-sm font-mono"></p>
                 </div>
             </section>
 
             <!-- CHAT TAB -->
             <section id="chat" class="tab-content">
-                <div id="chat-box" class="glass h-[50vh] overflow-y-auto p-4 mb-4 flex flex-col">
-                    <!-- Messages appear here -->
-                </div>
+                <div id="chat-box" class="gold-card h-[60vh] p-4 overflow-y-auto flex flex-col space-y-2 mb-2"></div>
                 <div class="flex gap-2">
-                    <input type="text" id="chat-input" placeholder="Message (Costs 1 Pt)..." class="flex-1 p-3 rounded">
-                    <button id="btn-send" onclick="sendMessage()" class="gold-bg px-4 py-3 rounded">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
+                    <input type="text" id="chat-input" placeholder="Type a message..." class="flex-1 bg-zinc-900 border border-yellow-600 p-3 rounded-lg text-white">
+                    <button id="btn-send" onclick="handleChat()" class="gold-btn px-6 rounded-lg"><i class="fas fa-paper-plane"></i></button>
                 </div>
-                <p id="timer-chat" class="text-center mt-2 text-red-500 font-mono text-sm"></p>
-            </section>
+                <p class="text-[10px] text-center mt-2 text-gray-500 italic">Sending costs 1 Point & gives ₱0.016 (92s CD)</p>
+            </section
+
+
 
             <!-- LEADERBOARD TAB -->
-            <section id="leaderboard" class="tab-content">
-                <h2 class="text-center gold-text text-xl mb-4">DAILY TOP EARNERS</h2>
-                <div id="leaderboard-list" class="space-y-2">
-                    <!-- Dynamic Ranking -->
-                </div>
+            <section id="top" class="tab-content">
+                <h2 class="text-center gold-text text-xl mb-4 italic">🏆 DAILY TOP EARNERS 🏆</h2>
+                <div id="leader-list" class="space-y-2"></div>
             </section>
 
             <!-- WALLET TAB -->
             <section id="wallet" class="tab-content">
-                <div class="glass p-6 mb-4">
-                    <p class="text-center text-gray-400 mb-2">Available for Withdrawal</p>
-                    <h2 class="text-center text-3xl gold-text mb-6">₱ <span id="wallet-balance">0.00</span></h2>
-                    <p class="text-xs mb-2">Min/Max Withdrawal: 0.02 Peso</p>
-                    <button onclick="requestWithdrawal()" class="gold-bg w-full py-4 rounded shadow-lg">WITHDRAW TO GCASH</button>
+                <div class="gold-card p-6 text-center">
+                    <p class="text-gray-400">Available Balance</p>
+                    <h1 class="text-4xl gold-text my-4">₱ <span id="val-wallet">0.00</span></h1>
+                    <p class="text-xs mb-4">Limit: ₱0.02 Peso Only</p>
+                    <button onclick="requestPayout()" class="gold-btn w-full py-4 rounded-xl">WITHDRAW VIA GCASH</button>
                 </div>
-                <div class="glass p-4 h-64 overflow-y-auto">
-                    <p class="gold-text mb-2">Recent Payouts</p>
-                    <div id="payout-history" class="text-xs space-y-2"></div>
+                <div class="mt-4">
+                    <h3 class="gold-text text-sm mb-2">Withdrawal History</h3>
+                    <div id="payout-list" class="space-y-2"></div>
                 </div>
             </section>
 
-            <!-- ADMIN DASHBOARD (Hidden) -->
+            <!-- ADMIN TAB -->
             <section id="admin" class="tab-content">
-                <h2 class="gold-text text-xl mb-4 text-center">OWNER PANEL</h2>
-                <div id="admin-payouts" class="space-y-2"></div>
+                <div class="gold-card p-4">
+                    <h2 class="gold-text mb-4 uppercase">Pending Payouts</h2>
+                    <div id="admin-list" class="space-y-2"></div>
+                </div>
             </section>
         </main>
 
-        <!-- Bottom Navigation -->
-        <nav class="fixed bottom-0 left-0 right-0 glass flex justify-around p-3 border-t border-yellow-600">
-            <button onclick="showTab('earn')" class="text-yellow-500"><i class="fas fa-coins block"></i><span class="text-[10px]">Earn</span></button>
-            <button onclick="showTab('chat')" class="text-yellow-500"><i class="fas fa-comments block"></i><span class="text-[10px]">Chat</span></button>
-            <button onclick="showTab('leaderboard')" class="text-yellow-500"><i class="fas fa-trophy block"></i><span class="text-[10px]">Top</span></button>
-            <button onclick="showTab('wallet')" class="text-yellow-500"><i class="fas fa-wallet block"></i><span class="text-[10px]">Wallet</span></button>
-            <button onclick="checkAdmin()" class="text-yellow-500"><i class="fas fa-user-shield block"></i><span class="text-[10px]">Owner</span></button>
+        <!-- FOOTER NAV -->
+        <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto gold-card rounded-t-2xl flex justify-around p-3 border-t-2 border-yellow-600 z-40 bg-black">
+            <button onclick="showTab('earn')" class="text-yellow-500 text-center"><i class="fas fa-coins block text-xl"></i><span class="text-[10px]">Earn</span></button>
+            <button onclick="showTab('chat')" class="text-yellow-500 text-center"><i class="fas fa-comments block text-xl"></i><span class="text-[10px]">Chat</span></button>
+            <button onclick="showTab('top')" class="text-yellow-500 text-center"><i class="fas fa-trophy block text-xl"></i><span class="text-[10px]">Top</span></button>
+            <button onclick="showTab('wallet')" class="text-yellow-500 text-center"><i class="fas fa-wallet block text-xl"></i><span class="text-[10px]">Wallet</span></button>
+            <button onclick="openAdmin()" class="text-yellow-500 text-center"><i class="fas fa-lock block text-xl"></i><span class="text-[10px]">Admin</span></button>
         </nav>
     </div>
 
-    <!-- Firebase Scripts -->
+    <!-- Firebase SDKs -->
     <script type="module" src="app.js"></script>
 </body>
 </html>

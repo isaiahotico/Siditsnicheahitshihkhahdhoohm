@@ -7,92 +7,121 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
     <style>
-        body { background: radial-gradient(circle, #1a1a1a 0%, #000 100%); color: #f3cf7a; font-family: sans-serif; }
-        .gold-border { border: 2px solid #bf953f; box-shadow: 0 0 15px rgba(191,149,63,0.3); }
+        body { background: #000; color: #f3cf7a; font-family: 'Inter', sans-serif; }
+        .gold-bg { background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c); }
         .gold-text { background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
-        .gold-btn { background: linear-gradient(to bottom, #fcf6ba 0%, #bf953f 100%); color: #000; font-weight: 800; transition: 0.2s; }
-        .gold-btn:active { transform: scale(0.95); }
-        .hidden { display: none; }
+        .gold-border { border: 2px solid #bf953f; box-shadow: 0 0 15px rgba(191,149,63,0.4); }
+        .gold-btn { background: linear-gradient(to bottom, #fcf6ba 0%, #bf953f 100%); color: #000; font-weight: bold; transition: 0.2s; }
+        .gold-btn:active { transform: scale(0.96); }
+        .modal { backdrop-filter: blur(10px); background: rgba(0,0,0,0.8); }
+        input { background: #111; border: 1px solid #bf953f; color: white; padding: 12px; border-radius: 8px; outline: none; }
     </style>
 </head>
-<body class="p-4 max-w-md mx-auto">
+<body class="p-4 max-w-md mx-auto min-h-screen pb-24">
 
-    <!-- LOGIN / REGISTRATION OVERLAY -->
-    <div id="login-overlay" class="fixed inset-0 bg-black z-[100] flex items-center justify-center p-6 hidden">
-        <div class="gold-border p-6 rounded-2xl bg-zinc-900 w-full text-center">
-            <h2 class="text-2xl gold-text mb-4">MEMBER LOGIN</h2>
-            <input id="reg-user" type="text" placeholder="Username" class="w-full p-3 mb-3 bg-black border border-yellow-700 rounded outline-none">
-            <input id="reg-gcash" type="number" placeholder="GCash Number" class="w-full p-3 mb-3 bg-black border border-yellow-700 rounded outline-none">
-            <input id="reg-ref" type="text" placeholder="Referral Code (Optional)" class="w-full p-3 mb-6 bg-black border border-yellow-700 rounded outline-none">
-            <button id="btn-register" class="gold-btn w-full py-3 rounded-xl">START EARNING</button>
+    <!-- STEP 1: REGISTRATION MODAL -->
+    <div id="modal-reg" class="modal fixed inset-0 z-[100] flex items-center justify-center p-6 hidden">
+        <div class="gold-border w-full p-6 rounded-2xl bg-zinc-900 text-center">
+            <h2 class="text-2xl gold-text mb-2">CREATE ACCOUNT</h2>
+            <p class="text-gray-400 text-xs mb-6">Enter your details to start earning</p>
+            <input id="reg-user" type="text" placeholder="Username" class="w-full mb-3">
+            <input id="reg-gcash" type="number" placeholder="GCash Number (11 digits)" class="w-full mb-6">
+            <button id="btn-save-reg" class="gold-btn w-full py-3 rounded-xl">CONTINUE</button>
         </div>
     </div>
 
-    <!-- MAIN APP -->
-    <header class="text-center mb-4">
-        <h1 class="text-2xl gold-text italic">🎖 PAPERHOUSE INC ADS 🎖</h1>
-        <p class="text-[10px] text-yellow-600 uppercase tracking-widest">Premium Rewards Portal</p>
+    <!-- STEP 2: REFERRAL MODAL (POPS IF EMPTY) -->
+    <div id="modal-ref" class="modal fixed inset-0 z-[90] flex items-center justify-center p-6 hidden">
+        <div class="gold-border w-full p-6 rounded-2xl bg-zinc-900 text-center border-dashed">
+            <h2 class="text-xl gold-text mb-2">HAVE A REFERRAL CODE?</h2>
+            <p class="text-gray-400 text-[10px] mb-4">Enter it now to link with your team.<br>You can skip, but this will pop up next time!</p>
+
+            <input id="reg-ref-input" type="text" placeholder="Referral ID" class="w-full mb-4 text-center">
+            <div class="flex gap-2">
+                <button id="btn-skip-ref" class="bg-zinc-800 text-gray-400 w-1/2 py-2 rounded-lg text-sm">SKIP FOR NOW</button>
+                <button id="btn-save-ref" class="gold-btn w-1/2 py-2 rounded-lg text-sm">APPLY CODE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN INTERFACE -->
+    <header class="text-center mb-6">
+        <h1 class="text-3xl gold-text italic tracking-tighter">🎖 PAPERHOUSE INC 🎖</h1>
+        <div class="flex justify-center items-center gap-2 mt-1">
+            <span class="h-[1px] w-10 bg-yellow-800"></span>
+            <span class="text-[10px] text-yellow-600 font-bold uppercase">Ads & Chat Mining</span>
+            <span class="h-[1px] w-10 bg-yellow-800"></span>
+        </div>
     </header>
 
-    <div class="gold-border rounded-2xl p-4 bg-zinc-900/50 text-center mb-4">
-        <div class="flex justify-between items-start">
-            <div class="text-left">
-                <p class="text-xs text-gray-400">Welcome, <span id="display-name" class="text-yellow-500">...</span></p>
-
-                <p class="text-[10px] text-gray-500">GCash: <span id="display-gcash">...</span></p>
+    <!-- BALANCE CARD -->
+    <div class="gold-border rounded-3xl p-6 bg-zinc-900/80 mb-6 relative overflow-hidden">
+        <div class="absolute top-0 right-0 p-2 opacity-20 gold-text text-4xl italic">GCASH</div>
+        <p class="text-xs text-gray-400">Total Available Balance</p>
+        <h2 class="text-5xl font-black text-white my-2">₱ <span id="balance">0.000</span></h2>
+        
+        <div class="grid grid-cols-2 gap-4 mt-6 border-t border-yellow-900/50 pt-4">
+            <div class="text-center border-r border-yellow-900/50">
+                <p class="text-[10px] text-gray-500 uppercase">Chat Points</p>
+                <p id="points" class="text-xl font-bold text-yellow-500">0</p>
             </div>
-            <button onclick="accessAdmin()" class="text-[10px] bg-zinc-800 px-2 py-1 rounded text-zinc-500">Admin</button>
-        </div>
-        <h2 class="text-4xl font-black text-white my-2">₱ <span id="balance">0.000</span></h2>
-        <div class="flex justify-around text-sm border-t border-yellow-900/50 pt-3">
-            <div><p class="text-gray-500">Points</p><p id="points" class="font-bold">0</p></div>
-            <div><p class="text-gray-500">Refs</p><p id="ref-count" class="font-bold text-green-500">0</p></div>
+            <div class="text-center">
+                <p class="text-[10px] text-gray-500 uppercase">Referrals</p>
+                <p id="ref-count" class="text-xl font-bold text-green-500">0</p>
+            </div>
         </div>
     </div>
 
-    <!-- AD SECTION -->
-    <div class="grid grid-cols-1 gap-3 mb-6">
-        <div class="gold-border p-3 rounded-xl bg-black/40 flex justify-between items-center">
+    <!-- EARNING ACTIONS -->
+    <div class="space-y-4 mb-8">
+        <div class="gold-border p-4 rounded-2xl bg-black flex justify-between items-center">
             <div>
-                <p class="font-bold">2-STEP AD MINING</p>
-                <p class="text-[10px] text-yellow-600">Step: <span id="ad-step">1</span>/2</p>
+                <p class="font-bold text-sm">MINING STEP: <span id="ad-step" class="text-yellow-500">1</span>/2</p>
+                <p class="text-[10px] text-gray-500">Watch 2 ads for ₱0.01 reward</p>
             </div>
-            <button id="btn-watch-ad" class="gold-btn px-6 py-2 rounded-lg text-sm">WATCH AD</button>
+            <button id="btn-watch-ad" class="gold-btn px-6 py-3 rounded-xl shadow-lg">WATCH AD</button>
+        </div>
+
+        <div class="gold-border rounded-2xl p-4 bg-zinc-900/50">
+            <h3 class="text-center gold-text text-xs mb-3">GOLD CHAT ROOM (₱0.015 / MSG)</h3>
+            <div id="chat-box" class="h-40 overflow-y-auto mb-3 p-2 text-xs space-y-2 bg-black/50 rounded-lg"></div>
+            <div class="flex gap-2">
+                <input id="chat-input" type="text" placeholder="Type here..." class="flex-1 text-sm py-2">
+                <button id="btn-send-chat" class="gold-btn px-4 rounded-lg">SEND</button>
+            </div>
+            <div id="cooldown" class="hidden text-center text-red-500 text-[10px] mt-2 font-bold uppercase animate-pulse">
+                Cooldown: <span id="timer">300</span>s
+            </div>
         </div>
     </div>
 
-    <!-- CHAT SECTION -->
-    <div class="gold-border rounded-xl p-2 bg-zinc-900/80 mb-6">
-        <h3 class="text-center text-xs gold-text mb-2 tracking-tighter">GOLD CHAT ROOM (₱0.015/msg)</h3>
-        <div id="chat-box" class="h-40 overflow-y-auto p-2 text-[12px] space-y-2 mb-2 bg-black/40 rounded"></div>
-        <div class="flex gap-2">
-            <input id="chat-input" type="text" placeholder="1 point per msg..." class="flex-1 bg-black border border-yellow-900 p-2 rounded text-white text-sm outline-none">
-            <button id="btn-send" class="gold-btn px-4 rounded text-xs">SEND</button>
+    <!-- LEADERBOARD & REFS -->
+    <div class="mb-10">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="gold-text text-sm">🏆 TOP EARNERS</h3>
+            <span class="text-[10px] text-gray-500">Real-time</span>
         </div>
-        <p id="cooldown" class="text-center text-[10px] text-red-500 mt-1 hidden font-bold italic">Wait <span id="cd-timer">300</span>s</p>
+        <div id="leaderboard" class="space-y-2"></div>
     </div>
 
-    <!-- REFERRAL LINK SECTION -->
-    <div class="bg-yellow-900/20 p-3 rounded-xl border border-dashed border-yellow-700 mb-6 text-center">
-        <p class="text-xs mb-1">Invite friends & earn <span class="text-green-500 font-bold">8% commission</span></p>
-        <p id="my-ref-code" class="text-lg font-mono font-bold text-white select-all cursor-pointer">LOADING...</p>
-        <p class="text-[8px] text-gray-500">Click to copy your referral code</p>
+    <!-- FOOTER INFO -->
+    <div class="text-center p-4 bg-yellow-900/10 rounded-xl border border-dashed border-yellow-800 mb-20">
+        <p class="text-
+
+ 
+[10px] text-gray-400 mb-1">Your Referral ID (Click to Copy):</p>
+        <p id="my-uid" class="text-sm font-mono font-bold text-white cursor-pointer hover:text-yellow-500 transition">...</p>
+        <p class="text-[8px] text-green-600 mt-2 font-bold uppercase">Earn 8% Commission from referrals</p>
     </div>
 
-    <!-- LEADERBOARD -->
-    <div class="mb-20">
-        <h3 class="text-center gold-text text-sm mb-2">🏆 TOP 5 WORLDWIDE</h3>
-        <div id="leaderboard" class="space-y-1"></div>
-    </div>
+    <!-- WITHDRAW FIXED -->
+    <button onclick="handleWithdraw()" class="fixed bottom-6 left-6 right-6 gold-btn py-4 rounded-2xl shadow-2xl z-50 text-lg uppercase tracking-widest">💸 Withdraw to GCash</button>
 
-    <!-- WITHDRAW BUTTON -->
-    <button onclick="openWithdraw()" class="fixed bottom-6 left-1/2 -translate-x-1/2 gold-btn w-[90%] py-4 rounded-2xl shadow-2xl z-40">💸 WITHDRAW TO GCASH</button>
-
-    <!-- ADMIN MODAL -->
-    <div id="admin-panel" class="fixed inset-0 bg-black z-[200] hidden overflow-y-auto p-4">
-        <h2 class="text-2xl gold-text text-center mb-6">OWNER DASHBOARD</h2>
-        <div id="admin-list" class="space-y-3"></div>
-        <button onclick="document.getElementById('admin-panel').classList.add('hidden')" class="fixed bottom-4 right-4 bg-red-600 p-3 rounded-full">Close</button>
+    <!-- ADMIN PANEL -->
+    <div id="admin-panel" class="fixed inset-0 z-[200] bg-black hidden overflow-y-auto p-6">
+        <h2 class="text-2xl gold-text text-center mb-8">ADMIN DASHBOARD</h2>
+        <div id="admin-payouts" class="space-y-3"></div>
+        <button onclick="document.getElementById('admin-panel').classList.add('hidden')" class="fixed bottom-6 right-6 bg-red-600 text-white p-4 rounded-full shadow-xl font-bold">X</button>
     </div>
 
     <script type="module" src="app.js"></script>

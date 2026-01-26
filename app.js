@@ -1,6 +1,6 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-import { getDatabase, ref, set, get, update, onValue, push, serverTimestamp, query, orderByChild, limitToLast } 
+import { getDatabase, ref, set, get, update, onValue, push, serverTimestamp, runTransaction, query, orderByChild, limitToLast } 
 from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -15,226 +15,209 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+let userKey = "";
 
-let currentUser = null;
-let cooldowns = { video: 0, bonus: 0, chat: 0 };
-
-// --- LOGIN LOGIC ---
-window.handleLogin = async () => {
-    const user = document.getElementById('login-user').value.trim();
+// 1. AUTHENTICATION
+window.authStep1 = async () => {
+    const user = document.getElementById('login-user').value.trim().toLowerCase();
     const gcash = document.getElementById('login-gcash').value.trim();
 
-    if (user.length < 3 || gcash.length < 10) {
-        alert("Enter valid Username and GCash");
-        return;
-    }
+    if (user.length < 3 || gcash.length < 10) return alert("Valid Username & GCash Required");
 
-    const userRef = ref(db, 'users/' + user);
-    const snapshot = await get(userRef);
+    userKey = user;
+    const userRef = ref(db, 'users/' + userKey);
+    const snap = await get(userRef);
 
-    if (snapshot.exists()) {
-        currentUser = snapshot.val();
-    } else {
-        currentUser = {
-            username: user,
+    if (!snap.exists()) {
+        await set(userRef, {
+            username: userKey,
             gcash: gcash,
             balance: 0,
             points: 0,
             dailyEarnings: 0,
-            referredBy: "",
-            lastLogin: Date.now()
-        };
-        await set(userRef, currentUser);
+            joined: Date.now()
+        });
     }
-
-    document.getElementById('login-screen').classList.add('hidden');
+    
+    document.getElementById('login-page').classList.add('hidden');
     document.getElementById('ref-modal').classList.remove('hidden');
-    updateUI();
 };
 
-window.submitReferral = async () => {
-    const code = document.getElementById('ref-input').value.trim();
-    if (code && code !== currentUser.username) {
-        const refUserRef = ref(db, 'users/' + code);
-        const refSnap = await get(refUserRef);
-        
-        if (refSnap.exists()) {
-            // Apply 8% bonus logic: Typically 8% of what the user earns, 
-            // but per your prompt "8% bonus auto to referral user automatically on login"
-            // We'll give a fixed small bonus based on a theoretical "login value" or just a greeting gift
-            const bonus = 0.05; // Example fixed bonus
-            await update(refUserRef, { balance: refSnap.val().balance + (bonus * 0.08) });
-            await update(ref(db, 'users/' + currentUser.username), { referredBy: code });
+window.processReferral = async () => {
+    const code = document.getElementById('ref-code').value.trim().toLowerCase();
+    if (code && code !== userKey) {
+        const refRef = ref(db, 'users/' + code);
+        const snap = await get(refRef);
+        if (snap.exists()) {
+            // Give 8% of the min withdraw as a starting bonus to the referrer
+            await runTransaction(refRef, (user) => {
+                if (user) {
+                    user.balance = (user.balance || 0) + (0.02 * 0.08);
+                }
+                return user;
+            });
+            alert("Referral bonus sent to " + code);
         }
     }
-    closeRef();
+    proceedToApp();
 };
 
-window.closeRef = () => {
+window.skipReferral = () => proceedToApp();
+
+function proceedToApp() {
     document.getElementById('ref-modal').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    startSync();
-};
-
-// --- CORE UTILS ---
-function updateUI() {
-    if (!currentUser) return;
-    document.getElementById('display-name').innerText = currentUser.username;
-    document.getElementById('user-balance').innerText = currentUser.balance.toFixed(4);
-    document.getElementById('wallet-balance').innerText = currentUser.balance.toFixed(2);
-    document.getElementById('user-points').innerText = currentUser.points;
+    document.getElementById('app-content').classList.remove('hidden');
+    initDataSync();
 }
 
-function startSync() {
-    // Sync User Data
-    onValue(ref(db, 'users/' + currentUser.username), (snap) => {
-        currentUser = snap.val();
-        updateUI();
+// 2. DATA SYNC
+function initDataSync() {
+    onValue(ref(db, 'users/' + userKey), (snap) => {
+        const data = snap.val();
+        document.getElementById('val-balance').innerText = data.balance.toFixed(4);
+        document.getElementById('val-wallet').innerText = data.balance.toFixed(2);
+        document.getElementById('val-points').innerText = data.points;
     });
 
-    // Sync Chat (Real-time)
     onValue(ref(db, 'chats'), (snap) => {
-        const chatBox = document.getElementById('chat-box');
-        chatBox.innerHTML = '';
-        snap.forEach((child) => {
-            const data = child.val();
-            chatBox.innerHTML += `<div class="chat-msg">
-                <span class="gold-text text-xs">${data.user}</span>: ${data.msg}
+        const box = document.getElementById('chat-box');
+        box.innerHTML = '';
+        snap.forEach(msg => {
+            const m = msg.val();
+            box.innerHTML += `<div class="p-2 bg-zinc-900 rounded border-l-2 border-yellow-500 text-xs">
+                <b class="gold-text">${m.user}:</b> ${m.text}
             </div>`;
         });
-        chatBox.scrollTop = chatBox.scrollHeight;
+        box.scrollTop = box.scrollHeight;
     });
 
-    // Leaderboard (Every Second simulation via Realtime DB sync)
+    // Leaderboard update every second (auto-synced by Firebase)
     const topQuery = query(ref(db, 'users'), orderByChild('dailyEarnings'), limitToLast(10));
     onValue(topQuery, (snap) => {
-        const list = document.getElementById('leaderboard-list');
+        const list = document.getElementById('leader-list');
         list.innerHTML = '';
-        let entries = [];
-        snap.forEach(child => entries.push(child.val()));
-        entries.reverse().forEach((u, i) => {
-            list.innerHTML += `<div class="glass p-3 flex justify-between">
+        let items = [];
+        snap.forEach(u => items.push(u.val()));
+        items.reverse().forEach((u, i) => {
+            list.innerHTML += `<div class="gold-card p-3 flex justify-between text-sm">
                 <span>#${i+1} ${u.username}</span>
-                <span class="gold-text">₱${u.dailyEarnings.toFixed(3)}</span>
+                <span class="gold-text">₱${u.dailyEarnings.toFixed(4)}</span>
             </div>`;
         });
     });
 }
 
-// --- ADS LOGIC ---
-window.watchVideoAd = () => {
-    if (Date.now() < cooldowns.video) return;
-    
+// 3. AD REWARDS (CHAT POINTS)
+window.handleVideoAd = () => {
     show_10276123().then(() => {
-        const newPoints = currentUser.points + 1;
-        update(ref(db, 'users/' + currentUser.username), { points: newPoints });
-        startCooldown('video', 60);
-        alert("Earned 1 Chat Point!");
-    });
+        creditPoint(60, 'video');
+    }).catch(() => alert("Ad not ready"));
 };
 
-window.watchBonusAd = () => {
-    if (Date.now() < cooldowns.bonus) return;
-
+window.handleBonusAd = () => {
     show_10276123('pop').then(() => {
-        // Rewarded format
-        const newPoints = currentUser.points + 1;
-        update(ref(db, 'users/' + currentUser.username), { points: newPoints });
-        startCooldown('bonus', 45);
-    });
+        creditPoint(45, 'bonus');
+    }).catch(() => alert("Ad error"));
 };
 
-// --- CHAT LOGIC ---
-window.sendMessage = async () => {
-    const msg = document.getElementById('chat-input').value;
-    if (Date.now() < cooldowns.chat) return;
-    if (currentUser.points < 1) return alert("Need 1 Chat Point!");
+async function creditPoint(cooldown, type) {
+    const userRef = ref(db, 'users/' + userKey);
+    await runTransaction(userRef, (user) => {
+        if (user) {
+            user.points = (user.points || 0) + 1;
+        }
+        return user;
+    });
+    startCooldown(type, cooldown);
+}
+
+// 4. CHAT SYSTEM
+window.handleChat = async () => {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
     if (!msg) return;
 
-    // Show 2 Combined Ads as requested
+    const userRef = ref(db, 'users/' + userKey);
+    const snap = await get(userRef);
+    const data = snap.val();
+
+    if (data.points < 1) return alert("Not enough Chat Points!");
+
+    // Monetag In-App Interstitial (Show 2 ads as requested)
     show_10276123({ type: 'inApp', inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 0, everyPage: false } });
 
-    const newPoints = currentUser.points - 1;
-    const newBalance = currentUser.balance + 0.016;
-    const newDaily = (currentUser.dailyEarnings || 0) + 0.016;
-
-    await update(ref(db, 'users/' + currentUser.username), { 
-        points: newPoints, 
-        balance: newBalance,
-        dailyEarnings: newDaily
+    await runTransaction(userRef, (user) => {
+        if (user) {
+            user.points -= 1;
+            user.balance += 0.016;
+            user.dailyEarnings = (user.dailyEarnings || 0) + 0.016;
+        }
+        return user;
     });
 
-    push(ref(db, 'chats'), {
-        user: currentUser.username,
-        msg: msg,
-        time: serverTimestamp()
-    });
-
-    document.getElementById('chat-input').value = '';
-    startCooldown('chat', 92);
+    push(ref(db, 'chats'), { user: userKey, text: msg, time: serverTimestamp() });
+    input.value = '';
+    startCooldown('send', 92);
 };
 
-// --- WITHDRAWAL ---
-window.requestWithdrawal = async () => {
-    if (currentUser.balance < 0.02) return alert("Minimum 0.02 Peso required!");
-    
-    const amount = 0.02; 
-    const withdrawal = {
-        uid: currentUser.username,
-        gcash: currentUser.gcash,
-        amount: amount,
-        time: new Date().toLocaleString(),
-        status: "Pending"
+// 5. WITHDRAWAL
+window.requestPayout = async () => {
+    const userRef = ref(db, 'users/' + userKey);
+    const snap = await get(userRef);
+    const balance = snap.val().balance;
+
+    if (balance < 0.02) return alert("Min withdrawal 0.02 Peso");
+
+    const payout = {
+        user: userKey,
+        gcash: snap.val().gcash,
+        amount: 0.02,
+        status: 'Pending',
+        time: new Date().toLocaleString()
     };
 
-    await push(ref(db, 'withdrawals'), withdrawal);
-    await update(ref(db, 'users/' + currentUser.username), { balance: currentUser.balance - amount });
-    alert("Withdrawal Requested!");
+    await push(ref(db, 'withdrawals'), payout);
+    await update(userRef, { balance: balance - 0.02 });
+    alert("Payout requested successfully!");
 };
 
-// --- COOLDOWNS ---
-function startCooldown(type, seconds) {
-    cooldowns[type] = Date.now() + (seconds * 1000);
-    const btn = document.getElementById(`btn-${type === 'chat' ? 'send' : type}`);
-    const timerDisplay = document.getElementById(`timer-${type}`);
-    
-    btn.classList.add('cooldown');
-    
-    let remaining = seconds;
-    const interval = setInterval(() => {
-        remaining--;
-        timerDisplay.innerText = `${remaining}s`;
-        if (remaining <= 0) {
-            clearInterval(interval);
-            btn.classList.remove('cooldown');
-            timerDisplay.innerText = '';
+// 6. UTILS
+function startCooldown(id, seconds) {
+    const btn = document.getElementById('btn-' + id);
+    const disp = document.getElementById('cd-' + id);
+    btn.classList.add('disabled');
+    let left = seconds;
+    const intv = setInterval(() => {
+        left--;
+        if (disp) disp.innerText = left + "s Cooldown";
+        if (left <= 0) {
+            clearInterval(intv);
+            btn.classList.remove('disabled');
+            if (disp) disp.innerText = "";
         }
     }, 1000);
 }
 
-// --- ADMIN DASHBOARD ---
-window.checkAdmin = () => {
-    const pw = prompt("Enter Admin Password:");
+window.showTab = (id) => {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+};
+
+window.openAdmin = () => {
+    const pw = prompt("Admin Password:");
     if (pw === "Propetas12") {
         showTab('admin');
         onValue(ref(db, 'withdrawals'), (snap) => {
-            const container = document.getElementById('admin-payouts');
-            container.innerHTML = '';
-            snap.forEach(child => {
-                const w = child.val();
-                container.innerHTML += `<div class="glass p-3 text-xs">
-                    <p>User: ${w.uid} | GCash: ${w.gcash}</p>
-                    <p>Amount: ₱${w.amount} | Time: ${w.time}</p>
-                    <button onclick="confirmPayout('${child.key}')" class="bg-green-600 px-2 py-1 mt-2 rounded">Mark Paid</button>
+            const list = document.getElementById('admin-list');
+            list.innerHTML = '';
+            snap.forEach(item => {
+                const w = item.val();
+                list.innerHTML += `<div class="p-2 border border-yellow-800 rounded text-[10px]">
+                    ${w.user} | ${w.gcash} | ₱${w.amount} | ${w.status}
                 </div>`;
             });
         });
     } else {
-        alert("Wrong password!");
+        alert("Access Denied");
     }
-};
-
-window.showTab = (tabId) => {
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
 };

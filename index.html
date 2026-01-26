@@ -2,183 +2,218 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     
-    <!-- Monetag SDK -->
+    <!-- SDKs -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
-
+    
     <style>
         :root {
             --gold: #FFD700;
             --dark-gold: #B8860B;
-            --shiny: linear-gradient(45deg, #FFD700, #FFFACD, #B8860B, #FFD700);
-            --glass: rgba(255, 255, 255, 0.1);
+            --shiny-gold: linear-gradient(135deg, #fceabb 0%, #fccd4d 50%, #f8b500 51%, #fbdf93 100%);
+            --bg: #0b0b0b;
         }
 
         body {
             margin: 0;
+            background-color: var(--bg);
+            color: white;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #000;
-            color: #fff;
-            overflow-x: hidden;
-            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+            padding-bottom: 70px;
+            user-select: none;
+        }
+
+        /* Gold UI Elements */
+        .gold-header {
+            background: var(--shiny-gold);
+            color: #000;
+            padding: 20px;
+            text-align: center;
+            font-weight: 800;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+            border-bottom: 2px solid var(--gold);
+        }
+
+        .balance-card {
+            background: #1a1a1a;
+            margin: 15px;
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid var(--gold);
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
         }
 
         .gold-text {
-            background: var(--shiny);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--gold);
             font-weight: bold;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
         }
 
-        .header {
-            padding: 20px;
-            text-align: center;
-            border-bottom: 2px solid var(--gold);
-            background: rgba(0,0,0,0.8);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .card {
-            background: var(--glass);
-            border: 1px solid var(--gold);
-            border-radius: 15px;
-            margin: 15px;
+        /* Main Menu */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
             padding: 15px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
         }
+
+        .action-card {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 0.5px solid #333;
+            transition: 0.3s;
+        }
+
+        .action-card:active { transform: scale(0.95); }
 
         .btn-gold {
-            background: var(--shiny);
+            background: var(--shiny-gold);
             border: none;
-            padding: 12px 25px;
-            border-radius: 25px;
-            color: #000;
-            font-weight: bold;
+            padding: 12px;
+            border-radius: 8px;
             width: 100%;
+            font-weight: bold;
+            margin-top: 10px;
             cursor: pointer;
-            transition: 0.3s;
-            text-transform: uppercase;
-            margin: 10px 0;
         }
 
-        .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
+        /* Chat System */
 
-        #chat-room { height: 300px; overflow-y: auto; border: 1px solid var(--gold); padding: 10px; border-radius: 10px; }
-        .msg { margin-bottom: 8px; font-size: 0.9em; border-bottom: 1px solid rgba(255,215,0,0.1); padding-bottom: 4px; }
-        .msg b { color: var(--gold); }
+        #chat-room { height: 250px; overflow-y: auto; background: #000; padding: 10px; margin: 10px; border-radius: 10px; border: 1px solid #222; }
+        .chat-msg { margin-bottom: 8px; font-size: 14px; border-bottom: 1px solid #1a1a1a; padding-bottom: 4px; }
+        .chat-user { color: var(--gold); font-weight: 600; margin-right: 5px; }
 
-        .tab-bar {
+        /* Navigation Bar */
+        .navbar {
             position: fixed;
             bottom: 0;
             width: 100%;
+            background: #111;
             display: flex;
-            background: #000;
-            border-top: 2px solid var(--gold);
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top: 1px solid var(--dark-gold);
         }
 
-        .tab { flex: 1; text-align: center; padding: 15px; font-size: 12px; color: var(--gold); }
+        .nav-item { color: #888; font-size: 12px; text-align: center; flex: 1; }
+        .nav-item.active { color: var(--gold); }
 
-        /* Admin Styles */
-        #admin-panel { display: none; position: fixed; top:0; left:0; width: 100%; height: 100%; background: #000; z-index: 200; overflow-y: auto; padding-top: 50px;}
+        /* Dashboard & Overlays */
+        .screen { display: none; padding: 10px; animation: fadeIn 0.3s; }
+        .active-screen { display: block; }
 
-        .cooldown-text { font-size: 12px; color: #aaa; text-align: center; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .cooldown-text { font-size: 11px; color: #ff4444; margin-top: 5px; }
         
-        .shimmer {
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            background-size: 200% 100%;
-            animation: shimmer 2s infinite;
+        input {
+            background: #222; border: 1px solid var(--gold); color: white;
+            padding: 10px; border-radius: 5px; width: 80%; margin: 5px 0;
         }
-        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h3 class="gold-text">🎖 PAPERHOUSE INC ADS 🎖</h3>
-    <div id="user-display" class="gold-text" style="font-size: 1.5em;">Loading User...</div>
-    <div style="font-size: 1.2em; margin-top: 10px;">
-        💰 <span id="balance">0.00</span> PHP | 🪙 <span id="points">0</span> Points
-    </div>
-</div>
-
-<!-- Main Section -->
-<div id="main-view">
-    <div class="card">
-        <h4>🎁 EARNING CENTER</h4>
-        <button class="btn-gold" id="btn-video" onclick="watchVideoAd()">📺 Watch Video (+1 Pt) <br><small id="video-cd">Ready</small></button>
-        <button class="btn-gold" id="btn-bonus" onclick="claimBonusAd()">💎 Bonus Claim (+1 Pt) <br><small id="bonus-cd">Ready</small></button>
+    <div class="gold-header">
+        <div id="tg-username">Loading...</div>
+        <div style="font-size: 10px;">🎖🤑PAPERHOUSE INC ADS🤑🎖</div>
     </div>
 
-    <div class="card">
-        <h4>💬 GOLDEN CHAT ROOM</h4>
-        <p style="font-size: 10px; color: #ffcc00;">Cost: 1 Pt | Reward: 0.016 PHP | Cooldown: 92s</p>
-        <div id="chat-room"></div>
-        <div style="display: flex; margin-top: 10px;">
-            <input type="text" id="chat-input" placeholder="Type message..." style="flex: 1; padding: 10px; border-radius: 5px 0 0 5px; border: 1px solid var(--gold); background: #222; color: #fff;">
-            <button onclick="sendChatMessage()" style="padding: 10px; background: var(--gold); border: none; border-radius: 0 5px 5px 0;">Send</button>
+    <div class="balance-card">
+        <div>
+            <div class="gold-text">POINTS</div>
+            <div id="stat-points">0</div>
         </div>
-        <div id="chat-cd" class="cooldown-text"></div>
-    </div>
-</div>
-
-<!-- Leaderboard Section -->
-<div id="leaderboard-view" style="display: none;">
-    <div class="card">
-        <h4 class="gold-text">🏆 TOP DAILY EARNERS</h4>
-        <div id="leaderboard-list"></div>
-    </div>
-</div>
-
-<!-- Wallet Section -->
-<div id="wallet-view" style="display: none;">
-    <div class="card">
-        <h4>🏦 GCASH WITHDRAWAL</h4>
-        <p>Min/Max: 0.02 PHP</p>
-        <input type="text" id="gcash-num" placeholder="GCash Number" style="width: 90%; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
-        <button class="btn-gold" onclick="requestWithdrawal()">WITHDRAW 0.02 PHP</button>
-    </div>
-    <div class="card">
-        <h4>🕒 PAYOUT HISTORY</h4>
-        <div id="payout-history" style="font-size: 12px;"></div>
-    </div>
-    <div class="card">
-        <h4>🔗 REFERRAL</h4>
-        <p>Referral Code: <b id="ref-code-display">...</b></p>
-        <p>Your Bonus: 8% per referral activity</p>
-    </div>
-</div>
-
-<!-- Admin Panel -->
-<div id="admin-panel">
-    <button onclick="closeAdmin()" style="p
-
-osition: absolute; top: 10px; right: 10px; color: gold;">Close</button>
-    <div class="card">
-        <h3>OWNER DASHBOARD</h3>
-        <div id="admin-content">
-            <h4>Pending Withdrawals</h4>
-            <div id="pending-list"></div>
+        <div>
+            <div class="gold-text">BALANCE</div>
+            <div>₱<span id="stat-balance">0.00</span></div>
         </div>
     </div>
-</div>
 
-<div class="tab-bar">
-    <div class="tab" onclick="switchView('main')">🏠 Home</div>
-    <div class="tab" onclick="switchView('leaderboard')">🏆 Rank</div>
-    <div class="tab" onclick="switchView('wallet')">💰 Wallet</div>
-    <div class="tab" onclick="checkAdmin()">⚙️ Admin</div>
-</div>
+    <!-- HOME SCREEN -->
+    <div id="screen-home" class="screen active-screen">
+        <div class="grid-container">
+            <div class="action-card">
+                <span>Video Ads</span>
+                <button class="btn-gold" id="btn-video" onclick="handleVideoAd()">WATCH</button>
+                <div id="cd-video" class="cooldown-text"></div>
+            </div>
+            <div class="action-card">
+                <span>Bonus Popup</span>
+                <button class="btn-gold" id="btn-bonus" onclick="handleBonusAd()">CLAIM</button>
+                <div id="cd-bonus" class="cooldown-text"></div>
+            </div>
+        </div>
 
-<script src="app.js"></script>
+        <div class="action-card" style="margin: 0 15px;">
+            <h4 class="gold-text" style="margin:0 0 10px 0;">Referral System</h4>
+            <p style="font-size: 12px;">Get 8% Bonus from your friends earnings!</p>
+            <div id="referral-link" style="font-size: 11px; background: #000; padding: 5px; border: 1px dashed var(--gold);">Loading link...</div>
+        </div>
+    </div>
+
+    <!-- CHAT SCREEN -->
+    <div id="screen-chat" class="screen">
+        <div class="action-card">
+            <h4 class="gold-text">Reward Chat Room</h4>
+            <div id="chat-room"></div>
+            <input type="text" id="chat-input" placeholder="Say something gold...">
+            <button class="btn-gold" id="btn-chat" onclick="handleChatSend()">SEND (1 PT)</button>
+            <div id="cd-chat" class="cooldown-text"></div>
+        </div>
+    </div>
+
+    <!-- LEADERBOARD SCREEN -->
+    <div id="screen-leaderboard" class="screen">
+        <div class="action-card">
+            <h4 class="gold-text">🏆 Top Daily Earners</h4>
+            <div id="leader-list"></div>
+        </div>
+    </div>
+
+    <!-- WALLET SCREEN -->
+    <div id="screen-wallet" class="screen">
+        <div class="action-card">
+            <h4 class="gold-text">GCash Withdrawal</h4>
+
+<p>Min/Max: ₱0.02</p>
+            <input type="text" id="wd-gcash" placeholder="GCash Name">
+            <input type="number" id="wd-number" placeholder="GCash Number">
+            <button class="btn-gold" onclick="handleWithdraw()">WITHDRAW</button>
+        </div>
+        <div class="action-card" style="margin-top: 15px; font-size: 12px; text-align: left;">
+            <h4 class="gold-text">History</h4>
+            <div id="withdraw-history"></div>
+        </div>
+    </div>
+
+    <!-- ADMIN SCREEN -->
+    <div id="screen-admin" class="screen">
+        <div id="admin-login-ui">
+            <input type="password" id="admin-pass" placeholder="Admin Password">
+            <button class="btn-gold" onclick="loginAdmin()">Login</button>
+        </div>
+        <div id="admin-panel" style="display: none;">
+            <h3 class="gold-text">Owner Dashboard</h3>
+            <div id="admin-pending-list"></div>
+        </div>
+    </div>
+
+    <div class="navbar">
+        <div class="nav-item active" onclick="nav('home')">HOME</div>
+        <div class="nav-item" onclick="nav('chat')">CHAT</div>
+        <div class="nav-item" onclick="nav('leaderboard')">TOP</div>
+        <div class="nav-item" onclick="nav('wallet')">WALLET</div>
+        <div class="nav-item" onclick="nav('admin')">OWNER</div>
+    </div>
+
+    <!-- Firebase App (Modular) -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>

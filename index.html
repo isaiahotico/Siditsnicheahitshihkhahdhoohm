@@ -3,108 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
+    <title>PAPERHOUSE INC ADS</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Monetag SDK -->
     <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #0f172a; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        .nav-btn { flex: 1; text-align: center; padding: 10px; font-size: 12px; }
-        .active-tab { color: #22c55e; border-top: 2px solid #22c55e; }
-        #chat-messages { height: 300px; overflow-y: auto; }
+        body { background: #000; color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .bg-gold-shimmer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #8a6d3b 0%, #000 100%);
+            z-index: -2;
+        }
+        .diamond-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; }
+        .diamond {
+            position: absolute; width: 18px; height: 18px; background: #ffd700;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            opacity: 0.4; animation: float 12s infinite linear;
+        }
+        @keyframes float { 0% { transform: translateY(110vh) rotate(0deg); } 100% { transform: translateY(-10vh) rotate(360deg); } }
+        
+        .glass { background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(255, 215, 0, 0.2); }
         .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Reward Popup Animation */
+        #reward-popup {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
+            z-index: 100; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #reward-popup.show { display: block; transform: translate(-50%, -50%) scale(1); opacity: 1; }
+
+        .nav-btn.active { color: #fbbf24; }
     </style>
 </head>
-<body class="pb-20">
+<body class="pb-24">
+    <div class="bg-gold-shimmer"></div>
+    <div class="diamond-layer" id="diamond-wrap"></div>
+
+    <!-- Reward Popup -->
+    <div id="reward-popup" class="glass p-8 rounded-3xl text-center shadow-2xl border-2 border-yellow-500">
+
+        <div class="text-5xl mb-4">💰</div>
+        <h2 class="text-2xl font-black text-yellow-500 mb-2">REWARD RECEIVED!</h2>
+        <p id="reward-amount-text" class="text-xl font-bold text-white"></p>
+        <button onclick="closePopup()" class="mt-6 bg-yellow-600 px-8 py-2 rounded-full font-bold">Awesome!</button>
+    </div>
 
     <!-- Header -->
-    <header class="p-4 glass sticky top-0 z-50 flex justify-between items-center">
-        <h1 class="font-bold text-yellow-400">🎖 PAPERHOUSE INC</h1>
+    <header class="p-4 glass sticky top-0 z-50 flex justify-between items-center border-b border-yellow-500/20">
+        <div>
+            <h1 class="text-xs font-black text-yellow-500 uppercase">🎖 Paperhouse Ads</h1>
+            <p class="text-[10px] opacity-60">Code: <span id="my-username" class="text-white">...</span></p>
+        </div>
         <div class="text-right">
-            <p class="text-xs opacity-70">Balance</p>
-            <p class="text-green-400 font-bold">₱ <span id="user-balance">0.00</span></p>
+            <p class="text-green-400 font-bold text-lg leading-none">₱<span id="bal">0.0000</span></p>
+            <p class="text-blue-400 text-[10px] font-bold"><span id="pts">0</span> Chat Pts</p>
         </div>
     </header>
 
     <div class="p-4">
-        <!-- HOME TAB -->
-        <section id="home" class="tab-content active">
-            <div class="glass p-6 rounded-2xl text-center mb-6">
-                <i class="fas fa-coins text-5xl text-yellow-500 mb-4"></i>
-                <h2 class="text-xl font-bold">Earn Rewards</h2>
-                <p class="text-sm opacity-70 mb-6">Watch ads to earn ₱0.01 per ad!</p>
-                <button onclick="watchAd()" class="bg-green-500 hover:bg-green-600 w-full py-4 rounded-xl font-bold text-lg shadow-lg transform active:scale-95 transition">
-                    WATCH AD NOW 📺
-                </button>
+        <!-- HOME -->
+        <section id="home" class="tab-content active space-y-4">
+            <div class="glass p-6 rounded-2xl text-center">
+                <h3 class="font-bold mb-3 text-sm">Main Rewards</h3>
+                <button onclick="handleAd('normal')" id="btn-normal" class="w-full bg-gradient-to-r from-yellow-500 to-yellow-700 py-4 rounded-xl font-black shadow-lg">WATCH AD (₱0.0102)</button>
+                <div id="timer-normal" class="text-[10px] mt-2 opacity-50">Cooldown: 3m</div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div class="glass p-4 rounded-xl text-center">
-                    <p class="text-xs">Min. Withdraw</p>
-                    <p class="font-bold">₱0.02</p>
-                </div>
+            <div class="glass p-6 rounded-2xl text-center border-purple-500/30">
+                <h3 class="font-bold text-purple-400 mb-3 text-sm">Turbo Ads (2 Combined) 🚀</h3>
+                <button onclick="handleAd('turbo')" id="btn-turbo" class="w-full bg-purple-600 py-4 rounded-xl font-black shadow-lg">ACTIVATE TURBO (₱0.012)</button>
+                <div id="timer-turbo" class="text-[10px] mt-2 opacity-50">Cooldown: 45s</div>
+            </div>
 
-                <div class="glass p-4 rounded-xl text-center">
-                    <p class="text-xs">Rate/Ad</p>
-                    <p class="font-bold">₱0.01</p>
+            <div class="glass p-6 rounded-2xl text-center border-blue-500/30">
+                <h3 class="font-bold text-blue-400 mb-3 text-sm">Chat Points (3 Combined) ✨</h3>
+                <button onclick="handleAd('pts')" id="btn-pts" class="w-full bg-blue-600 py-4 rounded-xl font-black shadow-lg uppercase">Earn Chat Points</button>
+                <div id="timer-pts" class="text-[10px] mt-2 opacity-50">Cooldown: 5m</div>
+            </div>
+            
+            <div class="glass p-5 rounded-2xl">
+                <h4 class="text-xs font-bold text-yellow-500 mb-2">Referral System (8%)</h4>
+                <p class="text-[10px] opacity-70 mb-3">Share your link and earn 8% of every ad your friends watch!</p>
+                <div class="flex gap-2">
+                    <input type="text" id="ref-link" readonly class="flex-grow bg-white/5 rounded p-2 text-[10px] border border-white/10">
+                    <button onclick="copyRef()" class="bg-yellow-600 px-3 rounded text-xs font-bold">COPY</button>
                 </div>
             </div>
         </section>
 
-        <!-- CHAT TAB -->
+        <!-- CHAT -->
         <section id="chat" class="tab-content">
-            <div class="glass rounded-xl flex flex-col h-[70vh]">
-                <div id="chat-messages" class="p-4 space-y-3 flex-grow"></div>
-                <div class="p-2 border-t border-gray-700 flex gap-2">
-                    <input type="text" id="chat-input" class="bg-slate-800 border-none rounded-lg p-2 flex-grow text-sm" placeholder="Type a message...">
-                    <button onclick="sendMessage()" class="bg-blue-500 px-4 py-2 rounded-lg"><i class="fas fa-paper-plane"></i></button>
+            <div class="glass rounded-2xl flex flex-col h-[60vh]">
+                <div id="chat-list" class="flex-grow p-4 overflow-y-auto space-y-3 text-sm"></div>
+                <div class="p-3 bg-black/40 flex gap-2 border-t border-white/10">
+                    <input type="text" id="chat-input" class="flex-grow bg-white/5 rounded-lg px-3 text-xs" placeholder="Message (Costs 1 Pt - Reward ₱0.02)">
+                    <button onclick="sendChat()" class="bg-yellow-600 px-4 py-2 rounded-lg"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
         </section>
 
-        <!-- LEADERBOARD TAB -->
-        <section id="leaderboard" class="tab-content">
-            <h3 class="text-lg font-bold mb-4"><i class="fas fa-trophy text-yellow-500 mr-2"></i>Top Earners</h3>
-            <div id="leaderboard-list" class="space-y-2"></div>
-        </section>
-
-        <!-- WITHDRAW TAB -->
-        <section id="withdraw" class="tab-content">
-            <div class="glass p-6 rounded-xl">
-                <h3 class="font-bold mb-4">Withdraw via GCash</h3>
-                <input type="number" id="gcash-number" placeholder="09xxxxxxxxx" class="w-full bg-slate-800 p-3 rounded-lg mb-4">
-                <p class="text-xs text-red-400 mb-4">* Minimum withdrawal is ₱0.02</p>
-                <button onclick="requestWithdrawal()" class="w-full bg-blue-600 py-3 rounded-lg font-bold">Withdraw Now</button>
+        <!-- WALLET -->
+        <section id="wallet" class="tab-content">
+            <div class="glass p-6 rounded-2xl mb-4">
+                <h3 class="font-bold mb-4 text-sm text-yellow-500">Withdraw via GCash</h3>
+                <input type="text" id="gcash-name" placeholder="GCash Account Name" class="w-full bg-white/5 p-3 rounded-xl mb-3 text-xs border border-white/10">
+                <input type="number" id="gcash-num" placeholder="09xxxxxxxxx" class="w-full bg-white/5 p-3 rounded-xl mb-4 text-xs border border-white/10">
+                <button onclick="requestWithdraw()" class="w-full bg-green-600 py-3 rounded-xl font-bold text-sm">Request Withdrawal (Min ₱0.02)</button>
             </div>
+            <div id="history-list" class="space-y-2"></div>
         </section>
 
-        <!-- ADMIN TAB -->
+        <!-- LEADERBOARD -->
+        <section id="leaderboard" class="tab-content">
+            <div id="leader-list" class="space-y-2"></div>
+        </section>
+
+        <!-- ADMIN -->
         <section id="admin" class="tab-content">
-            <div id="admin-login" class="glass p-6 rounded-xl">
-                <input type="password" id="admin-pass" placeholder="Admin Password" class="w-full bg-slate-800 p-3 rounded-lg mb-4">
-                <button onclick="checkAdmin()" class="w-full bg-red-600 py-3 rounded-lg font-bold">Login Admin</button>
+            <div id="admin-login" class="glass p-6 rounded-2xl">
+                <input type="password" id="admin-pass" class="w-full bg-white/5 p-3 rounded-xl mb-4 border border-white/10" placeholder="Password">
+                <button onclick="tryAdmin()" class="w-full bg-red-600 py-3 rounded-xl font-bold">Admin Login</button>
             </div>
             <div id="admin-panel" class="hidden space-y-4">
-                <h3 class="font-bold">Withdrawal Requests</h3>
-                <div id="withdrawal-requests" class="space-y-2"></div>
+                <div class="glass p-4 rounded-xl flex justify-between items-center border-green-500/30">
+                    <span class="text-xs font-bold">Total Approved:</span>
+                    <span class="text-xl font-black text-green-400">₱<span id="total-appr">0.00</span></span>
+                </div>
+                <h4 class="text-xs font-bold text-yellow-500">PENDING REQUESTS</h4>
+                <div id="admin-reqs" class="space-y-2"></div>
             </div>
         </section>
     </div>
 
-    <!-- Bottom Navigation -->
-    <nav class="fixed bottom-0 left-0 right-0 glass flex justify-around border-t border-gray-700 z-50">
-        <div class="nav-btn active-tab" onclick="showTab('home', this)"><i class="fas fa-home block text-xl"></i>Home</div>
-        <div class="nav-btn" onclick="showTab('chat', this)"><i class="fas fa-comments block text-xl"></i>Chat</div>
-        <div class="nav-btn" onclick="showTab('leaderboard', this)"><i class="fas fa-award block text-xl"></i>Top</div>
-        <div class="nav-btn" onclick="showTab('withdraw', this)"><i class="fas fa-wallet block text-xl"></i>Wallet</div>
-        <div class="nav-btn" onclick="showTab('admin', this)"><i class="fas fa-user-shield block text-xl"></i>Admin</div>
+    <nav class="fixed bottom-0 left-0 right-0 glass h-20 flex justify-around items-center z-50 border-t border-yellow-500/20">
+        <button onclick="tab('home')" id="n-home" class="nav-btn p-2 flex flex-col items-center active"><i class="fas fa-home"></i><span class="text-[10px]">Home</span></button>
+        <button onclick="tab('chat')" id="n-chat" class="nav-btn p-2 flex flex-col items-center"><i class="fas fa-comment"></i><span class="text-[10px]">Chat</span></button>
+        <button onclick="tab('leaderboard')" id="n-leaderboard" class="nav-btn p-2 flex flex-col items-center"><i class="fas fa-trophy"></i><span class="text-[10px]">Top</span></button>
+        <button onclick="tab('wallet')" id="n-wallet" class="nav-btn p-2 flex flex-col items-center"><i class="fas fa-wallet"></i><span class="text-[10px]">Wallet</span></button>
+        <button onclick="tab('admin')" id="n-admin" class="nav-btn p-2 flex flex-col items-center"><i class="fas fa-lock"></i><span class="text-[10px]">Admin</span></button>
     </nav>
 
-    <!-- Firebase SDKs -->
     <script type="module" src="app.js"></script>
 </body>
 </html>

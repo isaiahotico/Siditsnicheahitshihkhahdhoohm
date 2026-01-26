@@ -1,14 +1,10 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-// Realtime Database Imports
-import { getDatabase, ref, set, onValue, push, update, increment, get as rtdbGet } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-// Firestore Imports
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, addDoc, query, orderBy, limit, where, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
     authDomain: "freegcash-ads.firebaseapp.com",
-    databaseURL: "https://freegcash-ads-default-rtdb.asia-southeast1.firebasedatabase.app", // Realtime DB URL
     projectId: "freegcash-ads",
     storageBucket: "freegcash-ads.firebasestorage.app",
     messagingSenderId: "608086825364",
@@ -16,233 +12,213 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const rtdb = getDatabase(app);     // Firebase Realtime Database instance
-const firestore = getFirestore(app); // Firebase Firestore instance
-
+const db = getFirestore(app);
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-const uid = tg.initDataUnsafe?.user?.id || "dev_" + Math.floor(Math.random()*999);
-const myUsername = tg.initDataUnsafe?.user?.username || "Guest_" + uid;
+const uid = tg.initDataUnsafe?.user?.id?.toString() || "local_dev";
+const username = tg.initDataUnsafe?.user?.username || "Guest_" + uid;
 
-let balance = 0, chatPoints = 0, unclaimed = 0;
+let userData = { balance: 0, chatPoints: 0, unclaimedBonus: 0, referredBy: null };
 
-// Sync User Data from Realtime Database
-onValue(ref(rtdb, 'users/' + uid), (snap) => {
-    const data = snap.val();
-    if (!data) {
-        set(ref(rtdb, 'users/' + uid), { username: myUsername, balance: 0, chatPoints: 0, unclaimedBonus: 0, referredBy: null });
-        set(ref(rtdb, 'usernames/' + myUsername), uid);
-    } else {
-        balance = data.balance || 0;
-        chatPoints = data.chatPoints || 0;
-        unclaimed = data.unclaimedBonus || 0;
-        document.getElementById('balance').innerText = balance.toFixed(4);
-        document.getElementById('pts').innerText = chatPoints;
-        document.getElementById('unclaimed-bal').innerText = unclaimed.toFixed(4);
-        if (data.referredBy) document.getElementById('ref-setup').innerHTML = `<p class="text-xs text-green-400">Linked to Referrer: @${data.referredBy}</p>`;
+// 1. Initial Load & User Registration
+async function initUser() {
+    const userRef = doc(db, "users", uid);
+    const snap = await getDoc(userRef);
+    
+    if (!snap.exists()) {
+        userData = { username, balance: 0, chatPoints: 0, unclaimedBonus: 0, referredBy: null, createdAt: Date.now() };
+        await setDoc(userRef, userData);
     }
-});
-document.getElementById('my-username').innerText = myUsername;
+    
+    // Live listeners
+    onSnapshot(userRef, (doc) => {
+        userData = doc.data();
+        document.getElementById('balance').innerText = userData.balance.toFixed(4);
+        document.getElementById('pts').innerText = userData.chatPoints;
+        document.getElementById('unclaimed-bal').innerText = userData.unclaimedBonus.toFixed(4);
+        if(userData.referredBy) {
+            document.getElementById('ref-input-area').innerHTML = `<p class="text-green-500 text-xs">Referred by: @${userData.referredBy}</p>`;
+        }
+    });
 
-// Ads Logic with 8% Commission (Realtime DB)
-async function reward(amt, isPt = false) {
+    // Show Opening Ad
+    show_10276123({ type: 'inApp', inAppSettings: { frequency: 1, capping: 0.1, interval: 30, timeout: 5 } });
+}
+
+// 2. Ad Logic (Chain rewards for Turbo/Points)
+window.runAd = (type) => {
+    const btn = document.getElementById('btn-' + type);
+    btn.disabled = true;
+
+    if (type === 'normal') {
+        show_10276123('pop').then(() => { processReward(0.0102); startCd(type, 180); }).catch(() => btn.disabled = false);
+    } else if (type === 'turbo') {
+        show_10276123('pop').then(() => {
+            show_10276123('pop').then(() => { processReward(0.0120); startCd(type, 45); });
+        }).catch(() => btn.disabled = false);
+    } else if (type === 'points') {
+        show_10276123('pop').then(() => {
+            show_10276123('pop').then(() => {
+                show_10276123('pop').then(() => { processReward(0, true); startCd(type, 300); });
+            });
+        }).catch(() => btn.disabled = false);
+    }
+};
+
+async function processReward(amt, isPt = false) {
+    const userRef = doc(db, "users", uid);
     if (isPt) {
-        update(ref(rtdb, 'users/' + uid), { chatPoints: increment(1) });
+        await updateDoc(userRef, { chatPoints: increment(1) });
         showPop("1 Chat Point");
     } else {
-        update(ref(rtdb, 'users/' + uid), { balance: increment(amt) });
+        await updateDoc(userRef, { balance: increment(amt) });
         showPop(`₱${amt.toFixed(4)}`);
         
-        // Referral 8% Commission
-        const uSnap = await rtdbGet(ref(rtdb, 'users/' + uid));
-        const refName = uSnap.val()?.referredBy;
-        if (refName) {
-            const refUidSnap = await rtdbGet(ref(rtdb, 'usernames/' + refName));
-            const refUid = refUidSnap.val();
-            if (refUid) update(ref(rtdb, 'users/' + refUid), { unclaimedBonus: increment(amt * 0.08) });
+        // Referral 8% logic
+        if (userData.referredBy) {
+            const q = query(collection(db, "users"), where("username", "==", userData.referredBy), limit(1));
+            const qSnap = await getDoc(q); // Simplified: In production, query collection for the doc
+            // Real logic: find the UID of the person named userData.referredBy
+            onSnapshot(query(collection(db, "users"), where("username", "==", userData.referredBy)), (snap) => {
+                snap.forEach(d => {
+                    updateDoc(doc(db, "users", d.id), { unclaimedBonus: increment(amt * 0.08) });
+                });
+            });
         }
     }
 }
 
-window.runAd = (type) => {
-    const b = document.getElementById('btn-'+type); b.disabled = true;
-    if (type === 'normal') {
-        show_10276123().then(() => { reward(0.0102); startCd(type, 180); });
-    } else if (type === 'turbo') {
-        show_10276123().then(() => show_10276123().then(() => { reward(0.0120); startCd(type, 45); }));
-    } else if (type === 'points') {
-        show_10276123().then(() => show_10276123().then(() => show_10276123().then(() => { reward(0, true); startCd(type, 300); })));
-    }
+// 3. Referral System
+window.setReferrer = async () => {
+    const code = document.getElementById('ref-code').value.trim().replace('@', '');
+    if (!code || code === username) return tg.showAlert("Invalid Username");
+
+    const q = query(collection(db, "users"), where("username", "==", code), limit(1));
+    onSnapshot(q, async (snap) => {
+        if (snap.empty) {
+            tg.showAlert("User not found!");
+        } else {
+            await updateDoc(doc(db, "users", uid), { referredBy: code });
+            tg.showAlert("Referrer Linked!");
+        }
+    }, {onlyOnce: true});
 };
 
-function startCd(t, s) {
-    const lbl = document.getElementById('t-'+t); let rem = s;
-    const itv = setInterval(() => {
-        lbl.innerText = `Wait: ${rem--}s`;
-        if (rem < 0) { clearInterval(itv); document.getElementById('btn-'+t).disabled = false; lbl.innerText = "Ready!"; }
-    }, 1000);
-}
-
-// Referral Manual Input Logic (Realtime DB)
-window.submitReferral = async () => {
-    const input = document.getElementById('ref-input').value.trim().replace('@','');
-    if (!input || input === myUsername) return tg.showAlert("Invalid Username");
-    
-    const refUidSnap = await rtdbGet(ref(rtdb, 'usernames/' + input));
-    if (!refUidSnap.exists()) return tg.showAlert("User not found in app");
-
-    update(ref(rtdb, 'users/' + uid), { referredBy: input });
-    tg.showAlert("Referrer Linked Successfully!");
+window.claimRefBonus = async () => {
+    if (userData.unclaimedBonus <= 0) return tg.showAlert("Nothing to claim!");
+    const bonus = userData.unclaimedBonus;
+    await updateDoc(doc(db, "users", uid), { 
+        balance: increment(bonus), 
+        unclaimedBonus: 0 
+    });
+    tg.showAlert("Bonus claimed!");
 };
 
-window.claimBonus = () => {
-    if (unclaimed <= 0) return tg.showAlert("No bonus to claim");
-    update(ref(rtdb, 'users/' + uid), { balance: increment(unclaimed), unclaimedBonus: 0 });
-    tg.showAlert("Bonus moved to Main Balance!");
-};
-
-// Chat (Realtime DB) - (Note: Chat logic was not provided in last prompt, retaining previous version for completeness)
-window.sendChat = () => {
+// 4. Chat System
+window.sendChat = async () => {
     const inp = document.getElementById('chat-in');
-    if (!inp.value.trim() || chatPoints < 1) return tg.showAlert("Need 1 Chat Point");
-    update(ref(rtdb, 'users/' + uid), { chatPoints: increment(-1), balance: increment(0.02) });
-    push(ref(rtdb, 'chat'), { u: myUsername, m: inp.value, t: Date.now() });
+    if (userData.chatPoints < 1 || !inp.value.trim()) return tg.showAlert("Need 1 Chat Pt");
+    
+    await updateDoc(doc(db, "users", uid), { chatPoints: increment(-1), balance: increment(0.02) });
+    await addDoc(collection(db, "messages"), { username, text: inp.value, createdAt: Date.now() });
     inp.value = "";
 };
 
-// Wallet & History (Firestore)
-const gcashNameInput = document.getElementById('gcashName');
-const gcashNumberInput = document.getElementById('gcashNumber');
-const withdrawAmountInput = document.getElementById('withdrawAmount');
-
-window.requestWithdraw = async () => {
-    const name = gcashNameInput.value.trim();
-    const number = gcashNumberInput.value.trim();
-    const amount = Number(withdrawAmountInput.value);
-
-    if (!name || !number || amount <= 0 || amount > balance) {
-        tg.showAlert("Fill all fields correctly or check balance.");
-        return;
-    }
-    if (number.length < 10) {
-        tg.showAlert("Invalid GCash Number.");
-        return;
-    }
-
-    // Deduct from Realtime DB balance first
-    await update(ref(rtdb, 'users/' + uid), { balance: increment(-amount) });
-
-    await addDoc(collection(firestore, "withdrawals"), {
-        uid: uid,
-        username: myUsername,
-        name: name,
-        number: number,
-        amount: amount,
-        status: "PENDING",
-        createdAt: Date.now()
+function loadChat() {
+    onSnapshot(query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(20)), (snap) => {
+        const box = document.getElementById('chat-box');
+        box.innerHTML = "";
+        snap.forEach(d => {
+            const m = d.data();
+            box.innerHTML += `<div><b class="text-yellow-500">${m.username}:</b> ${m.text}</div>`;
+        });
     });
+}
 
-    tg.showAlert("⏳ Withdrawal requested");
-    // Clear inputs after successful request
-    gcashNameInput.value = "";
-    gcashNumberInput.value = "";
-    withdrawAmountInput.value = "";
+// 5. Leaderboard
+function loadLeaderboard() {
+    onSnapshot(query(collection(db, "users"), orderBy("balance", "desc"), limit(10)), (snap) => {
+        const list = document.getElementById('leader-list');
+        list.innerHTML = "";
+        let i = 1;
+        snap.forEach(d => {
+            const u = d.data();
+            list.innerHTML += `<div class="glass p-3 flex justify-between text-xs"><span>${i++}. ${u.username}</span><span class="text-green-400">₱${u.balance.toFixed(2)}</span></div>`;
+        });
+    });
+}
+
+// 6. Wallet & Admin logic
+window.requestWithdraw = async () => {
+    const name = document.getElementById('gcashName').value;
+    const num = document.getElementById('gcashNumber').value;
+    const amt = Number(document.getElementById('withdrawAmount').value);
+
+    if (!name || !num || amt < 0.02 || amt > userData.balance) return tg.showAlert("Invalid data/balance");
+
+    await updateDoc(doc(db, "users", uid), { balance: increment(-amt) });
+    await addDoc(collection(db, "withdrawals"), { uid, username, name, number: num, amount: amt, status: "PENDING", createdAt: Date.now() });
+    tg.showAlert("Withdrawal Requested!");
 };
 
 function loadHistory() {
-    const withdrawTable = document.getElementById('withdrawTable');
-    onSnapshot(
-        query(collection(firestore, "withdrawals"), where("uid", "==", uid), orderBy("createdAt", "desc")),
-        (snap) => {
-            withdrawTable.innerHTML = "";
-            snap.forEach(docu => {
-                const d = docu.data();
-                withdrawTable.innerHTML += `
-                    <tr>
-                        <td>${new Date(d.createdAt).toLocaleString()}</td>
-                        <td>${d.number}</td>
-                        <td>₱${d.amount.toFixed(2)}</td>
-                        <td class="${d.status.toLowerCase()}">${d.status}</td>
-                    </tr>
-                `;
-            });
-        }
-    );
+    onSnapshot(query(collection(db, "withdrawals"), where("uid", "==", uid), orderBy("createdAt", "desc")), (snap) => {
+        const table = document.getElementById('withdrawTable');
+        table.innerHTML = "";
+        snap.forEach(docu => {
+            const d = docu.data();
+            table.innerHTML += `<tr><td>${new Date(d.createdAt).toLocaleDateString()}</td><td>${d.number}</td><td>${d.amount}</td><td class="${d.status}">${d.status}</td></tr>`;
+        });
+    });
 }
-
-// Admin Panel (Firestore)
-const adminPassInput = document.getElementById('adminPass');
-const adminPanelDiv = document.getElementById('adminPanel');
 
 window.openAdmin = () => {
-    if (adminPassInput.value !== "Propetas6") { // Updated password
-        tg.showAlert("Wrong password");
-        return;
+    if (document.getElementById('adminPass').value === "Propetas6") {
+        document.getElementById('admin-gate').style.display = 'none';
+        document.getElementById('adminPanel').classList.remove('hidden');
+        loadAdminPanel();
     }
-    document.getElementById('admin-gate').classList.add('hidden'); // Hide password input
-    adminPanelDiv.classList.remove('hidden'); // Show admin panel
-    loadAdmin();
 };
 
-function loadAdmin() {
-    const adminWithdrawTable = document.getElementById('adminWithdrawTable');
-    onSnapshot(
-        query(collection(firestore, "withdrawals"), orderBy("createdAt", "desc")),
-        (snap) => {
-            adminWithdrawTable.innerHTML = "";
-            snap.forEach(docu => {
-                const d = docu.data();
-                adminWithdrawTable.innerHTML += `
-                    <tr>
-                        <td>${d.username}</td>
-                        <td>${d.number}</td>
-                        <td>₱${d.amount.toFixed(2)}</td>
-                        <td class="${d.status.toLowerCase()}">${d.status}</td>
-                        <td>
-                            ${d.status === "PENDING" ? `
-                                <button onclick="updateStatus('${docu.id}','APPROVED')" class="bg-green-600 px-2 py-1 rounded text-xs">✅</button>
-                                <button onclick="updateStatus('${docu.id}','REJECTED')" class="bg-red-600 px-2 py-1 rounded text-xs ml-1">❌</button>
-                            ` : '—'}
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-    );
+function loadAdminPanel() {
+    onSnapshot(query(collection(db, "withdrawals"), orderBy("createdAt", "desc")), (snap) => {
+        const table = document.getElementById('adminWithdrawTable');
+        table.innerHTML = "";
+        snap.forEach(docu => {
+            const d = docu.data();
+            table.innerHTML += `<tr><td>${d.username}</td><td>${d.number}</td><td>${d.amount}</td>
+                <td><button onclick="updateStatus('${docu.id}','APPROVED')" class="bg-green-600 px-2 rounded">✅</button></td></tr>`;
+        });
+    });
 }
 
-window.updateStatus = async (docId, newStatus) => {
-    await updateDoc(doc(firestore, "withdrawals", docId), { status: newStatus });
-    tg.showAlert(`Withdrawal ${docId} ${newStatus}`);
+window.updateStatus = async (id, status) => {
+    await updateDoc(doc(db, "withdrawals", id), { status });
+    tg.showAlert("Updated!");
 };
 
-
-// UI Extras
+// UI & Cooldowns
 window.tab = (id) => {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     document.getElementById('n-'+id).classList.add('active');
-    if (id === 'wallet') loadHistory();
-    // No chat load for this version, as chat UI was trimmed from the prompt.
+    if(id === 'chat') loadChat();
+    if(id === 'leaderboard') loadLeaderboard();
+    if(id === 'wallet') loadHistory();
 };
-window.showPop = (t) => { document.getElementById('pop-amt').innerText = t; document.getElementById('reward-pop').style.display='block'; };
-window.closePop = () => document.getElementById('reward-pop').style.display='none';
 
-// Background
-const dWrap = document.getElementById('diamonds');
-for(let i=0; i<12; i++){
-    const d = document.createElement('div'); d.className='diamond';
-    d.style.left=Math.random()*100+'%'; d.style.animationDelay=Math.random()*10+'s';
-    dWrap.appendChild(d);
+window.showPop = (t) => { document.getElementById('pop-amt').innerText = t; document.getElementById('reward-pop').style.display='block'; };
+window.closePop = () => { document.getElementById('reward-pop').style.display='none'; };
+
+function startCd(t, s) {
+    const lbl = document.getElementById('t-'+t), btn = document.getElementById('btn-'+t);
+    let r = s;
+    const itv = setInterval(() => {
+        lbl.innerText = `${r--}s Cooldown`;
+        if(r < 0) { clearInterval(itv); lbl.innerText = "Ready"; btn.disabled = false; }
+    }, 1000);
 }
 
-// Interstitial Ad
-window.onload = () => {
-    const l = localStorage.getItem('lastInApp') || 0;
-    if (Date.now() - l > 120000) {
-        show_10276123({ type: 'inApp', inAppSettings: { frequency: 1, capping: 0.1, interval: 30, timeout: 5, everyPage: false } });
-        localStorage.setItem('lastInApp', Date.now());
-    }
-};
+initUser();

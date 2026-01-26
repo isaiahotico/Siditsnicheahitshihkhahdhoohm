@@ -17,164 +17,201 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 
-let userData = { balance: 0, chatPoints: 0, lastChat: 0 };
-let uid = null;
+let uData = null;
+let adProgress = 0;
 
-// Initialize User
+// 1. AUTH & REGISTRATION
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        uid = user.uid;
-        syncData();
-        loadChat();
-        loadLeaderboard();
+        checkUser(user.uid);
     } else {
         signInAnonymously(auth);
     }
 });
 
-function syncData() {
-    onValue(ref(db, `users/${uid}`), (snapshot) => {
-        if (snapshot.exists()) {
-            userData = snapshot.val();
-            document.getElementById('user-balance').innerText = userData.balance.toFixed(3);
-            document.getElementById('user-points').innerText = userData.chatPoints;
-        } else {
-            set(ref(db, `users/${uid}`), { balance: 0, chatPoints: 0, lastChat: 0 });
-        }
-    });
+async function checkUser(uid) {
+    const snap = await get(ref(db, `users/${uid}`));
+    if (snap.exists()) {
+        uData = snap.val();
+        loadDashboard();
+    } else {
+        document.getElementById('login-overlay').classList.remove('hidden');
+    }
 }
 
-// 1. ADS LOGIC
-document.getElementById('btn-watch-ad').addEventListener('click', () => {
-    // Monetag SDK Call
-    show_10276123().then(() => {
-        const newBalance = (userData.balance || 0) + 0.01;
-        const newPoints = (userData.chatPoints || 0) + 1;
-        update(ref(db, `users/${uid}`), { balance: newBalance, chatPoints: newPoints });
-        // Update leaderboard
-        set(ref(db, `leaderboard/${uid}`), { name: "User", balance: newBalance });
-        alert('Reward Added: ₱0.01 & 1 Chat Point!');
-    }).catch(e => alert("Ad failed to load. Try again."));
+document.getElementById('btn-register').addEventListener('click', async () => {
+    const user = document.getElementById('reg-user').value;
+    const gcash = document.getElementById('reg-gcash').value;
+    const refCode = document.getElementById('reg-ref').value.trim();
+    const uid = auth.currentUser.uid;
+
+    if (user.length < 3 || gcash.length < 10) return alert("Invalid Details");
+
+    const newUser = {
+        uid: uid,
+        username: user,
+        gcash: gcash,
+        balance: 0,
+        chatPoints: 0,
+        referredBy: refCode || null,
+        lastChat: 0
+    };
+
+    await set(ref(db, `users/${uid}`), newUser);
+    // If referred, update referrer's count
+    if (refCode) {
+        const refSnap = await get(ref(db, `users/${refCode}`));
+        if (refSnap.exists()) {
+            const count = (refSnap.val().refCount || 0) + 1;
+            update(ref(db, `users/${refCode}`), { refCount: count });
+        }
+    }
+    location.reload();
 });
 
-// 2. CHAT LOGIC
-document.getElementById('btn-send-chat').addEventListener('click', async () => {
-    const msg = document.getElementById('chat-input').value;
-    const now = Date.now();
-
-    if (userData.chatPoints < 1) return alert("Need 1 Chat Point!");
-    if (now - (userData.lastChat || 0) < 300000) return alert("Wait for 5 mins cooldown!");
-    if (!msg) return;
-
-    const newBalance = userData.balance + 0.015;
-    const newPoints = userData.chatPoints - 1;
-
-    // Save Message
-    const chatRef = push(ref(db, 'chat'));
-    set(chatRef, { text: msg, user: uid.substring(0, 5), timestamp: serverTimestamp() });
-
-    // Update User
-    update(ref(db, `users/${uid}`), { 
-        balance: newBalance, 
-        chatPoints: newPoints, 
-        lastChat: now 
+// 2. MAIN SYNC
+function loadDashboard() {
+    document.getElementById('login-overlay').classList.add('hidden');
+    document.getElementById('display-name').innerText = uData.username;
+    document.getElementById('display-gcash').innerText = uData.gcash;
+    document.getElementById('my-ref-code').innerText = auth.currentUser.uid;
+    
+    onValue(ref(db, `users/${auth.currentUser.uid}`), (s) => {
+        const d = s.val();
+        uData = d;
+        document.getElementById('balance').innerText = d.balance.toFixed(3);
+        document.getElementById('points').innerText = d.chatPoints;
+        document.getElementById('ref-count').innerText = d.refCount || 0;
     });
 
+    loadChat();
+    loadLeaderboard();
+}
+
+// 3. REFERRAL 8% LOGIC
+async function distributeReward(amount) {
+    const uid = auth.currentUser.uid;
+    // Update User
+    const newBal = uData.balance + amount;
+    const newPoints = uData.chatPoints + (amount === 0.01 ? 1 : 0); // 1 point per ad
+    await update(ref(db, `users/${uid}`), { balance: newBal, chatPoints: newPoints });
+
+    // Pay Referrer (8%)
+    if (uData.referredBy) {
+        const refId = uData.referredBy;
+        const refSnap = await get(ref(db, `users/${refId}`));
+        if (refSnap.exists()) {
+            const commission = amount * 0.08;
+            const currentRefBal = refSnap.val().balance || 0;
+            update(ref(db, `users/${refId}`), { balance: currentRefBal + commission });
+        }
+    }
+}
+
+// 4. AD LOGIC (2 STEPS)
+document.getElementById('btn-watch-ad').addEventListener('click', () => {
+    show_10276123().then(() => {
+        adProgress++;
+        if (adProgress >= 2) {
+            distributeReward(0.01);
+            adProgress = 0;
+            alert("Reward ₱0.01 added!");
+        } else {
+            alert("Step 1 Complete! Watch 1 more ad to get reward.");
+        }
+        document.getElementById('ad-step').innerText = adProgress + 1;
+    });
+});
+
+// 5. CHAT LOGIC
+document.getElementById('btn-send').addEventListener('click', async () => {
+    const msg = document.getElementById('chat-input').value;
+    const now = Date.now();
+    if (uData.chatPoints < 1) return alert("Need 1 Point!");
+    if (now - uData.lastChat < 300000) return alert("Cooldown active!");
+    if (!msg) return;
+
+    // Save Chat
+    push(ref(db, 'chat'), { 
+        u: uData.username, 
+        m: msg, 
+        timestamp: serverTimestamp() 
+    });
+
+    // Pay User
+    distributeReward(0.015);
+    update(ref(db, `users/${auth.currentUser.uid}`), { lastChat: now });
     document.getElementById('chat-input').value = "";
     startCooldown();
 });
 
 function startCooldown() {
-    const btn = document.getElementById('btn-send-chat');
-    const timerBox = document.getElementById('cooldown-timer');
-    const timerSec = document.getElementById('timer-sec');
-    btn.disabled = true;
-    timerBox.classList.remove('hidden');
-    
-    let sec = 300;
-    const interval = setInterval(() => {
-        sec--;
-        timerSec.innerText = sec;
-        if (sec <= 0) {
-            clearInterval(interval);
-            btn.disabled = false;
-            timerBox.classList.add('hidden');
-        }
+    let s = 300;
+    const box = document.getElementById('cooldown');
+    box.classList.remove('hidden');
+    const inter = setInterval(() => {
+        s--;
+        document.getElementById('cd-timer').innerText = s;
+        if (s <= 0) { clearInterval(inter); box.classList.add('hidden'); }
     }, 1000);
 }
 
 function loadChat() {
-    const chatMsgDiv = document.getElementById('chat-messages');
-    onValue(query(ref(db, 'chat'), limitToLast(15)), (snapshot) => {
-        chatMsgDiv.innerHTML = "";
-        snapshot.forEach(child => {
-            const data = child.val();
-            chatMsgDiv.innerHTML += `<div class="bg-yellow-900/20 p-2 rounded border-l-2 border-yellow-500">
-                <span class="text-yellow-500 font-bold">#${data.user}:</span> ${data.text}
-            </div>`;
+    onValue(query(ref(db, 'chat'), limitToLast(10)), (s) => {
+        const box = document.getElementById('chat-box');
+        box.innerHTML = "";
+        s.forEach(c => {
+            const d = c.val();
+            box.innerHTML += `<p><span class="text-yellow-600 font-bold">${d.u}:</span> ${d.m}</p>`;
         });
-        chatMsgDiv.scrollTop = chatMsgDiv.scrollHeight;
+        box.scrollTop = box.scrollHeight;
     });
 }
 
-// 3. LEADERBOARD
 function loadLeaderboard() {
-    const leadDiv = document.getElementById('leaderboard');
-    onValue(query(ref(db, 'leaderboard'), orderByChild('balance'), limitToLast(5)), (snapshot) => {
-        leadDiv.innerHTML = "";
-        let entries = [];
-        snapshot.forEach(child => entries.push(child.val()));
-        entries.reverse().forEach((data, i) => {
-            leadDiv.innerHTML += `<div class="flex justify-between bg-black/40 p-2 border border-yellow-900 rounded">
-                <span>${i+1}. User ${data.name}</span>
-                <span class="text-green-400">₱${data.balance.toFixed(2)}</span>
+    onValue(query(ref(db, 'users'), orderByChild('balance'), limitToLast(5)), (s) => {
+        const l = document.getElementById('leaderboard');
+        l.innerHTML = "";
+        let arr = [];
+        s.forEach(c => arr.push(c.val()));
+        arr.reverse().forEach((u, i) => {
+            l.innerHTML += `<div class="flex justify-between bg-zinc-900 p-2 rounded text-xs">
+                <span>${i+1}. ${u.username}</span>
+                <span class="gold-text">₱${u.balance.toFixed(2)}</span>
             </div>`;
         });
     });
 }
 
-// 4. WITHDRAWAL SYSTEM
-window.openWithdraw = () => document.getElementById('modal-withdraw').classList.remove('hidden');
-window.closeModal = () => document.getElementById('modal-withdraw').classList.add('hidden');
-
-window.submitWithdraw = () => {
-    const name = document.getElementById('wd-name').value;
-    const num = document.getElementById('wd-number').value;
-    const amount = userData.balance;
-
-    if (amount < 0.02) return alert("Minimum is ₱0.02");
-    if (!name || !num) return alert("Fill all details");
-
-    const wdRef = push(ref(db, 'payouts'));
-    set(wdRef, {
-        name, num, amount, uid, time: new Date().toLocaleString(), status: 'PENDING'
-    }).then(() => {
-        update(ref(db, `users/${uid}`), { balance: 0 });
-        alert("Withdrawal Requested!");
-        closeModal();
-    });
+// 6. WITHDRAW & ADMIN
+window.openWithdraw = () => {
+    if (uData.balance < 0.02) return alert("Min. ₱0.02 required");
+    const ok = confirm(`Withdraw ₱${uData.balance.toFixed(3)} to ${uData.gcash}?`);
+    if (ok) {
+        push(ref(db, 'payouts'), {
+            user: uData.username,
+            num: uData.gcash,
+            amt: uData.balance,
+            time: new Date().toLocaleString()
+        });
+        update(ref(db, `users/${auth.currentUser.uid}`), { balance: 0 });
+        alert("Success! Payout within 24h.");
+    }
 };
 
-// 5. OWNER DASHBOARD
 window.accessAdmin = () => {
-    const pw = prompt("Enter Admin Password:");
-    if (pw === "Propetas12") {
-        document.getElementById('owner-dashboard').classList.remove('hidden');
-        const payoutDiv = document.getElementById('payout-history');
-        onValue(ref(db, 'payouts'), (snapshot) => {
-            payoutDiv.innerHTML = "";
-            snapshot.forEach(child => {
-                const data = child.val();
-                payoutDiv.innerHTML += `<div class="bg-gray-800 p-3 rounded mb-2 border border-yellow-600">
-                    <p><b>Name:</b> ${data.name}</p>
-                    <p><b>GCash:</b> ${data.num}</p>
-                    <p><b>Amount:</b> ₱${data.amount}</p>
-                    <p class="text-xs text-gray-400">${data.time}</p>
-                    <p class="text-green-500 font-bold">${data.status}</p>
+    if (prompt("Password:") === "Propetas12") {
+        document.getElementById('admin-panel').classList.remove('hidden');
+        onValue(ref(db, 'payouts'), (s) => {
+            const list = document.getElementById('admin-list');
+            list.innerHTML = "";
+            s.forEach(c => {
+                const p = c.val();
+                list.innerHTML += `<div class="bg-zinc-800 p-3 rounded border-l-4 border-yellow-500 text-[10px]">
+                    ${p.time} | <b>${p.user}</b><br>
+                    GCash: ${p.num} | <span class="text-green-500">₱${p.amt.toFixed(3)}</span>
                 </div>`;
             });
         });
-    } else {
-        alert("Wrong Password!");
     }
 };

@@ -1,283 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Evergrow – Global Garden</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-body{
-  margin:0;
-  font-family:Arial, sans-serif;
-  background:linear-gradient(135deg,#4caf50,#1b5e20);
-  color:#fff;
-  text-align:center;
-}
-.container{
-  max-width:480px;
-  margin:auto;
-  padding:10px;
-}
-.card{
-  background:rgba(0,0,0,0.25);
-  border-radius:14px;
-  padding:10px;
-  margin-bottom:10px;
-}
-.top-aide{
-  font-weight:bold;
-  padding:8px;
-}
-.stats{
-  display:flex;
-  justify-content:space-between;
-  font-size:14px;
-}
-button{
-  width:100%;
-  padding:10px;
-  margin:4px 0;
-  border:none;
-  border-radius:12px;
-  font-size:15px;
-  cursor:pointer;
-}
-.green{background:#81c784}
-.yellow{background:#ffd54f}
-.purple{background:#ba68c8}
-.orange{background:#ff8a65}
-.progress{
-  height:14px;
-  background:#1b5e20;
-  border-radius:8px;
-  overflow:hidden;
-}
-.bar{
-  height:100%;
-  width:0%;
-  background:#a5d6a7;
-}
-.garden{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:6px;
-  font-size:26px;
-}
-.plant{
-  background:rgba(0,0,0,0.3);
-  border-radius:10px;
-  padding:6px;
-}
-.small{
-  font-size:12px;
-  opacity:.9;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Monetag SDK -->
+    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background: #0f172a; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .nav-btn { flex: 1; text-align: center; padding: 10px; font-size: 12px; }
+        .active-tab { color: #22c55e; border-top: 2px solid #22c55e; }
+        #chat-messages { height: 300px; overflow-y: auto; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
 </head>
+<body class="pb-20">
 
-<body>
-<div class="container">
+    <!-- Header -->
+    <header class="p-4 glass sticky top-0 z-50 flex justify-between items-center">
+        <h1 class="font-bold text-yellow-400">🎖 PAPERHOUSE INC</h1>
+        <div class="text-right">
+            <p class="text-xs opacity-70">Balance</p>
+            <p class="text-green-400 font-bold">₱ <span id="user-balance">0.00</span></p>
+        </div>
+    </header>
 
-<div class="card top-aide" id="aide">
-🌾 Your Rice Seed is ready! Tap Plant to grow more!
-</div>
+    <div class="p-4">
+        <!-- HOME TAB -->
+        <section id="home" class="tab-content active">
+            <div class="glass p-6 rounded-2xl text-center mb-6">
+                <i class="fas fa-coins text-5xl text-yellow-500 mb-4"></i>
+                <h2 class="text-xl font-bold">Earn Rewards</h2>
+                <p class="text-sm opacity-70 mb-6">Watch ads to earn ₱0.01 per ad!</p>
+                <button onclick="watchAd()" class="bg-green-500 hover:bg-green-600 w-full py-4 rounded-xl font-bold text-lg shadow-lg transform active:scale-95 transition">
+                    WATCH AD NOW 📺
+                </button>
+            </div>
 
-<div class="card stats">
-  <div>🌾 Seeds: <span id="seeds">20</span></div>
-  <div>🌳 Roots: <span id="roots">0</span></div>
-</div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="glass p-4 rounded-xl text-center">
+                    <p class="text-xs">Min. Withdraw</p>
+                    <p class="font-bold">₱0.02</p>
+                </div>
 
-<div class="card stats">
-  <div>🧬 MP: <span id="mp">0</span></div>
-  <div>🕰️ Era: <span id="era">0</span></div>
-</div>
+                <div class="glass p-4 rounded-xl text-center">
+                    <p class="text-xs">Rate/Ad</p>
+                    <p class="font-bold">₱0.01</p>
+                </div>
+            </div>
+        </section>
 
-<div class="card">
-  <button class="green" onclick="plant()">Plant 🌾</button>
-  <button class="yellow" onclick="harvest()">Harvest 🌾</button>
-  <button class="purple" onclick="mergeAll()">Merge All 🧩</button>
-  <button class="orange" onclick="prestigeSeason()">Prestige 🔁</button>
-</div>
+        <!-- CHAT TAB -->
+        <section id="chat" class="tab-content">
+            <div class="glass rounded-xl flex flex-col h-[70vh]">
+                <div id="chat-messages" class="p-4 space-y-3 flex-grow"></div>
+                <div class="p-2 border-t border-gray-700 flex gap-2">
+                    <input type="text" id="chat-input" class="bg-slate-800 border-none rounded-lg p-2 flex-grow text-sm" placeholder="Type a message...">
+                    <button onclick="sendMessage()" class="bg-blue-500 px-4 py-2 rounded-lg"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </section>
 
-<div class="card">
-Growth
-<div class="progress"><div class="bar" id="bar"></div></div>
-</div>
+        <!-- LEADERBOARD TAB -->
+        <section id="leaderboard" class="tab-content">
+            <h3 class="text-lg font-bold mb-4"><i class="fas fa-trophy text-yellow-500 mr-2"></i>Top Earners</h3>
+            <div id="leaderboard-list" class="space-y-2"></div>
+        </section>
 
-<div class="card">
-<h3>🌼 Garden</h3>
-<div id="garden" class="garden"></div>
-</div>
+        <!-- WITHDRAW TAB -->
+        <section id="withdraw" class="tab-content">
+            <div class="glass p-6 rounded-xl">
+                <h3 class="font-bold mb-4">Withdraw via GCash</h3>
+                <input type="number" id="gcash-number" placeholder="09xxxxxxxxx" class="w-full bg-slate-800 p-3 rounded-lg mb-4">
+                <p class="text-xs text-red-400 mb-4">* Minimum withdrawal is ₱0.02</p>
+                <button onclick="requestWithdrawal()" class="w-full bg-blue-600 py-3 rounded-lg font-bold">Withdraw Now</button>
+            </div>
+        </section>
 
-<div class="card small">
-Evolution: <span id="evoName">Rice Seed</span>
-</div>
+        <!-- ADMIN TAB -->
+        <section id="admin" class="tab-content">
+            <div id="admin-login" class="glass p-6 rounded-xl">
+                <input type="password" id="admin-pass" placeholder="Admin Password" class="w-full bg-slate-800 p-3 rounded-lg mb-4">
+                <button onclick="checkAdmin()" class="w-full bg-red-600 py-3 rounded-lg font-bold">Login Admin</button>
+            </div>
+            <div id="admin-panel" class="hidden space-y-4">
+                <h3 class="font-bold">Withdrawal Requests</h3>
+                <div id="withdrawal-requests" class="space-y-2"></div>
+            </div>
+        </section>
+    </div>
 
-</div>
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 glass flex justify-around border-t border-gray-700 z-50">
+        <div class="nav-btn active-tab" onclick="showTab('home', this)"><i class="fas fa-home block text-xl"></i>Home</div>
+        <div class="nav-btn" onclick="showTab('chat', this)"><i class="fas fa-comments block text-xl"></i>Chat</div>
+        <div class="nav-btn" onclick="showTab('leaderboard', this)"><i class="fas fa-award block text-xl"></i>Top</div>
+        <div class="nav-btn" onclick="showTab('withdraw', this)"><i class="fas fa-wallet block text-xl"></i>Wallet</div>
+        <div class="nav-btn" onclick="showTab('admin', this)"><i class="fas fa-user-shield block text-xl"></i>Admin</div>
+    </nav>
 
-<script>
-/* TELEGRAM */
-if (window.Telegram?.WebApp) {
-  Telegram.WebApp.ready();
-  Telegram.WebApp.expand();
-}
-
-/* CORE STATE */
-let seeds = 20; // starter seeds
-let roots = 0;
-let growth = 0;
-let lifetimeSeeds = 0;
-let eraLevel = 0;
-let mutationPoints = 0;
-
-/* PLANT TIERS - Rice Seed starter */
-let plantTiers = [1,0,0,0,0,0]; // start with 1 Rice Seed 🌾
-
-/* FUSION & EVOLUTION */
-const fusionMult = [1,3,9,27,81,250];
-const evoStages = [
-  {icon:"🌾",name:"Rice Seed",mult:1},
-  {icon:"🌿",name:"Sprout",mult:1.5},
-  {icon:"🌳",name:"Tree",mult:2.2},
-  {icon:"🌸",name:"Bloom",mult:3.5},
-  {icon:"🌺",name:"Mythic",mult:6},
-  {icon:"🌍🌳",name:"World Tree",mult:10}
-];
-
-/* MUTATIONS */
-let mutations = {
-  growth:0,
-  yield:0
-};
-
-/* TOP WORLD CONTENT EVENTS */
-let globalEvent = {
-  active:false,
-  type:"",
-  multiplier:1
-};
-
-// Possible world events
-const worldEvents = [
-  {name:"Rainstorm 🌧️",mult:1.5,duration:180},
-  {name:"Solar Burst ☀️",mult:2,duration:60},
-  {name:"Meteor Shower 🌠",mult:3,duration:30}
-];
-
-/* HELPERS */
-function totalPlants(){ return plantTiers.reduce((a,b)=>a+b,0); }
-function globalMultiplier(){ return 1 + roots*0.15; }
-function eraMultiplier(){ return 1 + eraLevel*0.5; }
-function getEvolution(){ return Math.min(evoStages.length-1, Math.floor(Math.log10(lifetimeSeeds+1))); }
-function fusionYield(){
-  let total=0;
-  for(let i=0;i<plantTiers.length;i++) total+=plantTiers[i]*fusionMult[i];
-  return total;
-}
-
-/* ACTIONS */
-function plant(){
-  let cost = Math.floor(10*Math.pow(totalPlants(),1.25));
-  if(seeds>=cost){
-    seeds-=cost;
-    plantTiers[0]++;
-    setAide("🌾 Planted Rice Seed");
-    update();
-  } else setAide("Not enough seeds");
-}
-
-function harvest(){
-  if(growth<100){ setAide("Not ready"); return; }
-
-  let evo = getEvolution();
-  let gain =
-    fusionYield()
-    * evoStages[evo].mult
-    * (1+mutations.yield*0.25)
-    * globalMultiplier()
-    * eraMultiplier()
-    * globalEvent.multiplier;
-
-  gain = Math.floor(gain);
-  seeds+=gain;
-  lifetimeSeeds+=gain;
-  growth=0;
-
-  setAide(globalEvent.active ? `🌎 ${globalEvent.type}! Harvest +${gain}` : `🌾 Harvest +${gain}`);
-  update();
-}
-
-function mergeAll(){
-  for(let t=0;t<plantTiers.length-1;t++){
-    let pairs=Math.floor(plantTiers[t]/2);
-    if(pairs>0){
-      plantTiers[t]-=pairs*2;
-      plantTiers[t+1]+=pairs;
-    }
-  }
-  setAide("🧩 Plants merged");
-  update();
-}
-
-function prestigeSeason(){
-  if(seeds<1000){ setAide("Need 1000 seeds"); return; }
-
-  let earnedRoots = Math.floor(Math.sqrt(seeds/1000));
-  let earnedMP = Math.floor(Math.sqrt(lifetimeSeeds/10000));
-  roots+=earnedRoots; mutationPoints+=earnedMP;
-  seeds=0; growth=0; plantTiers=[0,0,0,0,0,0];
-
-  setAide(`🔁 Prestige +${earnedRoots} Roots +${earnedMP} MP`);
-  update();
-}
-
-/* UI */
-function setAide(t){ document.getElementById("aide").innerText=t; }
-function renderGarden(){
-  let g=document.getElementById("garden"); g.innerHTML="";
-  plantTiers.forEach((c,t)=>{
-    for(let i=0;i<c;i++){
-      let d=document.createElement("div");
-      d.className="plant"; d.innerText=evoStages[t]?.icon||"🌾"; g.appendChild(d);
-    }
-  });
-}
-function update(){
-  document.getElementById("seeds").innerText=Math.floor(seeds);
-  document.getElementById("roots").innerText=roots;
-  document.getElementById("mp").innerText=mutationPoints;
-  document.getElementById("era").innerText=eraLevel;
-  document.getElementById("bar").style.width=growth+"%";
-  let evo=getEvolution();
-  document.getElementById("evoName").innerText=evoStages[evo].name;
-  renderGarden();
-}
-
-/* IDLE TICK */
-setInterval(()=>{
-  if(totalPlants()>0){
-    growth += (0.6 + totalPlants()*0.15) * (1+mutations.growth*0.2) * globalMultiplier() * eraMultiplier();
-    if(growth>100) growth=100;
-  }
-  update();
-},1000);
-
-/* PASSIVE SEED SAFETY */
-setInterval(()=>{
-  if(totalPlants()===0){ seeds+=1; setAide("🌾 Free seed gained"); update();}
-},5000);
-
-/* WORLD EVENTS - Exciting top world content */
-setInterval(()=>{
-  if(!globalEvent.active && Math.random()<0.05){ // ~5% chance every tick
-    let evt = worldEvents[Math.floor(Math.random()*worldEvents.length)];
-    globalEvent={...evt,active:true};
-    setAide(`🌎 Event started: ${evt.name} x${evt.mult}`);
-    update();
-    setTimeout(()=>{ globalEvent.active=false; globalEvent.multiplier=1; setAide("🌎 Event ended"); update(); }, evt.duration*1000);
-  }
-},10000);
-</script>
-
+    <!-- Firebase SDKs -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>

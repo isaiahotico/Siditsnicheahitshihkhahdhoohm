@@ -18,119 +18,115 @@ const db = getDatabase(app);
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Get Real Telegram Username
-let username = tg.initDataUnsafe?.user?.username || "Guest_" + Math.floor(Math.random() * 9999);
-document.getElementById('tg-welcome').innerText = "@" + username;
+// Detect Real Telegram Username
+let myUser = tg.initDataUnsafe?.user?.username || "user_" + Math.floor(Math.random() * 9000);
+document.getElementById('tg-user-display').innerText = "@" + myUser;
 
-let userRef = null;
+// 1. REGISTRATION & LOGIN
+window.handleRegistration = async () => {
+    const gcash = document.getElementById('reg-gcash').value;
+    const refCode = document.getElementById('reg-ref').value.trim();
 
-// 1. INITIALIZATION
-window.saveGcash = async () => {
-    const gcash = document.getElementById('gcash-num').value;
-    if (gcash.length < 10) return alert("Enter valid GCash");
+    if (gcash.length < 10) return alert("Enter valid GCash Number");
 
-    userRef = ref(db, 'users/' + username);
+    const userRef = ref(db, 'users/' + myUser);
     const snap = await get(userRef);
 
     if (!snap.exists()) {
         await set(userRef, {
-            username: username,
+            username: myUser,
             gcash: gcash,
             balance: 0,
             points: 0,
             dailyEarnings: 0
         });
-    }
-    document.getElementById('login-overlay').classList.add('hidden');
-    document.getElementById('ref-modal').classList.remove('hidden');
-};
 
-window.applyRef = async () => {
-    const code = document.getElementById('ref-input').value.trim();
-    if (code && code !== username) {
-        const targetRef = ref(db, 'users/' + code);
-        const snap = await get(targetRef);
-        if (snap.exists()) {
-            // Auto credit 8% bonus to the referral user
-            await runTransaction(targetRef, (u) => {
+        // 8% Auto-credit to referral user
+        if (refCode && refCode !== myUser) {
+            const referRef = ref(db, 'users/' + refCode);
+            await runTransaction(referRef, (u) => {
                 if (u) u.balance = (u.balance || 0) + (0.02 * 0.08);
                 return u;
             });
         }
     }
-    closeRef();
-};
 
-window.closeRef = () => {
-    document.getElementById('ref-modal').classList.add('hidden');
+    document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('main-app').classList.remove('hidden');
-    syncData();
+    startRealtimeSync();
 };
 
-// 2. DATA SYNC (REALTIME)
-function syncData() {
-    onValue(userRef, (snap) => {
-        const val = snap.val();
-        document.getElementById('balance').innerText = val.balance.toFixed(4);
-        document.getElementById('wallet-bal').innerText = val.balance.toFixed(2);
-        document.getElementById('points').innerText = val.points;
+// 2. REALTIME SYNC
+function startRealtimeSync() {
+    // User Data
+    onValue(ref(db, 'users/' + myUser), (s) => {
+        const d = s.val();
+        document.getElementById('ui-balance').innerText = d.balance.toFixed(4);
+        document.getElementById('ui-wallet').innerText = d.balance.toFixed(2);
+        document.getElementById('ui-points').innerText = d.points;
     });
 
-    onValue(ref(db, 'chats'), (snap) => {
-        const box = document.getElementById('chat-display');
-        box.innerHTML = '';
-        snap.forEach(c => {
-            const data = c.val();
-            box.innerHTML += `<div class="p-2 bg-white/5 rounded-lg border-l-2 border-yellow-500 text-xs">
-                <span class="gold-text font-bold">${data.user}:</span> ${data.text}
-            </div>`;
-        });
-        box.scrollTop = box.scrollHeight;
-    });
-
-    onValue(query(ref(db, 'users'), orderByChild('dailyEarnings'), limitToLast(10)), (snap) => {
+    // Leaderboard (Sync every second)
+    const leaderboardQuery = query(ref(db, 'users'), orderByChild('dailyEarnings'), limitToLast(10));
+    onValue(leaderboardQuery, (s) => {
         const list = document.getElementById('top-list');
         list.innerHTML = '';
         let users = [];
-        snap.forEach(child => users.push(child.val()));
+        s.forEach(c => users.push(c.val()));
         users.reverse().forEach((u, i) => {
-            list.innerHTML += `<div class="glass-card p-3 flex justify-between">
-                <span>${i + 1}. ${u.username}</span>
+            list.innerHTML += `<div class="glass-card p-3 flex justify-between items-center">
+                <span class="text-sm font-bold">${i+1}. ${u.username}</span>
                 <span class="gold-text">₱${u.dailyEarnings.toFixed(4)}</span>
             </div>`;
         });
     });
-}
 
-// 3. REWARD LOGIC (AUTO CREDIT)
-async function addPoint(type, cd) {
-    await runTransaction(userRef, (user) => {
-        if (user) user.points = (user.points || 0) + 1;
-        return user;
+    // Chat Messages
+    onValue(ref(db, 'chats'), (s) => {
+        const box = document.getElementById('chat-messages');
+        box.innerHTML = '';
+        s.forEach(c => {
+            const m = c.val();
+            box.innerHTML += `<div class="p-2 bg-white/5 rounded-lg border-l-2 border-yellow-600 text-[11px]">
+                <b class="gold-text">${m.user}:</b> ${m.text}
+            </div>`;
+        });
+        box.scrollTop = box.scrollHeight;
     });
-    startCooldown(type, cd);
 }
 
-window.watchVideo = () => {
-    show_10276123().then(() => addPoint('video', 60));
+// 3. AUTO CREDIT AD LOGIC
+async function creditPoints(type, seconds) {
+    const userRef = ref(db, 'users/' + myUser);
+    await runTransaction(userRef, (u) => {
+        if (u) u.points = (u.points || 0) + 1;
+        return u;
+    });
+    startCooldown(type, seconds);
+}
+
+window.playVideoAd = () => {
+    show_10276123().then(() => creditPoints('video', 60));
 };
 
-window.watchBonus = () => {
-    show_10276123('pop').then(() => addPoint('bonus', 45));
+window.playBonusAd = () => {
+    show_10276123('pop').then(() => creditPoints('bonus', 45));
 };
 
-window.sendChat = async () => {
-    const input = document.getElementById('chat-msg');
+// 4. CHAT SYSTEM
+window.sendChatMessage = async () => {
+    const input = document.getElementById('chat-input');
     const msg = input.value;
+    const userRef = ref(db, 'users/' + myUser);
     const snap = await get(userRef);
-    
-    if (snap.val().points < 1) return alert("Need 1 Point!");
+
+    if (snap.val().points < 1) return alert("Need 1 Chat Point!");
     if (!msg) return;
 
-    // Trigger Monetag Inline Interstitials
+    // Monetag Inline Interstitial (2 ads requirement)
     show_10276123({ type: 'inApp', inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 0, everyPage: false } });
 
-    // Atomic Credit balance & Deduct Point
+    // Auto-credit reward & deduct point
     await runTransaction(userRef, (u) => {
         if (u) {
             u.points -= 1;
@@ -140,62 +136,63 @@ window.sendChat = async () => {
         return u;
     });
 
-    push(ref(db, 'chats'), { user: username, text: msg, time: serverTimestamp() });
+    push(ref(db, 'chats'), { user: myUser, text: msg });
     input.value = '';
     startCooldown('chat', 92);
 };
 
-// 4. WITHDRAWAL
-window.requestWithdraw = async () => {
+// 5. WITHDRAWAL
+window.withdraw = async () => {
+    const userRef = ref(db, 'users/' + myUser);
     const snap = await get(userRef);
     if (snap.val().balance < 0.02) return alert("Min: ₱0.02");
 
     const request = {
-        user: username,
+        user: myUser,
         gcash: snap.val().gcash,
         amount: 0.02,
         time: new Date().toLocaleString()
     };
+
     await push(ref(db, 'withdrawals'), request);
     await update(userRef, { balance: snap.val().balance - 0.02 });
-    alert("Withdrawal submitted!");
+    alert("Withdrawal Request Sent!");
 };
 
-// 5. OWNER DASHBOARD
-window.checkAdmin = () => {
-    if (prompt("Owner Password:") === "Propetas12") {
-        nav('admin');
-        onValue(ref(db, 'withdrawals'), (snap) => {
-            const box = document.getElementById('admin-payouts');
-            box.innerHTML = '<h2 class="gold-text">Pending Payouts</h2>';
-            snap.forEach(child => {
-                const w = child.val();
-                box.innerHTML += `<div class="glass-card p-3 text-[10px]">
-                    ${w.user} | ${w.gcash} | ₱${w.amount} <br> ${w.time}
-                </div>`;
-            });
-        });
-    }
-};
-
-// 6. UI HELPERS
+// 6. UTILS
 function startCooldown(type, sec) {
     const btn = document.getElementById('btn-' + type);
-    const tmr = document.getElementById('timer-' + type);
+    const label = document.getElementById('cd-' + type);
     btn.classList.add('cooldown');
-    let rem = sec;
-    const count = setInterval(() => {
-        rem--;
-        if (tmr) tmr.innerText = rem + "s";
-        if (rem <= 0) {
-            clearInterval(count);
+    let r = sec;
+    const timer = setInterval(() => {
+        r--;
+        if (label) label.innerText = r + "s";
+        if (r <= 0) {
+            clearInterval(timer);
             btn.classList.remove('cooldown');
-            if (tmr) tmr.innerText = "";
+            if (label) label.innerText = "";
         }
     }, 1000);
 }
 
-window.nav = (id) => {
+window.switchTab = (id) => {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.getElementById('tab-' + id).classList.add('active');
+    document.getElementById(id).classList.add('active');
+};
+
+window.adminLogin = () => {
+    if (prompt("Owner Password:") === "Propetas12") {
+        switchTab('admin');
+        onValue(ref(db, 'withdrawals'), (s) => {
+            const list = document.getElementById('admin-payouts');
+            list.innerHTML = '<h2 class="gold-text">Pending Withdrawals</h2>';
+            s.forEach(c => {
+                const w = c.val();
+                list.innerHTML += `<div class="glass-card p-3 text-[10px]">
+                    User: ${w.user} | GCash: ${w.gcash} | Amt: ₱${w.amount} | Date: ${w.time}
+                </div>`;
+            });
+        });
+    }
 };

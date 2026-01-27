@@ -1,143 +1,140 @@
-UnlimAI (GPT | Claude | MidJourney):
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gold Armor - Interstitial Edition</title>
-    <!-- Adsgram SDK -->
-    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-    <!-- Telegram SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root {
-            --gold-bright: #fff9d0;
-            --gold-metallic: linear-gradient(145deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
-            --armor-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
 
-        body {
-            margin: 0;
-            background: #0f0c08;
-            font-family: 'Inter', sans-serif;
-            color: white;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-        }
+  <!-- Telegram Web App -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-        .gold-armor-container {
-            width: 100%;
-            max-width: 400px;
-            padding: 25px;
-            background: radial-gradient(circle at top, #2c2102 0%, #000 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+  <!-- Firebase (modular SDK will be loaded in app.js) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" defer></script>
 
-        .armor-plate {
-            width: 100%;
-            background: var(--gold-metallic);
-            border-radius: 20px;
-            padding: 2px; /* Border effect */
-            box-shadow: var(--armor-shadow);
-            margin-bottom: 30px;
-        }
+  <!-- Monetag SDKs -->
+  <script src="//libtl.com/sdk.js" data-zone="10276123" data-sdk="show_10276123" defer></script>
+  <script src="//libtl.com/sdk.js" data-zone="10337853" data-sdk="show_10337853" defer></script>
+  <script src="//libtl.com/sdk.js" data-zone="10337795" data-sdk="show_10337795" defer></script>
 
-        .armor-inner {
-            background: rgba(20, 20, 20, 0.9);
-            border-radius: 18px;
-            padding: 20px;
-            text-align: center;
-        }
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Inline minimal styles (Sentinel Fire Cord Style) */
+    :root{--bg:#050405;--card:#121213;--accent:#ff3c3c;--gold:#ffd700;--text:#fff}
+    body{margin:0;font-family:Inter,Roboto,Arial;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+    .header{padding:18px;text-align:center;border-bottom:2px solid rgba(255,60,60,0.12)}
+    .header h1{margin:0;color:var(--gold);letter-spacing:1px}
+    .container{padding:16px}
+    .wallet{background:linear-gradient(135deg,#0f0f10,#0a0a0a);padding:20px;border-radius:12px;border:1px solid rgba(255,215,0,0.12);text-align:center;margin-bottom:14px}
+    .wallet h2{margin:4px 0;font-size:2rem;color:var(--gold)}
+    .ad-buttons{display:grid;gap:10px;margin-bottom:12px}
+    .btn{background:linear-gradient(90deg,#3b0000,#ff3c3c);border:none;padding:14px;border-radius:10px;color:#fff;font-weight:700;cursor:pointer}
+    .btn:active{transform:scale(.98)}
+    .small{font-size:0.9rem;color:#bbb}
+    .tabs{position:fixed;bottom:0;left:0;right:0;background:#000;display:flex;justify-content:space-around;padding:8px 0;border-top:1px solid rgba(255,60,60,0.1)}
+    .tab-btn{background:none;border:none;color:#888;font-size:0.85rem;cursor:pointer}
+    .active-tab{color:var(--gold)}
+    .screen{display:none;padding-bottom:88px}
+    .screen.active{display:block}
+    .card{background:var(--card);padding:12px;border-radius:10px;border:1px solid #222;margin-bottom:10px}
+    input[type=text], input[type=password]{width:100%;padding:10px;border-radius:8px;border:1px solid #333;background:#0b0b0b;color:var(--text);margin-bottom:8px}
 
-        h1 {
-            background: var(--gold-metallic);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 28px;
-            text-transform: uppercase;
-            margin: 0;
-            letter-spacing: 2px;
-        }
-
-        .balance-display {
-            font-size: 48px;
-            font-weight: 800;
-            color: var(--gold-bright);
-            text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
-            margin: 10px 0;
-        }
-
-        .ad-btn {
-            width: 100%;
-            height: 60px;
-            margin: 12px 0;
-            border: none;
-            border-radius: 12px;
-            background: var(--gold-metallic);
-            color: #3e2b00;
-            font-weight: 900;
-            font-size: 16px;
-            cursor: pointer;
-
-            text-transform: uppercase;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.2s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-        }
-
-        .ad-btn:active { transform: scale(0.97); }
-
-        /* Shining Animation Overlay */
-        .ad-btn::before {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
-            transition: 0.5s;
-            animation: armorShine 3s infinite;
-        }
-
-        @keyframes armorShine {
-            0% { left: -100%; }
-            20% { left: 100%; }
-            100% { left: 100%; }
-        }
-
-        #status-bar {
-            margin-top: 20px;
-            font-size: 13px;
-            color: #d4af37;
-            background: rgba(212, 175, 55, 0.1);
-            padding: 8px 20px;
-            border-radius: 50px;
-            border: 1px solid #d4af37;
-        }
-    </style>
+    .chat-box{max-height:300px;overflow:auto;padding:8px;background:#0a0a0a;border-radius:8px;border:1px solid #222}
+    .msg{padding:8px;border-left:4px solid var(--accent);margin-bottom:8px;background:#0d0d0d;border-radius:6px}
+    .leaderboard-item{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #111}
+    .muted{color:#888}
+    .admin-actions button{margin-right:8px}
+    .note{font-size:0.85rem;color:#cfcfcf}
+  </style>
 </head>
 <body>
+  <div class="header">
+    <h1>🎖🤑PAPERHOUSE INC ADS🤑🎖</h1>
+  </div>
 
-<div class="gold-armor-container">
-    <div class="armor-plate">
-        <div class="armor-inner">
-            <h1>Gold Armor</h1>
-            <div style="font-size: 11px; color: #888;">TREASURE BALANCE</div>
-            <div class="balance-display" id="balance">0</div>
+  <div class="container">
+    <div id="screen-home" class="screen active">
+      <div class="wallet card">
+        <div class="small">Your Balance</div>
+        <h2 id="balance">₱ 0.000</h2>
+        <div class="muted">Min withdraw: ₱0.02 • Reward per ad: ₱0.01 • Referral: 10%</div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="ref-code" type="text" placeholder="Enter referral username (optional)">
+          <button id="set-ref" class="btn" style="padding:10px 12px">Set</button>
         </div>
+        <div class="note">Referral code is the inviter's Telegram username (without @). Can be set only once.</div>
+      </div>
+
+      <div class="card">
+        <div class="ad-buttons">
+          <button class="btn" onclick="playAd(1)">🔥 Watch Ad — Server 1 (₱0.01)</button>
+          <button class="btn" onclick="playAd(2)">🔥 Watch Ad — Server 2 (₱0.01)</button>
+          <button class="btn" onclick="playAd(3)">🔥 Watch Ad — Server 3 (₱0.01)</button>
+        </div>
+      </div>
     </div>
 
-    <!-- 3 Interstitial Ad Buttons -->
-    <button class="ad-btn" onclick="triggerInterstitial('btn1')">🛡️ Summon Armor Ad</button>
-    <button class="ad-btn" onclick="triggerInterstitial('btn2')">⚔️ Gold Interstitial</button>
-    <button class="ad-btn" onclick="triggerInterstitial('btn3')">👑 Royal Shield Ad</button>
+    <div id="screen-chat" class="screen">
+      <div class="card">
+        <div id="chat-box" class="chat-box"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input id="chat-input" type="text" placeholder="Say something...">
+          <button class="btn" onclick="sendChat()">Send</button>
+        </div>
+      </div>
+    </div>
 
-    <div id="status-bar">Waiting for warrior...</div>
-</div>
+    <div id="screen-board" class="screen">
+      <div class="card">
+        <h3 style="margin:0 0 10px 0">Leaderboard — Top 10</h3>
+        <div id="leaderboard"></div>
+      </div>
+    </div>
 
-<script type="module" src="app.js"></script>
+    <div id="screen-cash" class="screen">
+      <div class="card">
+        <h3 style="margin:0 0 8px 0">Withdraw to GCash</h3>
+        <input id="payout-name" type="text" placeholder="GCash full name">
+        <input id="payout-num" type="text" placeholder="GCash number (09...)">
+        <button class="btn" onclick="requestWithdraw()">Request Withdraw</button>
+        <div id="withdraw-note" class="muted" style="margin-top:8px"></div>
+      </div>
+
+      <div class="card">
+        <h4 style="margin:0 0 8px 0">Your payouts history</h4>
+        <div id="my-payouts" class="muted"></div>
+      </div>
+    </div>
+
+    <div id="screen-admin" class="screen">
+      <div class="card" id="admin-login-card">
+        <input id="admin-password" type="password" placeholder="Admin password">
+        <button class="btn" onclick="loginAdmin()">Login</button>
+      </div>
+      <div id="admin-panel" style="display:none">
+        <div class="card">
+          <h3 style="margin:0 0 8px 0">Pending Payouts</h3>
+          <div id="payout-list"></div>
+        </div>
+        <div class="card">
+          <h3 style="margin:0 0 8px 0">Users (Top 50 recent)</h3>
+          <div id="users-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active-tab" onclick="openTab('home', this)">Home</button>
+    <button class="tab-btn" onclick="openTab('chat', this)">Chat</button>
+    <button class="tab-btn" onclick="openTab('board', this)">Leaderboard</button>
+    <button class="tab-btn" onclick="openTab('cash', this)">Cash</button>
+    <button class="tab-btn" onclick="openTab('admin', this)">Admin</button>
+  </div>
+
+  <!-- App logic -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>

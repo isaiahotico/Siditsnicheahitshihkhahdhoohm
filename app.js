@@ -85,6 +85,28 @@ function listenRealtime() {
     }
   });
 
+  if (section === 'leaderboard') app.loadLeaderboard();
+    },
+
+    loadLeaderboard: () => {
+        const lbRef = query(ref(db, 'users'), orderByChild('balance'), limitToLast(10));
+        onValue(lbRef, (snapshot) => {
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = "";
+            let users = [];
+            snapshot.forEach(child => { users.push(child.val()); });
+            users.reverse().forEach((u, i) => {
+                list.innerHTML += `
+                    <div class="glass p-4 rounded-xl flex justify-between items-center">
+                        <span>#${i+1} ${u.username}</span>
+                        <span class="text-green-400 font-bold">₱${u.balance.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+        });
+    },
+
+  
   // chat messages (last 50)
   const chatQuery = query(collection(db, "chat"), orderBy("createdAt", "desc"), limit(50));
   onSnapshot(chatQuery, qsnap => {

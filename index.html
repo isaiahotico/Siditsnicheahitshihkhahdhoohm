@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11,145 +11,148 @@
         :root {
             --gold: #FFD700;
             --shiny: linear-gradient(135deg, #BF953F 0%, #FCF6BA 45%, #B38728 50%, #FBF5B7 55%, #AA771C 100%);
-            --dark: #0a0a0a;
+            --dark: #050505;
         }
 
         body {
-            margin: 0; font-family: 'Inter', sans-serif; background: var(--dark); color: white;
+            margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white;
             padding-bottom: 80px; overflow-x: hidden;
         }
 
-        .gold-bg { background: var(--shiny); color: #000; font-weight: bold; }
-        .gold-text { background: var(--shiny); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
-
-        .header {
-            padding: 20px; text-align: center; border-bottom: 2px solid var(--gold);
-            background: rgba(0,0,0,0.8); position: sticky; top: 0; z-index: 100;
+        .gold-header {
+            background: var(--shiny); color: #000; padding: 15px; text-align: center;
+            font-weight: 900; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+            position: sticky; top: 0; z-index: 100;
         }
 
-        .stat-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px;
+        .gold-text { background: var(--shiny); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
+        
+        .stat-container {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px;
         }
 
         .stat-card {
-            background: #151515; padding: 15px; border-radius: 12px; border: 1px solid #333; text-align: center;
+            background: #111; padding: 12px; border-radius: 10px; border: 1px solid #222; text-align: center;
         }
 
         .card {
-            background: #151515; margin: 10px 15px; padding: 20px; border-radius: 15px;
-            border: 1px solid #222; position: relative;
+            background: #111; margin: 10px; padding: 15px; border-radius: 12px; border: 1px solid #222;
         }
 
         .btn {
-            background: var(--shiny); border: none; padding: 14px; border-radius: 10px;
-            width: 100%; font-weight: 800; cursor: pointer; margin-top: 10px; transition: 0.2s;
+            background: var(--shiny); border: none; padding: 12px; border-radius: 8px;
+            width: 100%; font-weight: bold; color: #000; margin-top: 10px; cursor: pointer;
         }
 
-        .btn:disabled { opacity: 0.4; filter: grayscale(1); }
+        .btn:disabled { opacity: 0.3; }
 
-        #chat-room { height: 280px; overflow-y: auto; background: #000; border-radius: 10px; padding: 10px; border: 1px solid #333; }
-        .msg { margin-bottom: 10px; font-size: 14px; line-height: 1.4; border-bottom: 1px solid #111; padding-bottom: 5px; }
-        .msg-u { color: var(--gold); font-weight: bold; }
+        #chat-room { height: 250px; overflow-y: auto; background: #000; border-radius: 8px; padding: 10px; border: 1px solid #333; margin-bottom: 10px; }
+        .chat-msg { margin-bottom: 8px; font-size: 14px; border-bottom: 1px solid #111; padding-bottom: 4px; }
+        .chat-user { color: var(--gold); font-weight: bold; }
 
-        .nav {
+        .navbar {
             position: fixed; bottom: 0; width: 100%; background: #000; display: flex;
             border-top: 1px solid var(--gold); padding: 10px 0; z-index: 1000;
         }
-        .nav-item { flex: 1; text-align: center; font-size: 11px; color: #666; }
-
+        .nav-item { flex: 1; text-align: center; font-size: 10px; color: #555; }
         .nav-item.active { color: var(--gold); }
 
-        .cooldown { font-size: 10px; color: #ff4444; margin-top: 4px; display: block; }
-        .hidden { display: none; }
-
         input {
-            width: 100%; padding: 12px; margin: 8px 0; background: #222; border: 1px solid #444;
-            color: white; border-radius: 8px; box-sizing: border-box;
+
+            width: 100%; padding: 10px; margin: 8px 0; background: #1a1a1a; border: 1px solid #333;
+            color: white; border-radius: 5px; box-sizing: border-box;
         }
+
+        .hidden { display: none; }
+        .cooldown { font-size: 11px; color: #ff4444; }
     </style>
 </head>
 <body>
 
-<div id="app-content">
-    <div class="header">
-        <h2 class="gold-text" style="margin:0">🎖 PAPERHOUSE INC 🎖</h2>
-        <div id="display-username" class="gold-text">@Loading...</div>
+<div class="gold-header">
+    🎖🤑PAPERHOUSE INC ADS🤑🎖<br>
+    <span id="user-tag" style="font-size: 12px;">@username</span>
+</div>
+
+<div class="stat-container">
+    <div class="stat-card"><small>POINTS</small><div id="val-pts" class="gold-text">0</div></div>
+    <div class="stat-card"><small>BALANCE</small><div class="gold-text">₱<span id="val-bal">0.00</span></div></div>
+    <div class="stat-card"><small>TOTAL EARNED</small><div id="val-total" style="color: #00ff88;">₱0.00</div></div>
+    <div class="stat-card"><small>REFERRALS</small><div id="val-refcount" class="gold-text">0</div></div>
+</div>
+
+<!-- SCREENS -->
+<div id="scr-earn" class="scr">
+    <div class="card">
+        <h3>Watch Video Ads</h3>
+        <button id="btn-video" class="btn" onclick="watchVideo()">WATCH VIDEO (1PT)</button>
+        <div id="cd-video" class="cooldown"></div>
+    </div>
+    
+    <div class="card">
+        <h3>Bonus Reward</h3>
+        <button id="btn-bonus" class="btn" onclick="watchBonus()">CLAIM BONUS (1PT)</button>
+        <div id="cd-bonus" class="cooldown"></div>
     </div>
 
-    <div class="stat-grid">
-        <div class="stat-card"><small>POINTS</small><div id="val-pts" class="gold-text">0</div></div>
-        <div class="stat-card"><small>BALANCE</small><div class="gold-text">₱<span id="val-bal">0.00</span></div></div>
-        <div class="stat-card"><small>TOTAL EARNED</small><div id="val-total" style="color:#00ff88">₱0.00</div></div>
-        <div class="stat-card"><small>REFERRALS</small><div id="val-refcount" class="gold-text">0</div></div>
-    </div>
-
-    <!-- SCREENS -->
-    <div id="scr-earn" class="scr">
-        <div class="card">
-            <h3>Reward Video</h3>
-            <button id="btn-video" class="btn" onclick="watchVideo()">WATCH VIDEO</button>
-            <span id="cd-video" class="cooldown"></span>
+    <div class="card">
+        <h4 class="gold-text">Referral System (8% Bonus)</h4>
+        <p style="font-size: 11px;">Enter friend's telegram username (without @):</p>
+        <div id="ref-input-area">
+            <input type="text" id="ref-username-input" placeholder="e.g. JohnDoe123">
+            <button class="btn" style="width: auto; padding: 5px 15px;" onclick="submitReferrer()">Sync Referrer</button>
         </div>
-        <div class="card">
-            <h3>Bonus Reward</h3>
-            <button id="btn-bonus" class="btn" onclick="watchBonus()">CLAIM BONUS</button>
-            <span id="cd-bonus" class="cooldown"></span>
-        </div>
-        <div class="card">
-            <h4 class="gold-text">Referral System (8% Bonus)</h4>
-            <p style="font-size: 11px;">Share your link and earn 8% of what they earn!</p>
-            <input id="ref-link" readonly onclick="this.select()">
-        </div>
-    </div>
-
-    <div id="scr-chat" class="scr hidden">
-        <div class="card">
-            <div id="chat-room"></div>
-            <input type="text" id="chat-msg" placeholder="Type message... (Cost 1pt)">
-            <button id="btn-send" class="btn" onclick="sendChat()">SEND & EARN ₱0.016</button>
-            <span id="cd-chat" class="cooldown"></span>
-        </div>
-    </div>
-
-    <div id="scr-leader" class="scr hidden">
-        <div class="card">
-            <h3 class="gold-text" style="text-align:center">🏆 TOP 50 EARNERS</h3>
-            <div id="leaderboard-list"></div>
-        </div>
-    </div>
-
-    <div id="scr-wallet" class="scr hidden">
-        <div class="card">
-            <h3 class="gold-text">Withdraw GCash</h3>
-            <p style="font-size: 12px;">Minimum Withdrawal: ₱1.00</p>
-            <input type="text" id="wd-name" placeholder="GCash Registered Name">
-            <input type="number" id="wd-num" placeholder="GCash Number (09...)">
-            <button class="btn" onclick="requestWithdraw()">WITHDRAW NOW</button>
-        </div>
-        <div class="card">
-            <h4>History</h4>
-            <div id="wd-history" style="font-size: 11px;"></div>
-        </div>
-    </div>
-
-    <div id="scr-admin" class="scr hidden">
-        <div class="card" id="admin-auth">
-            <input type="password" id="admin-pass" placeholder="Password">
-            <button class="btn" onclick="authAdmin()">LOGIN</button>
-        </div>
-        <div id="admin-dash" class="hidden">
-            <h3 class="gold-text">Owner Dashboard</h3>
-            <div id="admin-pending"></div>
-        </div>
+        <p style="font-size: 10px; margin-top: 10px;">Your Link: <span id="ref-link" style="color:var(--gold); word-break: break-all;">...</span></p>
     </div>
 </div>
 
-<div class="nav">
+<div id="scr-chat" class="scr hidden">
+    <div class="card">
+        <div id="chat-room"></div>
+        <input type="text" id="chat-input" placeholder="Message (Cost 1 Point)...">
+        <button id="btn-send" class="btn" onclick="sendChatMessage()">SEND & EARN ₱0.016</button>
+        <div id="cd-chat" class="cooldown"></div>
+    </div>
+</div>
+
+<div id="scr-leader" class="scr hidden">
+    <div class="card">
+        <h3 class="gold-text" style="text-align:center">🏆 TOP 25 EARNERS</h3>
+        <div id="leaderboard-list"></div>
+    </div>
+</div>
+
+<div id="scr-wallet" class="scr hidden">
+    <div class="card">
+        <h3 class="gold-text">Withdraw GCash</h3>
+        <p style="font-size: 11px;">Minimum: ₱1.00</p>
+        <input type="text" id="wd-name" placeholder="GCash Full Name">
+        <input type="number" id="wd-num" placeholder="GCash Number">
+        <button class="btn" onclick="requestWithdraw()">WITHDRAW</button>
+    </div>
+    <div class="card">
+        <h4>My Live Payout History</h4>
+        <div id="my-history" style="font-size: 11px;"></div>
+    </div>
+</div>
+
+<div id="scr-owner" class="scr hidden">
+    <div class="card" id="owner-login">
+        <input type="password" id="owner-pass" placeholder="Owner Password">
+        <button class="btn" onclick="authOwner()">LOGIN</button>
+    </div>
+    <div id="owner-dash" class="hidden">
+        <h3 class="gold-text">Owner Dashboard</h3>
+        <div id="owner-pending-list"></div>
+    </div>
+</div>
+
+<div class="navbar">
     <div class="nav-item active" onclick="showScr('earn')">EARN</div>
     <div class="nav-item" onclick="showScr('chat')">CHAT</div>
-    <div class="nav-item" onclick="showScr('leader')">TOP 50</div>
+    <div class="nav-item" onclick="showScr('leader')">TOP 25</div>
     <div class="nav-item" onclick="showScr('wallet')">WALLET</div>
-    <div class="nav-item" onclick="showScr('admin')">ADMIN</div>
+    <div class="nav-item" onclick="showScr('owner')">OWNER</div>
 </div>
 
 <script type="module" src="app.js"></script>

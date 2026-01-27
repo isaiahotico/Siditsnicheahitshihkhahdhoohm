@@ -134,47 +134,50 @@ async function saveAndReward(cash) {
     updateUI();
 }
 
-// 5. Referral via Username
-window.submitReferrer = async function() {
-    const refInput = document.getElementById('ref-username-input').value.trim().toLowerCase();
-    if (!refInput || refInput === user.username) return alert("Invalid Username");
-
-    // Search for user with this username
-    const usersRef = query(ref(db, 'users'), orderByChild('username'), limitToLast(100));
-    const snap = await get(usersRef);
-    
-    let found = false;
-    snap.forEach(child => {
-        if (child.val().username === refInput) {
-            user.referrer = refInput;
-            found = true;
-            // Increment their ref count
-            update(ref(db, 'users/' + child.key), { refCount: (child.val().refCount || 0) + 1 });
-        }
-    });
-
-    if (found) {
-        update(ref(db, 'users/' + user.id), { referrer: user.referrer });
-        alert("Referrer Synced!");
-        location.reload();
-    } else {
-        alert("User not found. They must open the app first!");
+// --- HELPERS ---
+function bindReferrer() {
+    const code = document.getElementById('ref-binder').value.trim().toLowerCase();
+    if(code && code !== myUser && !uData.refBy) {
+        db.ref('users/'+code).once('value', s => {
+            if(s.exists()){
+                db.ref('users/'+myUser).update({ refBy: code });
+                db.ref('users/'+code+'/refCount').set(increment(1));
+            }
+        });
     }
-};
-
-// 6. Live Payouts & Sync
-function startSync() {
-    // Top 25 Leaderboard
-    onValue(query(ref(db, 'users'), orderByChild('totalEarned'), limitToLast(25)), (snap) => {
-        let list = [];
-        snap.forEach(c => list.push(c.val()));
-        document.getElementById('leaderboard-list').innerHTML = list.reverse().map((u, i) => `
-            <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #222; font-size:13px;">
-                <span>${i+1}. @${u.username}</span>
-                <span class="gold-text">₱${u.totalEarned.toFixed(2)}</span>
-            </div>
-        `).join('');
+}
+    // --- REAL-TIME LEADERBOARD & LISTS ---
+function loadLeaderboard() {
+    // Limits to top 100, sorts by balance, updates EVERY time balance changes
+    db.ref('users').orderByChild('balance').limitToLast(100).on('value', s => {
+        const list = document.getElementById('lb-list'); list.innerHTML = "";
+        let users = [];
+        s.forEach(c => { users.push(c.val()); });
+        users.reverse().forEach((u, i) => {
+            list.innerHTML += `<tr><td>${i+1}</td><td>${u.username}</td><td>₱${u.balance.toFixed(2)}</td><td>${u.totalAds}</td></tr>`;
+        });
     });
+}
+
+function loadOnline() {
+    db.ref('users').on('value', s => {
+        const el = document.getElementById('online-users'); el.innerHTML = "";
+        s.forEach(c => {
+            if(Date.now() - c.val().lastActive < 120000) {
+                el.innerHTML += `<div style="padding:12px; border-bottom:1px solid #222; display:flex; justify-content:space-between;">
+                <span>${c.val().username}</span><span style="color:#0f0">Online</span></div>`;
+            }
+        });
+    });
+}
+
+function loadChat() {
+    db.ref('chat').limitToLast(25).on('value', s => {
+        const win = document.getElementById('chat-window'); win.innerHTML = "";
+        s.forEach(c => { const m = c.val(); win.innerHTML += `<div class="msg"><b>${m.u}:</b> ${m.m}</div>`; });
+        win.scrollTop = win.scrollHeight;
+    });
+}
 
     // Chat
     onValue(query(ref(db, 'messages'), limitToLast(15)), (snap) => {
@@ -187,58 +190,74 @@ function startSync() {
         box.scrollTop = box.scrollHeight;
     });
 
-    // Global Withdrawals (Sync to Owner and User)
-    onValue(ref(db, 'withdrawals'), (snap) => {
-        const myHist = document.getElementById('my-history');
-        const ownDash = document.getElementById('owner-pending-list');
-        myHist.innerHTML = ""; ownDash.innerHTML = "";
-        
-        snap.forEach(c => {
-            const w = c.val();
-            const time = new Date(w.time).toLocaleString();
-            const card = `<div style="padding:10px; border-bottom:1px solid #222;">
-                ${time} | ₱${w.amount} | <b>${w.status}</b><br>
-                <small>${w.name} - ${w.num}</small>
-            </div>`;
+    // --- WALLET ---
+function submitCashout() {
+    const val = parseFloat(document.getElementById('wd-amount').value);
+    if(val >= 1 && uData.balance >= val) {
+        db.ref('withdrawals').push({
+            username: myUser, gcash: uData.gcash, amount: val, status: 'pending', 
+            time: Date.now(), dateStr: new Date().toLocaleString()
+        });
+        db.ref('users/'+myUser+'/balance').set(increment(-val));
+        alert("Request Sent to Admin!");
+    } else alert("Minimum Cashout: ₱1.00");
+}
 
-            if (w.uid == user.id) myHist.innerHTML += card;
-            
-            if (w.status === "Pending") {
-                ownDash.innerHTML += `<div class="card">
-                    <b>@${w.username}</b><br>₱${w.amount}<br>${w.name} (${w.num})<br>
-                    <button class="btn" style="background:green; color:white;" onclick="approveWd('${c.key}')">APPROVE PAYOUT</button>
-                </div>`;
-            }
+function loadMyHistory() {
+    db.ref('withdrawals').orderByChild('username').equalTo(myUser).on('value', s => {
+        const hist = document.getElementById('wd-history'); hist.innerHTML = "";
+        s.forEach(c => {
+            const w = c.val();
+            let color = w.status === 'paid' ? '#0f0' : (w.status === 'denied' ? '#f00' : '#f80');
+            hist.innerHTML += `<tr><td>${new Date(w.time).toLocaleDateString()}</td><td>₱${w.amount}</td><td style="color:${color}">${w.status}</td></tr>`;
         });
     });
 }
 
-// 7. Wallet Logic
-window.requestWithdraw = function() {
-    const name = document.getElementById('wd-name').value;
-    const num = document.getElementById('wd-num').value;
-    if (user.balance < 1.0) return alert("Min ₱1.00");
-    if (!name || num.length < 10) return alert("Fill GCash Details");
+// --- ADMIN OWNER DASHBOARD (MANUAL) ---
+function tryAdm() {
+    if(document.getElementById('adm-pass').value === "Propetas12") {
+        document.getElementById('adm-lock').style.display = 'none';
+        document.getElementById('adm-main').style.display = 'block';
+        loadAdminData();
+    }
+}
 
-    push(ref(db, 'withdrawals'), {
-        uid: user.id, username: user.username,
-        name, num, amount: 1.0, status: "Pending", time: serverTimestamp()
+function loadAdminData() {
+    db.ref('withdrawals').on('value', s => {
+        const pArea = document.getElementById('adm-pendings'), cArea = document.getElementById('adm-completed');
+        let totalPaid = 0; pArea.innerHTML = ""; cArea.innerHTML = "";
+        
+        s.forEach(c => {
+            const w = c.val(); w.id = c.key;
+            if(w.status === 'pending') {
+                pArea.innerHTML += `
+                <div class="admin-item">
+                    <b>USER:</b> ${w.username} <br>
+                    <b>GCASH:</b> ${w.gcash} <br>
+                    <b>AMOUNT:</b> ₱${w.amount} <br>
+                    <b>TIME:</b> ${w.dateStr} <br>
+                    <button class="btn btn-approve" onclick="updateWd('${w.id}', 'paid')">APPROVE</button>
+                    <button class="btn btn-deny" onclick="updateWd('${w.id}', 'denied', ${w.amount}, '${w.username}')">DENY & REFUND</button>
+                </div>`;
+            } else if(w.status === 'paid') {
+                totalPaid += w.amount;
+                cArea.innerHTML += `<div style="font-size:0.7rem; border-bottom:1px solid #333; padding:5px;">${w.username} | ₱${w.amount} | PAID</div>`;
+            }
+        });
+        document.getElementById('adm-total').innerText = totalPaid.toFixed(2);
     });
+}
 
-    user.balance -= 1.0;
-    update(ref(db, 'users/' + user.id), { balance: user.balance });
-    alert("Withdrawal Sent!");
-};
-
-// 8. Owner Logic
-window.authOwner = function() {
-    if (document.getElementById('owner-pass').value === "Propetas12") {
-        document.getElementById('owner-login').classList.add('hidden');
-        document.getElementById('owner-dash').classList.remove('hidden');
-    } else { alert("Wrong Password"); }
-};
-
-window.approveWd = (key) => update(ref(db, 'withdrawals/' + key), { status: "Paid" });
+function updateWd(id, status, refund = 0, user = "") {
+    db.ref('withdrawals/'+id).update({ status: status });
+    if(status === 'denied' && refund > 0) {
+        db.ref('users/'+user+'/balance').set(increment(refund));
+        alert("Denied and Refunded.");
+    } else {
+        alert("Marked as Paid.");
+    }
+}
 
 // UI Helpers
 function updateUI() {

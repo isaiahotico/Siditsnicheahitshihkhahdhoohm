@@ -2,188 +2,156 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Watch-to-Watch | Premium Player</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FreeGcashAds - Gold Armor</title>
+    <!-- Telegram Web App Script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Adsgram Script -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     <style>
         :root {
-            --primary: #ff0000;
-            --bg: #0f0f0f;
-            --card-bg: #1e1e1e;
-            --text: #ffffff;
-            --accent: #3ea6ff;
+            --gold: #f5d76e;
+            --dark-gold: #b8860b;
+            --armor-plate: linear-gradient(145deg, #dfbc4d, #f9ea8d, #b88a1a);
+            --shine-anim: shine 3s infinite;
         }
 
         body {
-            font-family: 'Roboto', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
             margin: 0;
             padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #000;
+            background-image: radial-gradient(circle at center, #2c2102 0%, #000 100%);
+            color: #fff;
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        header {
+        .armor-header {
             width: 100%;
-            padding: 15px 5%;
-            background: rgba(15, 15, 15, 0.95);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            height: 180px;
+            background: var(--armor-plate);
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            box-sizing: border-box;
-            border-bottom: 1px solid #333;
+            border-bottom: 4px solid var(--dark-gold);
+            box-shadow: 0 5px 20px rgba(218, 165, 32, 0.4);
+            position: relative;
         }
 
-        .user-info { display: flex; align-items: center; gap: 10px; }
-        #tg-username { color: var(--accent); font-weight: bold; }
+        .armor-header h1 {
+            font-size: 2rem;
+            margin: 0;
+            color: #332100;
+            text-shadow: 1px 1px 0px #fff;
+            letter-spacing: 2px;
+        }
 
-        .container {
-            width: 95%;
-            max-width: 1000px;
+        .balance-container {
+            margin-top: -30px;
+            background: #1a1a1a;
+            padding: 20px 40px;
+            border-radius: 50px;
+            border: 2px solid var(--dark-gold);
+            box-shadow: 0 0 15px var(--dark-gold);
+            text-align: center;
+            z-index: 10;
+        }
+
+        .balance-value {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: var(--gold);
+            text-shadow: 0 0 10px rgba(245, 215, 110, 0.5);
+        }
+
+        .ad-container {
+            width: 90%;
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .btn-gold {
+            background: var(--armor-plate);
+            border: 1px solid #7a5d0f;
+
+            padding: 18px;
+            border-radius: 12px;
+            color: #332100;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .btn-gold:active { transform: scale(0.95); }
+
+        /* Shining Animation */
+        .btn-gold::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+            transform: rotate(45deg);
+            animation: shine 4s infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-150%) rotate(45deg); }
+            100% { transform: translateX(150%) rotate(45deg); }
+        }
+
+        #status-msg {
             margin-top: 20px;
+            font-size: 0.9rem;
+            color: var(--gold);
             text-align: center;
         }
 
-        .player-container {
-            position: relative;
-            width: 100%;
-            padding-top: 56.25%; /* 16:9 Aspect Ratio */
-            background: #000;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        iframe {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            border: none;
-        }
-
-        .controls {
-            margin: 20px 0;
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-
-        button {
-            padding: 12px 25px;
-            border-radius: 25px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-
-        .btn-next { background: var(--primary); color: white; font-size: 1.1em; }
-        .btn-next:hover { transform: scale(1.05); background: #cc0000; }
-
-        .input-section {
-            background: var(--card-bg);
-
+        .footer {
+            margin-top: auto;
             padding: 20px;
-            border-radius: 15px;
-            margin: 20px 0;
+            font-size: 10px;
+            opacity: 0.5;
         }
-
-        input {
-            width: 70%;
-            padding: 12px;
-            border-radius: 5px;
-            border: 1px solid #444;
-            background: #2a2a2a;
-            color: white;
-        }
-
-        .my-links {
-            text-align: left;
-            margin-top: 30px;
-        }
-
-        .link-item {
-            background: #2a2a2a;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        #login-container { margin: 20px; }
     </style>
-
-    <!-- Monetag SDKs -->
-    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
-    <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
-    <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
 </head>
 <body>
 
-    <header>
-        <div class="logo"><i class="fab fa-youtube" style="color:red"></i> Watch2Watch</div>
-        <div class="user-info">
-            <span id="tg-username">Guest User</span>
-            <div id="login-container">
-                <!-- Telegram Login Widget -->
-                <script async src="https://telegram.org/js/telegram-widget.js?22" 
-                    data-telegram-login="YOUR_BOT_USERNAME" 
-                    data-size="small" 
-                    data-onauth="onTelegramAuth(user)" 
-                    data-request-access="write"></script>
-            </div>
-        </div>
-    </header>
-
-    <div class="container">
-        <!-- Player -->
-        <div class="player-container">
-            <div id="player-placeholder" style="color: #666; padding-top: 20%;">
-                <i class="fas fa-play-circle fa-5x"></i>
-                <p>Click NEXT to start watching</p>
-            </div>
-            <div id="youtube-frame-wrapper"></div>
-        </div>
-
-        <div class="controls">
-            <button class="btn-next" onclick="handleNextVideo()">
-                <i class="fas fa-forward"></i> NEXT RANDOM VIDEO
-            </button>
-        </div>
-
-        <!-- Input Section -->
-        <div class="input-section">
-            <h3>Add Your YouTube Video</h3>
-            <input type="text" id="video-url" placeholder="Paste YouTube Link (e.g., https://youtu.be/...)">
-            <button onclick="submitVideo()" style="background: var(--accent); color: white;">SUBMIT</button>
-        </div>
-
-        <!-- Profile / My History -->
-        <div class="my-links">
-            <h3><i class="fas fa-history"></i> My Submitted Links</h3>
-            <div id="links-list">
-                <!-- Links will appear here -->
-            </div>
-        </div>
+    <div class="armor-header">
+        <h1>FREEGCASH</h1>
+        <p style="color: #4a3701; font-weight: bold;">Adsgram Gold Edition</p>
     </div>
 
-    <!-- Firebase SDKs -->
-    <script type="module" src="app.js"></script>
+    <div class="balance-container">
+        <div style="font-size: 0.8rem; color: #888;">CURRENT POINTS</div>
+        <div class="balance-value" id="balance">0</div>
+    </div>
 
-    <script>
-        // Callback for Telegram
-        function onTelegramAuth(user) {
-            localStorage.setItem('tg_user', JSON.stringify(user));
-            document.getElementById('tg-username').innerText = "@" + user.username;
-            document.getElementById('login-container').style.display = 'none';
-            // Trigger event for app.js
-            window.dispatchEvent(new Event('userLogin'));
-        }
-    </script>
+    <div class="ad-container">
+        <button class="btn-gold" id="btn-reward-1">✨ Watch Golden Ad (+10)</button>
+        <button class="btn-gold" id="btn-reward-2">🛡️ Armor Bonus (+10)</button>
+        <button class="btn-gold" id="btn-interstitial">💰 Instant Reward (+5)</button>
+    </div>
+
+    <div id="status-msg">Welcome, Warrior.</div>
+
+    <div class="footer">Adsgram ID Verification Active</div>
+
+    <!-- Firebase App Script -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>

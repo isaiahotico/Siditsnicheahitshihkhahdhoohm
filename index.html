@@ -95,16 +95,25 @@
         <div id="cd-bonus" class="cooldown"></div>
     </div>
 
-    <div class="card">
-        <h4 class="gold-text">Referral System (8% Bonus)</h4>
-        <p style="font-size: 11px;">Enter friend's telegram username (without @):</p>
-        <div id="ref-input-area">
-            <input type="text" id="ref-username-input" placeholder="e.g. JohnDoe123">
-            <button class="btn" style="width: auto; padding: 5px 15px;" onclick="submitReferrer()">Sync Referrer</button>
+<div class="card">
+                <h4>🤝 INVITE FRIENDS</h4>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="ref-binder" placeholder="Referrer Username">
+                    <button class="btn btn-blue" style="width: 100px; font-size: 0.7rem;" onclick="bindReferrer()">BIND</button>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                    <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:15px; text-align:center;">
+                        <small>Total Invites</small><br><b id="txt-ref-c">0</b>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); padding:1
+
+2px; border-radius:15px; text-align:center;">
+                        <small>Bonus Pool</small><br><b id="txt-ref-b">₱0.00</b>
+                    </div>
+                </div>
+                <button class="btn btn-gold" style="margin-top:15px;" onclick="claimBonus()">CLAIM REWARDS</button>
+            </div>
         </div>
-        <p style="font-size: 10px; margin-top: 10px;">Your Link: <span id="ref-link" style="color:var(--gold); word-break: break-all;">...</span></p>
-    </div>
-</div>
 
 <div id="scr-chat" class="scr hidden">
     <div class="card">
@@ -115,44 +124,74 @@
     </div>
 </div>
 
-<div id="scr-leader" class="scr hidden">
-    <div class="card">
-        <h3 class="gold-text" style="text-align:center">🏆 TOP 25 EARNERS</h3>
-        <div id="leaderboard-list"></div>
+
+        <!-- LEADERBOARD (AUTO SYNC) -->
+        <div id="page-lb" class="page">
+            <header><h1>TOP EARNERS</h1></header>
+            <div class="card">
+                <table>
+                    <thead><tr><th>#</th><th>User</th><th>Balance</th><th>Total Ads</th></tr></thead>
+                    <tbody id="lb-list"></tbody>
+                </table>
+            </div>
+        </div>
+
+</div><!-- WALLET & WITHDRAWAL -->
+        <div id="page-wallet" class="page">
+            <header><h1>WALLET</h1></header>
+            <div class="card">
+                <p style="text-align:center; color:var(--gold); font-size: 0.8rem;">MINIMUM CASHOUT: ₱1.00</p>
+                <input type="number" id="wd-amount" placeholder="Amount to Withdraw">
+                <button class="btn btn-gold" onclick="submitCashout()">CASHOUT VIA GCASH</button>
+            </div>
+            <div class="card">
+                <h4>TRANSACTION HISTORY</h4>
+                <table>
+                    <thead><tr><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
+                    <tbody id="wd-history"></tbody>
+                </table>
+            </div>
+            <button class="btn" style="background:none; color:#333; font-size:0.7rem;" onclick="tab('page-admin')">ADMIN LOGIN</button>
+        </div>
+
+        <!-- ADMIN DASHBOARD (MANUAL APPROVE) -->
+        <div id="page-admin" class="page">
+            <header><h1>OWNER PANEL</h1></header>
+            <div class="card" id="adm-lock">
+                <input type="password" id="adm-pass" placeholder="Admin Password">
+                <button class="btn btn-gold" onclick="tryAdm()">UNLOCK</button>
+            </div>
+            <div id="adm-main" style="display:none;">
+                <div class="card" style="background:#001a00; text-align:center;">
+                    <small>TOTAL PAID TO USERS</small>
+                    <div style="font-size:2rem; color:var(--green);">₱<span id="adm-total">0.0
+
+0</span></div>
+                </div>
+                <h4>PENDING REQUESTS</h4>
+                <div id="adm-pendings"></div>
+                <h4>COMPLETED PAYMENTS</h4>
+                <div id="adm-completed"></div>
+            </div>
+        </div>
+
     </div>
+
+<div class="nav-item" onclick="tab('page-wallet')">💰<br>Cash</div>
+    </nav>
 </div>
 
-<div id="scr-wallet" class="scr hidden">
-    <div class="card">
-        <h3 class="gold-text">Withdraw GCash</h3>
-        <p style="font-size: 11px;">Minimum: ₱1.00</p>
-        <input type="text" id="wd-name" placeholder="GCash Full Name">
-        <input type="number" id="wd-num" placeholder="GCash Number">
-        <button class="btn" onclick="requestWithdraw()">WITHDRAW</button>
-    </div>
-    <div class="card">
-        <h4>My Live Payout History</h4>
-        <div id="my-history" style="font-size: 11px;"></div>
-    </div>
-</div>
+<!-- SUCCESS POPUP -->
+<div id="reward-pop"><div class="pop-box animate__animated" id="pop-anim"><span>EARNED</span><div id="pop-val" style="font-size:1.8rem;">₱0.01</div></div></div>
 
-<div id="scr-owner" class="scr hidden">
-    <div class="card" id="owner-login">
-        <input type="password" id="owner-pass" placeholder="Owner Password">
-        <button class="btn" onclick="authOwner()">LOGIN</button>
-    </div>
-    <div id="owner-dash" class="hidden">
-        <h3 class="gold-text">Owner Dashboard</h3>
-        <div id="owner-pending-list"></div>
-    </div>
-</div>
+
 
 <div class="navbar">
     <div class="nav-item active" onclick="showScr('earn')">EARN</div>
     <div class="nav-item" onclick="showScr('chat')">CHAT</div>
-    <div class="nav-item" onclick="showScr('leader')">TOP 25</div>
-    <div class="nav-item" onclick="showScr('wallet')">WALLET</div>
-    <div class="nav-item" onclick="showScr('owner')">OWNER</div>
+    <div class="nav-item" onclick="tab('page-lb')">🏆<br>Rank</div>
+    <div class="nav-item" onclick="tab('page-online')">🟢<br>Online</div>
+    <div class="nav-item" onclick="tab('page-wallet')">💰<br>Cash</div>
 </div>
 
 <script type="module" src="app.js"></script>

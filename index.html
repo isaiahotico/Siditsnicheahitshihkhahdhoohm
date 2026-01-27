@@ -1,157 +1,143 @@
+UnlimAI (GPT | Claude | MidJourney):
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FreeGcashAds - Gold Armor</title>
-    <!-- Telegram Web App Script -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Adsgram Script -->
+    <title>Gold Armor - Interstitial Edition</title>
+    <!-- Adsgram SDK -->
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <!-- Telegram SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --gold: #f5d76e;
-            --dark-gold: #b8860b;
-            --armor-plate: linear-gradient(145deg, #dfbc4d, #f9ea8d, #b88a1a);
-            --shine-anim: shine 3s infinite;
+            --gold-bright: #fff9d0;
+            --gold-metallic: linear-gradient(145deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+            --armor-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         body {
             margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', sans-serif;
-            background: #000;
-            background-image: radial-gradient(circle at center, #2c2102 0%, #000 100%);
-            color: #fff;
+            background: #0f0c08;
+            font-family: 'Inter', sans-serif;
+            color: white;
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .armor-header {
-            width: 100%;
-            height: 180px;
-            background: var(--armor-plate);
-            display: flex;
-            flex-direction: column;
             justify-content: center;
-            align-items: center;
-            border-bottom: 4px solid var(--dark-gold);
-            box-shadow: 0 5px 20px rgba(218, 165, 32, 0.4);
-            position: relative;
+            min-height: 100vh;
         }
 
-        .armor-header h1 {
-            font-size: 2rem;
+        .gold-armor-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 25px;
+            background: radial-gradient(circle at top, #2c2102 0%, #000 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .armor-plate {
+            width: 100%;
+            background: var(--gold-metallic);
+            border-radius: 20px;
+            padding: 2px; /* Border effect */
+            box-shadow: var(--armor-shadow);
+            margin-bottom: 30px;
+        }
+
+        .armor-inner {
+            background: rgba(20, 20, 20, 0.9);
+            border-radius: 18px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            background: var(--gold-metallic);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 28px;
+            text-transform: uppercase;
             margin: 0;
-            color: #332100;
-            text-shadow: 1px 1px 0px #fff;
             letter-spacing: 2px;
         }
 
-        .balance-container {
-            margin-top: -30px;
-            background: #1a1a1a;
-            padding: 20px 40px;
-            border-radius: 50px;
-            border: 2px solid var(--dark-gold);
-            box-shadow: 0 0 15px var(--dark-gold);
-            text-align: center;
-            z-index: 10;
+        .balance-display {
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--gold-bright);
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+            margin: 10px 0;
         }
 
-        .balance-value {
-            font-size: 2.5rem;
-            font-weight: 900;
-            color: var(--gold);
-            text-shadow: 0 0 10px rgba(245, 215, 110, 0.5);
-        }
-
-        .ad-container {
-            width: 90%;
-            margin-top: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .btn-gold {
-            background: var(--armor-plate);
-            border: 1px solid #7a5d0f;
-
-            padding: 18px;
+        .ad-btn {
+            width: 100%;
+            height: 60px;
+            margin: 12px 0;
+            border: none;
             border-radius: 12px;
-            color: #332100;
-            font-weight: bold;
-            font-size: 1.1rem;
+            background: var(--gold-metallic);
+            color: #3e2b00;
+            font-weight: 900;
+            font-size: 16px;
             cursor: pointer;
+
             text-transform: uppercase;
             position: relative;
             overflow: hidden;
             transition: transform 0.2s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
         }
 
-        .btn-gold:active { transform: scale(0.95); }
+        .ad-btn:active { transform: scale(0.97); }
 
-        /* Shining Animation */
-        .btn-gold::after {
-            content: "";
+        /* Shining Animation Overlay */
+        .ad-btn::before {
+            content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
-            transform: rotate(45deg);
-            animation: shine 4s infinite;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            transition: 0.5s;
+            animation: armorShine 3s infinite;
         }
 
-        @keyframes shine {
-            0% { transform: translateX(-150%) rotate(45deg); }
-            100% { transform: translateX(150%) rotate(45deg); }
+        @keyframes armorShine {
+            0% { left: -100%; }
+            20% { left: 100%; }
+            100% { left: 100%; }
         }
 
-        #status-msg {
+        #status-bar {
             margin-top: 20px;
-            font-size: 0.9rem;
-            color: var(--gold);
-            text-align: center;
-        }
-
-        .footer {
-            margin-top: auto;
-            padding: 20px;
-            font-size: 10px;
-            opacity: 0.5;
+            font-size: 13px;
+            color: #d4af37;
+            background: rgba(212, 175, 55, 0.1);
+            padding: 8px 20px;
+            border-radius: 50px;
+            border: 1px solid #d4af37;
         }
     </style>
 </head>
 <body>
 
-    <div class="armor-header">
-        <h1>FREEGCASH</h1>
-        <p style="color: #4a3701; font-weight: bold;">Adsgram Gold Edition</p>
+<div class="gold-armor-container">
+    <div class="armor-plate">
+        <div class="armor-inner">
+            <h1>Gold Armor</h1>
+            <div style="font-size: 11px; color: #888;">TREASURE BALANCE</div>
+            <div class="balance-display" id="balance">0</div>
+        </div>
     </div>
 
-    <div class="balance-container">
-        <div style="font-size: 0.8rem; color: #888;">CURRENT POINTS</div>
-        <div class="balance-value" id="balance">0</div>
-    </div>
+    <!-- 3 Interstitial Ad Buttons -->
+    <button class="ad-btn" onclick="triggerInterstitial('btn1')">🛡️ Summon Armor Ad</button>
+    <button class="ad-btn" onclick="triggerInterstitial('btn2')">⚔️ Gold Interstitial</button>
+    <button class="ad-btn" onclick="triggerInterstitial('btn3')">👑 Royal Shield Ad</button>
 
-    <div class="ad-container">
-        <button class="btn-gold" id="btn-reward-1">✨ Watch Golden Ad (+10)</button>
-        <button class="btn-gold" id="btn-reward-2">🛡️ Armor Bonus (+10)</button>
-        <button class="btn-gold" id="btn-interstitial">💰 Instant Reward (+5)</button>
-    </div>
+    <div id="status-bar">Waiting for warrior...</div>
+</div>
 
-    <div id="status-msg">Welcome, Warrior.</div>
-
-    <div class="footer">Adsgram ID Verification Active</div>
-
-    <!-- Firebase App Script -->
-    <script type="module" src="app.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>

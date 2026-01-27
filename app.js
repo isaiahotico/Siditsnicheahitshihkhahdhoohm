@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// --- Firebase Configuration ---
+// --- Firebase Config ---
 const firebaseConfig = {
   apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
   authDomain: "freegcash-ads.firebaseapp.com",
@@ -13,74 +13,70 @@ const firebaseConfig = {
   measurementId: "G-Z64B87ELGP"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Initialize Telegram WebApp
-const tg = window.Telegram?.WebApp;
-tg?.ready();
-tg?.expand();
-
-// Generate a User ID (From Telegram or fallback)
-const userId = tg?.initDataUnsafe?.user?.id?.toString() || "guest_user";
-
-// --- Adsgram Initialization ---
+// --- Adsgram Controller Setup ---
 const AdsGram = window.AdsGram || window.SAD;
 
-// Define the controllers using your block IDs
-const controller1 = AdsGram.init({ blockId: "task-21469" });
-const controller2 = AdsGram.init({ blockId: "21470" });
-const controller3 = AdsGram.init({ blockId: "int-21471" });
+// Initializing the 3 different controllers with your Block IDs
+const controllers = {
+    btn1: AdsGram.init({ blockId: "task-21469" }),
+    btn2: AdsGram.init({ blockId: "int-21471" }),
+    btn3: AdsGram.init({ blockId: "int-21422" })
+};
 
-// UI Elements
+const tg = window.Telegram?.WebApp;
+const userId = tg?.initDataUnsafe?.user?.id?.toString() || "local_warrior";
 const balanceEl = document.getElementById('balance');
-const statusEl = document.getElementById('status-msg');
+const statusEl = document.getElementById('status-bar');
 
-// Load User Data
-async function loadUserData() {
+// Sync balance from Firebase
+async function syncBalance() {
     const userRef = doc(db, "users", userId);
-    const docSnap = await getDoc(userRef);
-    if (docSnap.exists()) {
-        balanceEl.innerText = docSnap.data().points || 0;
+    const snap = await getDoc(userRef);
+    if (snap.exists()) {
+        balanceEl.innerText = snap.data().points;
     } else {
-        await setDoc(userRef, { points: 0, username: tg?.initDataUnsafe?.user?.username || "Guest" });
+        await setDoc(userRef, { points: 0 });
     }
 }
 
-// Function to handle Ads and Rewards
-async function triggerAd(controller, amount) {
-    statusEl.innerText = "Loading golden ad...";
+// Interstitial Handler
+async function triggerInterstitial(btnKey) {
+    statusEl.innerText = "Loading golden armor ad...";
     
     try {
-        const result = await controller.show();
+        const adController = controllers[btnKey];
+        const result = await adController.show();
+        
         if (result.done) {
-            // Success! Reward the user in Firestore
-            statusEl.innerText = "Reward Confirmed! Updating Armor...";
-            const userRef = doc(db, "users", userId);
-            
-            await setDoc(userRef, { 
-                points: increment(amount),
-                lastClaim: new Date()
-            }, { merge: true });
-
-            // Update UI locally
-            const currentPoints = parseInt(balanceEl.innerText);
-            balanceEl.innerText = currentPoints + amount;
-            statusEl.innerText = `Success! +${amount} points added.`;
+            statusEl.innerText = "Ad Finished! Reward granted.";
+            await updateFirebase(10); // Reward 10 gold for watching
         } else {
-            statusEl.innerText = "Ad closed early. No points awarded.";
+            statusEl.innerText = "Ad dismissed early.";
         }
-    } catch (e) {
-        console.error(e);
-        statusEl.innerText = "Ad failed to load. Try again later.";
+    } catch (err) {
+        console.error("Adsgram error:", err);
+        statusEl.innerText = "Ad Error: " + (err.description || "Failed to load");
     }
 }
 
-// Event Listeners
-document.getElementById('btn-reward-1').addEventListener('click', () => triggerAd(controller1, 10));
-document.getElementById('btn-reward-2').addEventListener('click', () => triggerAd(controller2, 10));
-document.getElementById('btn-interstitial').addEventListener('click', () => triggerAd(controller3, 5));
+async function updateFirebase(amount) {
+    const userRef = doc(db, "users", userId);
+    await setDoc(userRef, { 
+        points: increment(amount),
+        lastUpdated: new Date()
+    }, { merge: true });
+    
+    // Refresh local UI
+    const snap = await getDoc(userRef);
+    balanceEl.innerText = snap.data().points;
+}
 
-// Initial Load
-loadUserData();
+// Expose to window for HTML access
+window.triggerInterstitial = triggerInterstitial;
+
+// Init
+syncBalance();
+if(tg) tg.expand();

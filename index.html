@@ -1,199 +1,189 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Watch-to-Watch | Premium Player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --gold: #FFD700;
-            --shiny: linear-gradient(135deg, #BF953F 0%, #FCF6BA 45%, #B38728 50%, #FBF5B7 55%, #AA771C 100%);
-            --dark: #050505;
+            --primary: #ff0000;
+            --bg: #0f0f0f;
+            --card-bg: #1e1e1e;
+            --text: #ffffff;
+            --accent: #3ea6ff;
         }
 
         body {
-            margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white;
-            padding-bottom: 80px; overflow-x: hidden;
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .gold-header {
-            background: var(--shiny); color: #000; padding: 15px; text-align: center;
-            font-weight: 900; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
-            position: sticky; top: 0; z-index: 100;
+        header {
+            width: 100%;
+            padding: 15px 5%;
+            background: rgba(15, 15, 15, 0.95);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            border-bottom: 1px solid #333;
         }
 
-        .gold-text { background: var(--shiny); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
-        
-        .stat-container {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px;
+        .user-info { display: flex; align-items: center; gap: 10px; }
+        #tg-username { color: var(--accent); font-weight: bold; }
+
+        .container {
+            width: 95%;
+            max-width: 1000px;
+            margin-top: 20px;
+            text-align: center;
         }
 
-        .stat-card {
-            background: #111; padding: 12px; border-radius: 10px; border: 1px solid #222; text-align: center;
+        .player-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        .card {
-            background: #111; margin: 10px; padding: 15px; border-radius: 12px; border: 1px solid #222;
+        iframe {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border: none;
         }
 
-        .btn {
-            background: var(--shiny); border: none; padding: 12px; border-radius: 8px;
-            width: 100%; font-weight: bold; color: #000; margin-top: 10px; cursor: pointer;
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
         }
 
-        .btn:disabled { opacity: 0.3; }
-
-        #chat-room { height: 250px; overflow-y: auto; background: #000; border-radius: 8px; padding: 10px; border: 1px solid #333; margin-bottom: 10px; }
-        .chat-msg { margin-bottom: 8px; font-size: 14px; border-bottom: 1px solid #111; padding-bottom: 4px; }
-        .chat-user { color: var(--gold); font-weight: bold; }
-
-        .navbar {
-            position: fixed; bottom: 0; width: 100%; background: #000; display: flex;
-            border-top: 1px solid var(--gold); padding: 10px 0; z-index: 1000;
+        button {
+            padding: 12px 25px;
+            border-radius: 25px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
         }
-        .nav-item { flex: 1; text-align: center; font-size: 10px; color: #555; }
-        .nav-item.active { color: var(--gold); }
+
+        .btn-next { background: var(--primary); color: white; font-size: 1.1em; }
+        .btn-next:hover { transform: scale(1.05); background: #cc0000; }
+
+        .input-section {
+            background: var(--card-bg);
+
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
 
         input {
-
-            width: 100%; padding: 10px; margin: 8px 0; background: #1a1a1a; border: 1px solid #333;
-            color: white; border-radius: 5px; box-sizing: border-box;
+            width: 70%;
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #2a2a2a;
+            color: white;
         }
 
-        .hidden { display: none; }
-        .cooldown { font-size: 11px; color: #ff4444; }
+        .my-links {
+            text-align: left;
+            margin-top: 30px;
+        }
+
+        .link-item {
+            background: #2a2a2a;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #login-container { margin: 20px; }
     </style>
+
+    <!-- Monetag SDKs -->
+    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
+    <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
+    <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
 </head>
 <body>
 
-<div class="gold-header">
-    🎖🤑PAPERHOUSE INC ADS🤑🎖<br>
-    <span id="user-tag" style="font-size: 12px;">@username</span>
-</div>
-
-<div class="stat-container">
-    <div class="stat-card"><small>POINTS</small><div id="val-pts" class="gold-text">0</div></div>
-    <div class="stat-card"><small>BALANCE</small><div class="gold-text">₱<span id="val-bal">0.00</span></div></div>
-    <div class="stat-card"><small>TOTAL EARNED</small><div id="val-total" style="color: #00ff88;">₱0.00</div></div>
-    <div class="stat-card"><small>REFERRALS</small><div id="val-refcount" class="gold-text">0</div></div>
-</div>
-
-<!-- SCREENS -->
-<div id="scr-earn" class="scr">
-    <div class="card">
-        <h3>Watch Video Ads</h3>
-        <button id="btn-video" class="btn" onclick="watchVideo()">WATCH VIDEO (1PT)</button>
-        <div id="cd-video" class="cooldown"></div>
-    </div>
-    
-    <div class="card">
-        <h3>Bonus Reward</h3>
-        <button id="btn-bonus" class="btn" onclick="watchBonus()">CLAIM BONUS (1PT)</button>
-        <div id="cd-bonus" class="cooldown"></div>
-    </div>
-
-<div class="card">
-                <h4>🤝 INVITE FRIENDS</h4>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="ref-binder" placeholder="Referrer Username">
-                    <button class="btn btn-blue" style="width: 100px; font-size: 0.7rem;" onclick="bindReferrer()">BIND</button>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                    <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:15px; text-align:center;">
-                        <small>Total Invites</small><br><b id="txt-ref-c">0</b>
-                    </div>
-                    <div style="background:rgba(255,255,255,0.03); padding:1
-
-2px; border-radius:15px; text-align:center;">
-                        <small>Bonus Pool</small><br><b id="txt-ref-b">₱0.00</b>
-                    </div>
-                </div>
-                <button class="btn btn-gold" style="margin-top:15px;" onclick="claimBonus()">CLAIM REWARDS</button>
+    <header>
+        <div class="logo"><i class="fab fa-youtube" style="color:red"></i> Watch2Watch</div>
+        <div class="user-info">
+            <span id="tg-username">Guest User</span>
+            <div id="login-container">
+                <!-- Telegram Login Widget -->
+                <script async src="https://telegram.org/js/telegram-widget.js?22" 
+                    data-telegram-login="YOUR_BOT_USERNAME" 
+                    data-size="small" 
+                    data-onauth="onTelegramAuth(user)" 
+                    data-request-access="write"></script>
             </div>
         </div>
+    </header>
 
-<div id="scr-chat" class="scr hidden">
-    <div class="card">
-        <div id="chat-room"></div>
-        <input type="text" id="chat-input" placeholder="Message (Cost 1 Point)...">
-        <button id="btn-send" class="btn" onclick="sendChatMessage()">SEND & EARN ₱0.016</button>
-        <div id="cd-chat" class="cooldown"></div>
-    </div>
-</div>
-
-
-        <!-- LEADERBOARD (AUTO SYNC) -->
-        <div id="page-lb" class="page">
-            <header><h1>TOP EARNERS</h1></header>
-            <div class="card">
-                <table>
-                    <thead><tr><th>#</th><th>User</th><th>Balance</th><th>Total Ads</th></tr></thead>
-                    <tbody id="lb-list"></tbody>
-                </table>
+    <div class="container">
+        <!-- Player -->
+        <div class="player-container">
+            <div id="player-placeholder" style="color: #666; padding-top: 20%;">
+                <i class="fas fa-play-circle fa-5x"></i>
+                <p>Click NEXT to start watching</p>
             </div>
+            <div id="youtube-frame-wrapper"></div>
         </div>
 
-</div><!-- WALLET & WITHDRAWAL -->
-        <div id="page-wallet" class="page">
-            <header><h1>WALLET</h1></header>
-            <div class="card">
-                <p style="text-align:center; color:var(--gold); font-size: 0.8rem;">MINIMUM CASHOUT: ₱1.00</p>
-                <input type="number" id="wd-amount" placeholder="Amount to Withdraw">
-                <button class="btn btn-gold" onclick="submitCashout()">CASHOUT VIA GCASH</button>
-            </div>
-            <div class="card">
-                <h4>TRANSACTION HISTORY</h4>
-                <table>
-                    <thead><tr><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
-                    <tbody id="wd-history"></tbody>
-                </table>
-            </div>
-            <button class="btn" style="background:none; color:#333; font-size:0.7rem;" onclick="tab('page-admin')">ADMIN LOGIN</button>
+        <div class="controls">
+            <button class="btn-next" onclick="handleNextVideo()">
+                <i class="fas fa-forward"></i> NEXT RANDOM VIDEO
+            </button>
         </div>
 
-        <!-- ADMIN DASHBOARD (MANUAL APPROVE) -->
-        <div id="page-admin" class="page">
-            <header><h1>OWNER PANEL</h1></header>
-            <div class="card" id="adm-lock">
-                <input type="password" id="adm-pass" placeholder="Admin Password">
-                <button class="btn btn-gold" onclick="tryAdm()">UNLOCK</button>
-            </div>
-            <div id="adm-main" style="display:none;">
-                <div class="card" style="background:#001a00; text-align:center;">
-                    <small>TOTAL PAID TO USERS</small>
-                    <div style="font-size:2rem; color:var(--green);">₱<span id="adm-total">0.0
-
-0</span></div>
-                </div>
-                <h4>PENDING REQUESTS</h4>
-                <div id="adm-pendings"></div>
-                <h4>COMPLETED PAYMENTS</h4>
-                <div id="adm-completed"></div>
-            </div>
+        <!-- Input Section -->
+        <div class="input-section">
+            <h3>Add Your YouTube Video</h3>
+            <input type="text" id="video-url" placeholder="Paste YouTube Link (e.g., https://youtu.be/...)">
+            <button onclick="submitVideo()" style="background: var(--accent); color: white;">SUBMIT</button>
         </div>
 
+        <!-- Profile / My History -->
+        <div class="my-links">
+            <h3><i class="fas fa-history"></i> My Submitted Links</h3>
+            <div id="links-list">
+                <!-- Links will appear here -->
+            </div>
+        </div>
     </div>
 
-<div class="nav-item" onclick="tab('page-wallet')">💰<br>Cash</div>
-    </nav>
-</div>
+    <!-- Firebase SDKs -->
+    <script type="module" src="app.js"></script>
 
-<!-- SUCCESS POPUP -->
-<div id="reward-pop"><div class="pop-box animate__animated" id="pop-anim"><span>EARNED</span><div id="pop-val" style="font-size:1.8rem;">₱0.01</div></div></div>
-
-
-
-<div class="navbar">
-    <div class="nav-item active" onclick="showScr('earn')">EARN</div>
-    <div class="nav-item" onclick="showScr('chat')">CHAT</div>
-    <div class="nav-item" onclick="tab('page-lb')">🏆<br>Rank</div>
-    <div class="nav-item" onclick="tab('page-online')">🟢<br>Online</div>
-    <div class="nav-item" onclick="tab('page-wallet')">💰<br>Cash</div>
-</div>
-
-<script type="module" src="app.js"></script>
+    <script>
+        // Callback for Telegram
+        function onTelegramAuth(user) {
+            localStorage.setItem('tg_user', JSON.stringify(user));
+            document.getElementById('tg-username').innerText = "@" + user.username;
+            document.getElementById('login-container').style.display = 'none';
+            // Trigger event for app.js
+            window.dispatchEvent(new Event('userLogin'));
+        }
+    </script>
 </body>
 </html>

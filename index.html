@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TubeCoin Pro - Watch & Earn</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- For Play/Pause/Next icons -->
     <script src="https://www.youtube.com/iframe_api"></script>
     <style>
         body { background: #0f0f0f; color: white; font-family: 'Segoe UI', sans-serif; }
@@ -17,6 +18,9 @@
         .hidden { display: none; }
         .admin-row { font-size: 0.8rem; border-bottom: 1px solid #333; padding: 10px 0; }
         #user-display { font-weight: bold; color: #00bcd4; } /* Cyan for username */
+        .player-controls button { background-color: #ff0000; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        .player-controls button:hover { background-color: #cc0000; }
+        .withdrawal-info ul { list-style-type: disc; margin-left: 20px; }
     </style>
 </head>
 <body>
@@ -24,12 +28,11 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary sticky-top">
     <div class="container">
         <a class="navbar-brand fw-bold" href="#" onclick="showSection('watch')">TUBE<span class="text-danger">COIN</span></a>
-        <span id="user-display" class="me-auto ms-3">@Guest</span> <!-- Real-time Telegram Username -->
+        <span id="user-display" class="me-auto ms-3">@Guest</span>
         <div class="d-flex gap-3">
             <a class="nav-link active" id="nav-watch" onclick="showSection('watch')">Watch</a>
             <a class="nav-link" id="nav-leader" onclick="showSection('leader')">Leaderboard</a>
-            <a class="nav-link" id="nav-withdraw" onclick="showSection('withdraw')">Withdraw</a>
-            <a class="nav-link text-warning" onclick="accessAdmin()">Admin</a>
+            <a class="nav-link" id="nav-withdraw" onclick="showSection('withdraw')">Withdraw</a>            <a class="nav-link text-warning" onclick="accessAdmin()">Admin</a>
         </div>
     </div>
 </nav>
@@ -41,11 +44,14 @@
             <div class="col-md-8">
                 <div class="card p-2">
                     <div id="player-container"><div id="player"></div></div>
-                    <div class="p-3 d-flex justify-content-between">
-
+                    <div class="p-3 d-flex justify-content-between align-items-center">
                         <div>
                             <h5 id="video-title">Loading video...</h5>
                             <div id="timer-display" class="text-info fw-bold">00:00</div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 player-controls">
+                            <button id="play-pause-btn" class="btn btn-danger btn-sm"><i class="fas fa-play"></i></button>
+                            <button id="next-btn" class="btn btn-danger btn-sm"><i class="fas fa-step-forward"></i> Next</button>
                         </div>
                         <div class="text-end">
                             <span class="coin-badge">💰 <span id="balance">0</span></span>
@@ -66,8 +72,7 @@
                     <h6>Live Activity <span class="text-danger small">(Global)</span></h6>
                     <div id="live-feed"></div>
                 </div>
-            </div>
-        </div>
+            </div>        </div>
     </div>
 
     <!-- LEADERBOARD SECTION -->
@@ -88,7 +93,18 @@
             <div class="col-md-5">
                 <div class="card p-4">
                     <h3>Withdraw GCash</h3>
-                    <p class="text-muted small">1 Coin = ₱0.0075 | Min: ₱1.00 (134 Coins)</p>
+                    <p class="text-muted small">Convert your earned coins to real money via GCash!</p>
+                    <div class="withdrawal-info mb-3">
+                        <h6 class="text-warning">How to Withdraw:</h6>
+                        <ul>
+                            <li><strong>Conversion Rate:</strong> 1 Coin = ₱0.0075</li>
+                            <li><strong>Minimum Withdrawal:</strong> ₱1.00 (which is <span id="min-coins-display"></span> Coins)</li>
+                            <li>Fill in your GCash Account Name and 11-digit GCash Number (starting with 09).</li>
+                            <li>Enter the amount of Coins youwish to convert and withdraw.</li>
+                            <li>Click "Submit Request". Your request will appear in your "Withdrawal History".</li>
+                            <li>The owner will review and approve your request. Once approved, you'll receive your payout via GCash!</li>
+                        </ul>
+                    </div>
                     <input type="text" id="withdraw-name" class="form-control mb-2 bg-dark text-white" placeholder="GCash Account Name">
                     <input type="number" id="withdraw-number" class="form-control mb-2 bg-dark text-white" placeholder="GCash Number (e.g., 09xxxxxxxxx)">
                     <input type="number" id="withdraw-coins" class="form-control mb-3 bg-dark text-white" placeholder="Coins to Convert">
@@ -115,14 +131,13 @@
             <h5 class="mt-4">Pending Approvals</h5>
             <hr>
             <div id="admin-pending-list" style="max-height: 300px; overflow-y: auto;">
-
-<p class="text-muted text-center">No pending withdrawals.</p>
+                <p class="text-muted text-center">No pending withdrawals.</p>
             </div>
 
-            <h5 class="mt-4">Approved Withdrawals History</h5>
+            <h5 class="mt-4">Payout History <small>(Approved/Rejected)</small></h5>
             <hr>
-            <div id="admin-approved-list" style="max-height: 300px; overflow-y: auto;">
-                <p class="text-muted text-center">No approved withdrawals yet.</p>
+            <div id="admin-payout-history" style="max-height: 300px; overflow-y: auto;">
+                <p class="text-muted text-center">No payouts yet.</p>
             </div>
         </div>
     </div>

@@ -18,10 +18,14 @@ const db = getDatabase(app);
 
 // Global State
 let userHandle = localStorage.getItem('tgUser');
-if (!userHandle) {
-    userHandle = prompt("Enter your Telegram Username (e.g., @yourusername):") || "@guest" + Math.floor(Math.random() * 9999);
-    localStorage.setItem('tgUser', userHandle);
+// Enforce real Telegram username - no guest option
+while (!userHandle || userHandle.trim() === '') {
+    userHandle = prompt("Please enter your Telegram Username (e.g., @yourusername). This is required to use the app and for withdrawals:") || '';
+    if (userHandle.trim() === '') {
+        alert("A valid Telegram Username is absolutely required. Please provide it.");
+    }
 }
+localStorage.setItem('tgUser', userHandle);
 document.getElementById('user-display').innerText = userHandle; // Display user immediately
 
 let balance = 0;
@@ -35,6 +39,7 @@ let watchedHistory = []; // To store recently watched video IDs for random selec
 const CONVERSION_RATE = 0.0075; // 1 Coin = ₱0.0075
 const MIN_WITHDRAW_PESO = 1.00; // Minimum withdrawal is ₱1.00
 const MIN_WITHDRAW_COINS = Math.ceil(MIN_WITHDRAW_PESO / CONVERSION_RATE); // ~134 coins
+document.getElementById('min-coins-display').innerText = MIN_WITHDRAW_COINS; // Display min coins in withdrawal info
 
 // Firebase References
 const userRef = ref(db, `users/${userHandle.replace('@', '')}`);
@@ -42,13 +47,18 @@ const liveFeedRef = query(ref(db, 'live_feed'), orderByChild('timestamp'), limit
 const videosRef = ref(db, 'videos');
 const withdrawalsRef = ref(db, 'withdrawals');
 
-// --- UI Navigation ---
+// UI Navigation
 window.showSection = (id) => {
     document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.add('hidden'));
     document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
     document.getElementById('section-' + id).classList.remove('hidden');
     document.getElementById('nav-' + id)?.classList.add('active');
     
+    // Stop video playback when navigating away from watch section
+    if (id !== 'watch' && player && player.getPlayerState() === YT.PlayerState.PLAYING) {
+        player.pauseVideo();
+    }
+
     if (id === 'leader') loadLeaderboard();
     if (id === 'withdraw') loadWithdrawHistory();
     if (id === 'admin') loadAdminDashboard();
@@ -86,10 +96,12 @@ onValue(liveFeedRef, (snapshot) => {
 
 // --- YouTube Player Logic ---
 window.onYouTubeIframeAPIReady = function() {
-    loadNextVideo();
+    loadNextVideo(true); // Load first video, attempt autoplay
+    document.getElementById('play-pause-btn').onclick = togglePlayPause;
+    document.getElementById('next-btn').onclick = () => loadNextVideo(true); // Next button also attempts autoplay
 };
 
-function loadNextVideo() {
+function loadNextVideo(autoplay = false) {
     onValue(videosRef, (snapshot) => {
         const vids = snapshot.val();
         if (!vids || Object.keys(vids).length === 0) {
@@ -120,19 +132,26 @@ function loadNextVideo() {
                 height: '100%',
                 width: '100%',
                 videoId: currentVideoId,
-                events: { 'onReady': onPlayerReady, 'onStateChange': onPlayerStateChange }
+                events: { 'onReady': (event) => onPlayerReady(event, autoplay), 'onStateChange': onPlayerStateChange }
             });
         }
-        document.getElementById('video-title').innerText = `Watching: ${currentVideoId}`; // Placeholder, can fetch real title
+        document.getElementById('video-title').innerText = `Loading: ${currentVideoId}`; 
         secondCounter = 0; // Reset timer for new video
         document.getElementById('timer-display').innerText = "00:00";
+        updatePlayPauseButton(YT.PlayerState.PAUSED); // Assume paused until it actually plays
     }, { onlyOnce: true });
 }
 
-function onPlayerReady(event) {
-    // Optionally fetch video title here if needed, requires YouTube Data API key
-    // For now, it just shows the ID.
-    // event.target.playVideo(); // Auto-play if desired, but can be annoying.
+function onPlayerReady(event, autoplay) {
+    // Attempt autoplay if requested. Browser policies might prevent it.
+    if (autoplay) {
+        event.target.playVideo().catch(e => {
+            console.warn("Autoplay prevented by browser:", e);
+            alert("Autoplay was blocked by your browser. Please click the play button to start watching.");
+            updatePlayPauseButton(YT.PlayerState.PAUSED);
+        });
+    }
+    document.getElementById('video-title').innerText = `Ready: ${event.target.getVideoData().title || currentVideoId}`;
 }
 
 function onPlayerStateChange(event) {
@@ -141,8 +160,30 @@ function onPlayerStateChange(event) {
     if (event.data == YT.PlayerState.PLAYING) {
         watchTimer = setInterval(trackTime, 1000);
         document.getElementById('video-title').innerText = `Watching: ${event.target.getVideoData().title || currentVideoId}`;
+        updatePlayPauseButton(YT.PlayerState.PLAYING);
     } else {
         document.getElementById('video-title').innerText = `Paused: ${event.target.getVideoData().title || currentVideoId}`;
+        updatePlayPauseButton(event.data);
+    }
+}
+
+function togglePlayPause() {
+    if (!player) return;
+    const playerState = player.getPlayerState();
+    if (playerState === YT.PlayerState.PLAYING) {
+        player.pauseVideo();
+    } else if (playerState === YT.PlayerState.PAUSED || playerState === YT.PlayerState.ENDED) {
+        player.playVideo();
+    }
+}
+
+function updatePlayPauseButton(playerState) {
+    const btn = document.getElementById('play-pause-btn');
+    if (!btn) return;
+    if (playerState === YT.PlayerState.PLAYING) {
+        btn.innerHTML = '<i class="fas fa-pause"></i>';
+    } else {
+        btn.innerHTML = '<i class="fas fa-play"></i>';
     }
 }
 
@@ -162,7 +203,7 @@ function trackTime() {
         setTimeout(() => {
             clearInterval(watchTimer); // Stop timer
             secondCounter = 0; // Reset counter
-            loadNextVideo(); // Load next random video
+            loadNextVideo(true); // Load next random video, attempt autoplay
         }, 2000); // 2-second delay before loading next video
     }
 }
@@ -218,9 +259,9 @@ window.submitVideo = function() {
 };
 
 function extractVideoID(url) {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const regExp = /^.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : false;
+    return (match && match[2] && match[2].length === 11) ? match[2] : false;
 }
 
 // --- Leaderboard Logic ---
@@ -290,7 +331,7 @@ window.requestWithdraw = () => {
 };
 
 function loadWithdrawHistory() {
-    onValue(query(withdrawalsRef, orderByChild('requestTime'), limitToLast(20)), (snapshot) => { // Last 20 requests
+    onValue(query(withdrawalsRef, orderByChild('requestTime'), limitToLast(20)), (snapshot) => { 
         const historyDiv = document.getElementById('withdraw-history');
         historyDiv.innerHTML = "";
         let hasHistory = false;
@@ -330,12 +371,12 @@ window.accessAdmin = () => {
 function loadAdminDashboard() {
     onValue(query(withdrawalsRef, orderByChild('requestTime')), (snapshot) => {
         const pendingList = document.getElementById('admin-pending-list');
-        const approvedList = document.getElementById('admin-approved-list');
-        pendingList.innerHTML = '<p class="text-muted text-center">No pending withdrawals.</p>';
-        approvedList.innerHTML = '<p class="text-muted text-center">No approved withdrawals yet.</p>';
+        const payoutHistory = document.getElementById('admin-payout-history');
+        pendingList.innerHTML = '';
+        payoutHistory.innerHTML = '';
         
         let hasPending = false;
-        let hasApproved = false;
+        let hasPayouts = false;
 
         const withdrawalsArray = [];
         snapshot.forEach(child => {
@@ -358,18 +399,19 @@ function loadAdminDashboard() {
 
             if (data.status === "pending") {
                 hasPending = true;
-                pendingList.innerHTML = (pendingList.innerHTML === '<p class="text-muted text-center">No pending withdrawals.</p>' ? '' : pendingList.innerHTML) + `
+                pendingList.innerHTML += `
                     ${adminRowHtml.replace('</div>', `<button class="btn btn-sm btn-success" onclick="approveWithdraw('${data.key}')">Approve</button></div>`)}`;
-            } else if (data.status === "approved") {
-                hasApproved = true;
-                const timeApproved = new Date(data.approvedTime).toLocaleString();
-                approvedList.innerHTML = (approvedList.innerHTML === '<p class="text-muted text-center">No approved withdrawals yet.</p>' ? '' : approvedList.innerHTML) + `
-                    ${adminRowHtml.replace('</div>', `<small class="text-success ms-2">Approved: ${timeApproved}</small></div>`)}`;
+            } else { // Approved or Rejected go into Payout History
+                hasPayouts = true;
+                const statusColor = data.status === 'approved' ? 'text-success' : 'text-danger';
+                const timeProcessed = new Date(data.approvedTime || data.requestTime).toLocaleString(); // Use approvedTime if exists, else requestTime
+                payoutHistory.innerHTML += `
+                    ${adminRowHtml.replace('</div>', `<small class="${statusColor} ms-2">Status: ${data.status.toUpperCase()} (${timeProcessed})</small></div>`)}`;
             }
         });
 
         if (!hasPending) pendingList.innerHTML = '<p class="text-muted text-center">No pending withdrawals.</p>';
-        if (!hasApproved) approvedList.innerHTML = '<p class="text-muted text-center">No approved withdrawals yet.</p>';
+        if (!hasPayouts) payoutHistory.innerHTML = '<p class="text-muted text-center">No payouts yet (approved or rejected).</p>';
     });
 }
 
@@ -379,7 +421,7 @@ window.approveWithdraw = (withdrawalId) => {
         approvedTime: Date.now() 
     }).then(() => {
         alert("Withdrawal approved successfully!");
-        // No need to reload dashboard explicitly, onValue listener will update
+        // The onValue listener in loadAdminDashboard will auto-update the display
     }).catch(error => {
         console.error("Error approving withdrawal: ", error);
         alert("Failed to approve withdrawal.");

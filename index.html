@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,22 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TubeCoin Pro - Watch & Earn</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- For Play/Pause/Next icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://www.youtube.com/iframe_api"></script>
     <style>
         body { background: #0f0f0f; color: white; font-family: 'Segoe UI', sans-serif; }
         .nav-link { color: #aaa; cursor: pointer; }
-        .nav-link.active { color: #ff0000 !important; font-weight: bold; border-bottom: 2px solid #ff0000; padding-bottom: 5px; }
+        .nav-link.active { color: #ff0000 !important; font-weight: bold; border-bottom: 2px solid #ff0000; }
         .card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; }
         #player-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; }
         .coin-badge { background: linear-gradient(45deg, #ffd700, #ffa500); color: #000; font-weight: bold; padding: 5px 15px; border-radius: 20px; }
-        .live-item { border-left: 3px solid #ff0000; padding-left: 10px; margin-bottom: 8px; font-size: 0.85rem; }
+        #user-display { font-weight: bold; color: #00bcd4; cursor: pointer; text-decoration: underline; }
         .hidden { display: none; }
-        .admin-row { font-size: 0.8rem; border-bottom: 1px solid #333; padding: 10px 0; }
-        #user-display { font-weight: bold; color: #00bcd4; } /* Cyan for username */
-        .player-controls button { background-color: #ff0000; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
-        .player-controls button:hover { background-color: #cc0000; }
-        .withdrawal-info ul { list-style-type: disc; margin-left: 20px; }
+        .btn-tube { background-color: #ff0000; color: white; border: none; }
+        .btn-tube:hover { background-color: #cc0000; color: white; }
+        .stat-box { background: #252525; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #444; }
     </style>
 </head>
 <body>
@@ -28,11 +27,12 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary sticky-top">
     <div class="container">
         <a class="navbar-brand fw-bold" href="#" onclick="showSection('watch')">TUBE<span class="text-danger">COIN</span></a>
-        <span id="user-display" class="me-auto ms-3">@Guest</span>
+        <span id="user-display" class="me-auto ms-3" onclick="viewProfile()">@Loading...</span>
         <div class="d-flex gap-3">
             <a class="nav-link active" id="nav-watch" onclick="showSection('watch')">Watch</a>
             <a class="nav-link" id="nav-leader" onclick="showSection('leader')">Leaderboard</a>
-            <a class="nav-link" id="nav-withdraw" onclick="showSection('withdraw')">Withdraw</a>            <a class="nav-link text-warning" onclick="accessAdmin()">Admin</a>
+            <a class="nav-link" id="nav-withdraw" onclick="showSection('withdraw')">Withdraw</a>
+            <a class="nav-link text-warning" onclick="accessAdmin()">Admin</a>
         </div>
     </div>
 </nav>
@@ -42,105 +42,81 @@
     <div id="section-watch">
         <div class="row">
             <div class="col-md-8">
+
                 <div class="card p-2">
                     <div id="player-container"><div id="player"></div></div>
                     <div class="p-3 d-flex justify-content-between align-items-center">
                         <div>
-                            <h5 id="video-title">Loading video...</h5>
+                            <h5 id="video-title" class="small">Loading video...</h5>
                             <div id="timer-display" class="text-info fw-bold">00:00</div>
                         </div>
-                        <div class="d-flex align-items-center gap-2 player-controls">
-                            <button id="play-pause-btn" class="btn btn-danger btn-sm"><i class="fas fa-play"></i></button>
-                            <button id="next-btn" class="btn btn-danger btn-sm"><i class="fas fa-step-forward"></i> Next</button>
+                        <div class="d-flex gap-2">
+                            <button id="play-pause-btn" class="btn btn-tube btn-sm"><i class="fas fa-play"></i></button>
+                            <button id="next-btn" class="btn btn-tube btn-sm"><i class="fas fa-step-forward"></i> Next</button>
                         </div>
                         <div class="text-end">
                             <span class="coin-badge">💰 <span id="balance">0</span></span>
-                            <div class="small text-muted mt-1">1 Coin = ₱0.0075</div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card p-3 mb-3">
-                    <h6>Submit Your Video</h6>
-                    <p class="small text-muted">First 5 links are free, then 50 coins/link.</p>
-                    <input type="text" id="video-url" class="form-control form-control-sm mb-2 bg-dark text-white" placeholder="YouTube Video URL">
-                    <button onclick="submitVideo()" class="btn btn-danger btn-sm w-100">Add Link</button>
-                    <div id="link-count-info" class="mt-2 small text-muted">Links used: 0/5 (Free)</div>
+                    <h6>Submit Video (Shorts/URL)</h6>
+                    <input type="text" id="video-url" class="form-control form-control-sm mb-2 bg-dark text-white border-secondary" placeholder="Paste YouTube link here...">
+                    <button onclick="submitVideo()" class="btn btn-tube btn-sm w-100">Add Link (5 Free)</button>
+                    <div id="link-count-info" class="mt-2 small text-muted">Links used: 0/5</div>
                 </div>
-                <div class="card p-3" style="height: 300px; overflow-y: auto;">
-                    <h6>Live Activity <span class="text-danger small">(Global)</span></h6>
+                <div class="card p-3" style="height: 250px; overflow-y: auto;">
+                    <h6>Global Live Feed</h6>
                     <div id="live-feed"></div>
                 </div>
-            </div>        </div>
+            </div>
+        </div>
     </div>
 
-    <!-- LEADERBOARD SECTION -->
-    <div id="section-leader" class="hidden">
+    <!-- PROFILE SECTION -->
+    <div id="section-profile" class="hidden">
         <div class="card p-4">
-            <h3 class="text-center mb-4">Weekly Top 100 Viewers</h3>
-            <table class="table table-dark table-striped">
-                <thead><tr><th>Rank</th><th>Username</th><th>Weekly Views</th></tr></thead>
-                <tbody id="leaderboard-body"></tbody>
-            </table>
-            <p class="text-muted small text-center mt-3">Leaderboard resets every Sunday.</p>
+            <div class="d-flex justify-content-between">
+                <h3 id="profile-name">User Profile</h3>
+                <button class="btn btn-sm btn-outline-light" onclick="showSection('watch')">Close</button>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-4"><div class="stat-box"><h6>Total Earnings</h6><h4 class="text-warning">₱<span id="prof-earn">0</span></h4></div></div>
+                <div class="col-md-4"><div class="stat-box"><h6>Weekly Views</h6><h4 class="text-info" id="prof-views">0</h4></div></div>
+                <div class="col-md-4"><div class="stat-box"><h6>Coins Balance</h6><h4 class="text-success" id="prof-coins">0</h4></div></div>
+            </div>
+            <h5 class="mt-4">My Submitted Videos</h5>
+            <div id="my-videos-list" class="list-group bg-dark mt-2"></div>
         </div>
     </div>
 
     <!-- WITHDRAW SECTION -->
     <div id="section-withdraw" class="hidden">
-        <div class="row">
-            <div class="col-md-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
                 <div class="card p-4">
-                    <h3>Withdraw GCash</h3>
-                    <p class="text-muted small">Convert your earned coins to real money via GCash!</p>
-                    <div class="withdrawal-info mb-3">
-                        <h6 class="text-warning">How to Withdraw:</h6>
-                        <ul>
-                            <li><strong>Conversion Rate:</strong> 1 Coin = ₱0.0075</li>
-                            <li><strong>Minimum Withdrawal:</strong> ₱1.00 (which is <span id="min-coins-display"></span> Coins)</li>
-                            <li>Fill in your GCash Account Name and 11-digit GCash Number (starting with 09).</li>
-                            <li>Enter the amount of Coins youwish to convert and withdraw.</li>
-                            <li>Click "Submit Request". Your request will appear in your "Withdrawal History".</li>
-                            <li>The owner will review and approve your request. Once approved, you'll receive your payout via GCash!</li>
-                        </ul>
+                    <h3 class="text-center">Withdraw GCash</h3>
+                    <div class="bg-dark p-3 rounded border border-secondary mb-3">
+                        <p class="mb-1">Rate: <strong>1 Coin = ₱0.0050</strong></p>
+                        <p class="mb-0 text-info">Minimum Payout: <strong>₱1.00 (200 Coins)</strong></p>
                     </div>
-                    <input type="text" id="withdraw-name" class="form-control mb-2 bg-dark text-white" placeholder="GCash Account Name">
-                    <input type="number" id="withdraw-number" class="form-control mb-2 bg-dark text-white" placeholder="GCash Number (e.g., 09xxxxxxxxx)">
-                    <input type="number" id="withdraw-coins" class="form-control mb-3 bg-dark text-white" placeholder="Coins to Convert">
-                    <button onclick="requestWithdraw()" class="btn btn-success w-100">Submit Request</button>
-                </div>
-            </div>
-            <div class="col-md-7">
-                <div class="card p-4">
-                    <h3>Withdrawal History</h3>
-                    <div id="withdraw-history" style="max-height: 400px; overflow-y: auto;"></div>
+                    <input type="text" id="withdraw-name" class="form-control mb-2 bg-dark text-white border-secondary" placeholder="GCash Name">
+                    <input type="number" id="withdraw-number" class="form-control mb-2 bg-dark text-white border-secondary" placeholder="GCash Number (09xxxxxxxxx)">
+                    <input type="number" id="withdraw-coins" class="form-control mb-3 bg-dark text-white border-secondary" placeholder="Amount of Coins">
+                    <button onclick="requestWithdraw()" class="btn btn-success w-100 fw-bold">SUBMIT WITHDRAWAL</button>
+                    <hr>
+                    <h6>Withdrawal History</h6>
+                    <div id="withdraw-history" style="font-size: 0.85rem;"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ADMIN SECTION -->
-    <div id="section-admin" class="hidden">
-        <div class="card p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3>Admin Panel: Withdrawals</h3>
-                <button class="btn btn-sm btn-outline-danger" onclick="showSection('watch')">Exit Admin</button>
-            </div>
-            
-            <h5 class="mt-4">Pending Approvals</h5>
-            <hr>
-            <div id="admin-pending-list" style="max-height: 300px; overflow-y: auto;">
-                <p class="text-muted text-center">No pending withdrawals.</p>
-            </div>
-
-            <h5 class="mt-4">Payout History <small>(Approved/Rejected)</small></h5>
-            <hr>
-            <div id="admin-payout-history" style="max-height: 300px; overflow-y: auto;">
-                <p class="text-muted text-center">No payouts yet.</p>
-            </div>
-        </div>
-    </div>
+    <!-- LEADERBOARD & ADMIN (Simplified for merge) -->
+    <div id="section-leader" class="hidden"><div class="card p-4"><h3>Top 100 Viewers</h3><table class="table table-dark table-striped"><tbody id="leaderboard-body"></tbody></table></div></div>
+    <div id="section-admin" class="hidden"><div class="card p-4"><h3>Admin Dashboard</h3><div id="admin-pending-list"></div><hr><h5>Payout History</h5><div id="admin-payout-history"></div></div></div>
 </div>
 
 <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>

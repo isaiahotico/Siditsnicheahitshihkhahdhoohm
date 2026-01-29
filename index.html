@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WatchPoint Pro</title>
+    <title>WatchPoint Pro v2</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
     
@@ -13,73 +13,87 @@
     <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
 
     <style>
-        :root { --bg: #0f0f0f; --card: #1e1e1e; --accent: #ff0000; --tg: #0088cc; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 10px; overflow-x: hidden; }
-        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .stat-box { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center; }
-        #player-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; margin-top: 10px; }
-        .timer-bar { height: 6px; background: #333; margin: 10px 0; border-radius: 10px; }
-        #progress { height: 100%; background: var(--accent); width: 0%; border-radius: 10px; }
-        button { padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; width: 100%; margin: 5px 0; transition: 0.2s; }
-        .btn-primary { background: var(--tg); color: white; }
-        .btn-withdraw { background: #f39c12; color: white; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; justify-content: center; align-items: center; padding: 20px; }
+        :root { --bg: #0f0f0f; --card: #1e1e1e; --accent: #ff0000; --tg: #0088cc; --success: #27ae60; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 10px; padding-bottom: 80px; }
+        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; }
+        .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+        .stat-item { background: #111; padding: 10px; border-radius: 8px; text-align: center; }
+        #player-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; position: relative; }
+        .timer-bar { height: 6px; background: #333; margin: 15px 0 5px 0; border-radius: 10px; overflow: hidden; }
+        #progress { height: 100%; background: var(--accent); width: 0%; transition: width 1s linear; }
+        button { padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; width: 100%; margin: 5px 0; }
+        .btn-play { background: var(--success); color: white; font-size: 1.1em; }
+        .btn-next { background: var(--tg); color: white; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
         .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 100%; text-align: center; }
-        input { padding: 12px; width: 90%; border-radius: 8px; border: 1px solid #444; background: #111; color: white; margin-bottom: 10px; }
-        .history-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #333; font-size: 13px; }
+        input { padding: 12px; width: 90%; border-radius: 8px; border: 1px solid #444; background: #111; color: white; margin: 10px 0; }
+        
+        /* Profile & Video List */
+        .video-item { display: flex; align-items: center; background: #111; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
 
-        #admin-panel { display: none; margin-top: 30px; border: 2px solid #555; }
+        .video-item img { width: 60px; height: 34px; border-radius: 4px; margin-right: 10px; }
+        .view-count { margin-left: auto; color: var(--success); font-weight: bold; }
+        #history-list { font-size: 12px; }
+        .status-tag { padding: 2px 6px; border-radius: 4px; font-size: 10px; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-    <!-- GCash Setup -->
+    <!-- GCash Modal -->
     <div id="gcash-modal" class="modal">
         <div class="modal-content">
-            <h2 style="color:var(--tg)">GCash Required</h2>
-            <p>Enter your GCash number for future payouts.</p>
+            <h2 style="color:var(--tg)">Withdrawal Setup</h2>
+            <p>Enter your GCash number to start earning Pesos.</p>
             <input type="number" id="gcash-input" placeholder="09123456789">
-            <button class="btn-primary" onclick="saveGcash()">Save & Start Earning</button>
+            <button class="btn-play" onclick="saveGcash()">Save & Continue</button>
         </div>
     </div>
 
+    <!-- Header Stats -->
     <div class="card">
-        <div class="header">
-            <span style="color:var(--tg); font-weight: bold;">@<span id="display-name">Guest</span></span>
-            <span id="slots-count" style="font-size: 12px; opacity: 0.7;">Slots: 0/5</span>
+        <div style="display: flex; justify-content: space-between;">
+            <span style="color:var(--tg); font-weight: bold;">@<span id="user-name">User</span></span>
+            <span id="slot-stats" style="font-size: 12px; opacity: 0.6;">Slots: 0/5</span>
         </div>
-        <div class="stats">
-            <div class="stat-box">Points<br><b id="pts-val">0</b></div>
-            <div class="stat-box">PHP<br><b id="php-val">₱0.00</b></div>
+        <div class="stats-row">
+            <div class="stat-item"><small>Points</small><br><b id="pts">0</b></div>
+            <div class="stat-item"><small>Peso Balance</small><br><b id="php">₱0.00</b></div>
         </div>
     </div>
 
+    <!-- Main Player Area -->
     <div id="player-container"><div id="player"></div></div>
     <div class="timer-bar"><div id="progress"></div></div>
-    <div id="timer-text" style="font-size: 12px; text-align: center;">Next point in 60s</div>
+    <div id="timer-text" style="text-align: center; font-size: 12px; margin-bottom: 10px;">Ready to watch</div>
+    
+    <button class="btn-play" id="play-btn" onclick="startVideo()">▶ PLAY VIDEO</button>
+    <button class="btn-next" onclick="handleManualNext()">⏭ SKIP TO NEXT (AD)</button>
 
-    <button class="btn-primary" onclick="handleManualNext()">SKIP TO NEXT VIDEO (AD)</button>
-
+    <!-- Profile & My Videos Section -->
     <div class="card">
-        <input type="text" id="yt-url-input" placeholder="Paste YouTube Video Link">
-        <button style="background: #27ae60; color: white;" onclick="addNewVideo()">Add Video to Global Queue</button>
+        <h4 style="margin-top:0">My Profile - Linked Videos</h4>
+        <input type="text" id="yt-url-input" placeholder="Paste YouTube Link Here">
+        <button style="background: var(--success); color:white" onclick="addNewVideo()">ADD VIDEO</button>
+        
+        <div id="my-videos-list" style="margin-top:15px;">
+            <!-- Videos and their view counts will appear here -->
+        </div>
     </div>
 
+    <!-- Withdrawal History -->
     <div class="card">
-        <h4 style="margin:0 0 10px 0;">Withdrawals</h4>
+        <h4 style="margin-top:0">Withdrawal Requests</h4>
         <div id="history-list"></div>
-        <button class="btn-withdraw" onclick="requestWithdrawal()">Withdraw (Min 2,000 Pts)</button>
+        <button style="background: #f39c12; color:white" onclick="requestWithdrawal()">Withdraw (Min 2,000 Pts)</button>
     </div>
 
-    <!-- OWNER LOGIN -->
-    <div style="margin-top: 50px; opacity: 0.5;">
-        <button onclick="checkAdmin()" style="background: transparent; color: #555; font-size: 10px;">Owner Login</button>
+    <!-- Hidden Owner Login -->
+    <div style="text-align: center; opacity: 0.3;">
+        <button onclick="checkAdmin()" style="background:transparent; color:#777; font-size: 10px; width: auto;">Owner Access</button>
     </div>
 
-    <div id="admin-panel" class="card">
-        <h3>Owner Dashboard</h3>
+    <div id="admin-panel" class="card" style="display:none; border: 2px solid var(--accent);">
+        <h3 style="color:var(--accent)">Owner Dashboard</h3>
         <div id="pending-requests"></div>
     </div>
 

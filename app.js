@@ -1,187 +1,88 @@
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, push, onValue, update, increment, query, orderByChild, limitToLast } 
-    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
-    authDomain: "freegcash-ads.firebaseapp.com",
-    databaseURL: "https://freegcash-ads-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "freegcash-ads",
-    storageBucket: "freegcash-ads.firebasestorage.app",
-    messagingSenderId: "608086825364",
-    appId: "1:608086825364:web:3a8e628d231b52c6171781"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// Strict User Setup
-let userHandle = localStorage.getItem('tgUser');
-while (!userHandle || userHandle.trim() === '') {
-    userHandle = prompt("Enter Telegram Username (e.g. @king_dev):") || "";
-}
-localStorage.setItem('tgUser', userHandle);
-document.getElementById('user-display').innerText = userHandle;
-
-const CONVERSION_RATE = 0.0050; 
-const MIN_PESO = 1.0;
-const MIN_COINS = 200;
-
-let balance = 0, linksUsed = 0, player, secondCounter = 0, watchTimer, currentVidId = "";
-
-// --- SECTIONS ---
-window.showSection = (id) => {
-    document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.add('hidden'));
-    document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-    document.getElementById('section-' + id).classList.remove('hidden');
-    document.getElementById('nav-' + id)?.classList.add('active');
-    if (id === 'leader') loadLeaderboard();
-    if (id === 'admin') loadAdminDashboard();
-};
-
-// --- YOUTUBE LOGIC (Supports all URL types) ---
-function extractVideoID(url) {
-    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i;
-    const match = url.match(regex);
-    return (match && match[1]) ? match[1] : false;
-}
-
-window.onYouTubeIframeAPIReady = () => loadNextVideo(true);
-
-function loadNextVideo(autoplay = false) {
-    onValue(ref(db, 'videos'), (snap) => {
-        const vids = snap.val();
-        if (!vids) return;
-        const keys = Object.keys(vids);
-        const randomVid = vids[keys[Math.floor(Math.random() * keys.length)]];
-        currentVidId = randomVid.id;
-
-        if (!player) {
-            player = new YT.Player('player', {
-                height: '100%', width: '100%', videoId: currentVidId,
-                playerVars: { 'autoplay': autoplay ? 1 : 0, 'mute': 0 },
-                events: { 'onStateChange': onPlayerStateChange }
-            });
-        } else {
-            player.loadVideoById(currentVidId);
-        }
-        document.getElementById('video-title').innerText = "Watching ID: " + currentVidId;
-        secondCounter = 0;
-    }, { onlyOnce: true });
-}
-
-function onPlayerStateChange(e) {
-    clearInterval(watchTimer);
-    if (e.data == YT.PlayerState.PLAYING) {
-        watchTimer = setInterval(trackTime, 1000);
-        document.getElementById('play-pause-btn').innerHTML = '<i class="fas fa-pause"></i>';
-    } else {
-        document.getElementById('play-pause-btn').innerHTML = '<i class="fas fa-play"></i>';
-    }
-}
-
-function trackTime() {
-    secondCounter++;
-    let mins = Math.floor(secondCounter/60), secs = secondCounter%60;
-    document.getElementById('timer-display').innerText = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
-    if (secondCounter === 60) giveReward(1);
-    if (secondCounter === 180) {
-        giveReward(1);
-        update(ref(db, `users/${userHandle.replace('@','')}`), { weeklyViews: increment(1) });
-        setTimeout(() => loadNextVideo(true), 2000);
-    }
-}
-
-function giveReward(amt) {
-    update(ref(db, `users/${userHandle.replace('@','')}`), { balance: increment(amt) });
-    push(ref(db, 'live_feed'), { user: userHandle, action: "earned", amount: amt, timestamp: Date.now() });
-}
-
-// --- PROFILE LOGIC ---
-window.viewProfile = () => {
-    showSection('profile');
-    const uKey = userHandle.replace('@','');
-    onValue(ref(db, `users/${uKey}`), (snap) => {
-        const d = snap.val();
-        document.getElementById('profile-name').innerText = userHandle + " Profile";
-        document.getElementById('prof-coins').innerText = d.balance || 0;
-        document.getElementById('prof-views').innerText = d.weeklyViews || 0;
-        document.getElementById('prof-earn').innerText = ((d.balance || 0) * CONVERSION_RATE).toFixed(2);
-    }, { onlyOnce: true });
-
-    // Load user's videos
-    onValue(ref(db, 'videos'), (snap) => {
-        const list = document.getElementById('my-videos-list');
-        list.innerHTML = "";
-        snap.forEach(child => {
-            const v = child.val();
-            if(v.creator === userHandle) {
-                list.innerHTML += `<div class="list-group-item bg-dark text-white border-secondary small">
-                    ID: ${v.id} | <a href="https://youtu.be/${v.id}" target="_blank">Link</a>
-                </div>`;
-            }
-        });
-    });
-};
-
-// --- WITHDRAWAL LOGIC ---
-window.requestWithdraw = () => {
-    const coins = parseInt(document.getElementById('withdraw-coins').value);
-    const name = document.getElementById('withdraw-name').value;
-    const num = document.getElementById('withdraw-number').value;
-
-    if (coins < MIN_COINS || balance < coins) return alert("Insufficient coins or below minimum 200.");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WatchPoint Pro</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
     
-    const request = {
-        userId: userHandle, name, gcash: num, coins, peso: (coins * CONVERSION_RATE).toFixed(2),
-        status: "pending", timestamp: Date.now()
-    };
-    push(ref(db, 'withdrawals'), request);
-    update(ref(db, `users/${userHandle.replace('@','')}`), { balance: increment(-coins) });
-    alert("Withdrawal Requested!");
-};
+    <!-- Monetag SDKs -->
+    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
+    <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
+    <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
 
-// --- DATA LISTENERS ---
-onValue(ref(db, `users/${userHandle.replace('@','')}`), (snap) => {
-    const d = snap.val();
-    if (d) {
-        balance = d.balance || 0;
-        linksUsed = d.linksUsed || 0;
-        document.getElementById('balance').innerText = balance;
-        document.getElementById('link-count-info').innerText = `Links used: ${linksUsed}/5`;
-    }
-});
+    <style>
+        :root { --bg: #0f0f0f; --card: #1e1e1e; --accent: #ff0000; --tg: #0088cc; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 10px; overflow-x: hidden; }
+        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .header { display: flex; justify-content: space-between; align-items: center; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .stat-box { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center; }
+        #player-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; margin-top: 10px; }
+        .timer-bar { height: 6px; background: #333; margin: 10px 0; border-radius: 10px; }
+        #progress { height: 100%; background: var(--accent); width: 0%; border-radius: 10px; }
+        button { padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; width: 100%; margin: 5px 0; transition: 0.2s; }
+        .btn-primary { background: var(--tg); color: white; }
+        .btn-withdraw { background: #f39c12; color: white; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 100%; text-align: center; }
+        input { padding: 12px; width: 90%; border-radius: 8px; border: 1px solid #444; background: #111; color: white; margin-bottom: 10px; }
+        .history-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #333; font-size: 13px; }
 
-onValue(query(ref(db, 'live_feed'), limitToLast(10)), (snap) => {
-    const feed = document.getElementById('live-feed');
-    feed.innerHTML = "";
-    snap.forEach(c => {
-        const d = c.val();
-        feed.innerHTML = `<div><small><b class="text-info">${d.user}</b> ${d.action} ${d.amount} coins</small></div>` + feed.innerHTML;
-    });
-});
+        #admin-panel { display: none; margin-top: 30px; border: 2px solid #555; }
+    </style>
+</head>
+<body>
 
-// Admin, Video Submit, Leaderboard logic remain similar to previous version, updated for RTDB consistency.
-window.submitVideo = function() {
-    const url = document.getElementById('video-url').value;
-    const id = extractVideoID(url);
-    if (!id) return alert("Invalid URL");
-    let cost = linksUsed >= 5 ? 50 : 0;
-    if (balance < cost) return alert("Need 50 coins");
-    
-    show_10276123('pop').then(() => {
-        update(ref(db, `users/${userHandle.replace('@','')}`), { balance: increment(-cost), linksUsed: increment(1) });
-        push(ref(db, 'videos'), { id, creator: userHandle });
-        alert("Video Added!");
-    });
-};
+    <!-- GCash Setup -->
+    <div id="gcash-modal" class="modal">
+        <div class="modal-content">
+            <h2 style="color:var(--tg)">GCash Required</h2>
+            <p>Enter your GCash number for future payouts.</p>
+            <input type="number" id="gcash-input" placeholder="09123456789">
+            <button class="btn-primary" onclick="saveGcash()">Save & Start Earning</button>
+        </div>
+    </div>
 
-// Controls
-document.getElementById('play-pause-btn').onclick = () => {
-    if (player.getPlayerState() == 1) player.pauseVideo();
-    else player.playVideo();
-};
-document.getElementById('next-btn').onclick = () => loadNextVideo(true);
+    <div class="card">
+        <div class="header">
+            <span style="color:var(--tg); font-weight: bold;">@<span id="display-name">Guest</span></span>
+            <span id="slots-count" style="font-size: 12px; opacity: 0.7;">Slots: 0/5</span>
+        </div>
+        <div class="stats">
+            <div class="stat-box">Points<br><b id="pts-val">0</b></div>
+            <div class="stat-box">PHP<br><b id="php-val">₱0.00</b></div>
+        </div>
+    </div>
 
-window.accessAdmin = () => { if(prompt("Pass:") === "Propetas12") showSection('admin'); };
+    <div id="player-container"><div id="player"></div></div>
+    <div class="timer-bar"><div id="progress"></div></div>
+    <div id="timer-text" style="font-size: 12px; text-align: center;">Next point in 60s</div>
+
+    <button class="btn-primary" onclick="handleManualNext()">SKIP TO NEXT VIDEO (AD)</button>
+
+    <div class="card">
+        <input type="text" id="yt-url-input" placeholder="Paste YouTube Video Link">
+        <button style="background: #27ae60; color: white;" onclick="addNewVideo()">Add Video to Global Queue</button>
+    </div>
+
+    <div class="card">
+        <h4 style="margin:0 0 10px 0;">Withdrawals</h4>
+        <div id="history-list"></div>
+        <button class="btn-withdraw" onclick="requestWithdrawal()">Withdraw (Min 2,000 Pts)</button>
+    </div>
+
+    <!-- OWNER LOGIN -->
+    <div style="margin-top: 50px; opacity: 0.5;">
+        <button onclick="checkAdmin()" style="background: transparent; color: #555; font-size: 10px;">Owner Login</button>
+    </div>
+
+    <div id="admin-panel" class="card">
+        <h3>Owner Dashboard</h3>
+        <div id="pending-requests"></div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

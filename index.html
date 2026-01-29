@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WatchPoint Pro | YT Booster</title>
-    <!-- Telegram & YouTube SDKs -->
+    <title>WatchPoint Pro | No Cooldown</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
     
@@ -14,92 +13,86 @@
     <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
 
     <style>
-        :root { --bg: #0a0a0a; --card: #161616; --accent: #ff0000; --tg-blue: #0088cc; --gold: #f1c40f; }
+        :root { --bg: #0a0a0a; --card: #1a1a1a; --accent: #ff0000; --tg: #0088cc; --gold: #f1c40f; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: #fff; margin: 0; padding: 10px; padding-bottom: 100px; }
-        .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--card); border-radius: 15px; margin-bottom: 15px; border-bottom: 2px solid var(--tg-blue); }
-        .balance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .balance-card { background: var(--card); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #222; }
+        .card { background: var(--card); border-radius: 15px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         
-        /* YouTube Sliding Container */
-        #player-wrapper { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        #player { width: 100%; height: 100%; }
-
-        .progress-container { height: 6px; background: #222; margin: 15px 0; border-radius: 10px; }
-        #progress-bar { height: 100%; background: var(--accent); width: 0%; border-radius: 10px; transition: width 1s linear; }
-
-        button { padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; width: 100%; margin: 5px 0; transition: 0.3s; }
-        .btn-play { background: #27ae60; color: white; font-size: 1.2em; }
-        .btn-next { background: var(--tg-blue); color: white; }
+        /* Progress System */
+        #player-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; position: relative; }
+        .milestone-container { display: flex; justify-content: space-between; margin: 10px 0; font-size: 11px; color: #777; }
+        .milestone-dot { width: 30%; height: 6px; background: #333; border-radius: 10px; position: relative; }
+        .milestone-dot.active { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
         
-        .section-title { font-size: 14px; text-transform: uppercase; color: #777; margin: 20px 0 10px 5px; font-weight: bold; display: flex; justify-content: space-between; }
-
-        .video-item { background: var(--card); padding: 10px; border-radius: 10px; display: flex; align-items: center; margin-bottom: 8px; border: 1px solid #222; }
-        .video-item img { width: 80px; border-radius: 5px; margin-right: 12px; }
-        .watch-tag { margin-left: auto; color: var(--gold); font-size: 12px; font-weight: bold; }
+        button { padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; width: 100%; margin: 5px 0; }
+        .btn-play { background: #27ae60; color: white; font-size: 1.1em; }
+        .btn-next { background: var(--tg); color: white; }
+        
+        .video-item { background: #111; padding: 10px; border-radius: 10px; display: flex; align-items: center; margin-bottom: 8px; font-size: 13px; }
+        .video-item img { width: 60px; height: 35px; border-radius: 4px; margin-right: 10px; }
+        .view-badge { margin-left: auto; background: var(--gold); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
 
         /* Modals */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 10000; justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: var(--card); padding: 30px; border-radius: 20px; width: 100%; text-align: center; }
-        input { padding: 12px; width: 90%; border-radius: 10px; border: 1px solid #333; background: #000; color: white; margin: 10px 0; font-size: 16px; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }        .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 100%; text-align: center; }
+        input { padding: 12px; width: 90%; border-radius: 10px; border: 1px solid #444; background: #000; color: white; margin: 10px 0; }
     </style>
 </head>
 <body>
 
-    <!-- Mandatory GCash Prompt -->
+    <!-- Setup GCash -->
     <div id="gcash-modal" class="modal">
         <div class="modal-content">
-            <h2 style="color:var(--tg-blue)">Setup Payouts</h2>
-            <p>Enter your GCash number to receive your earnings.</p>
+            <h2 style="color:var(--tg)">GCash Number</h2>
+            <p>Required for withdrawals.</p>
             <input type="number" id="gcash-input" placeholder="09xxxxxxxxx">
-            <button class="btn-play" onclick="saveGcash()">Save & Start Earning</button>
+            <button class="btn-play" onclick="saveGcash()">Save & Continue</button>
         </div>
     </div>
 
-    <div class="top-nav">
-        <span style="font-weight: bold;">@<span id="user-display">Guest</span></span>
-        <span id="slot-count" style="font-size: 12px;">Slots: 0/5</span>
+    <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold; color: var(--tg);">@<span id="u-name">Guest</span></span>
+        <span id="u-slots" style="font-size: 11px;">Slots: 0/5</span>
     </div>
 
-    <div class="balance-grid">
-        <div class="balance-card"><small>Points</small><br><b id="pts-val" style="font-size: 20px;">0</b></div>
-        <div class="balance-card"><small>PHP Balance</small><br><b id="php-val" style="font-size: 20px; color:var(--gold);">₱0.00</b></div>
+    <div class="stats-grid">
+        <div class="card" style="text-align:center;">Pts: <b id="u-pts" style="font-size:18px;">0</b></div>
+        <div class="card" style="text-align:center;">PHP: <b id="u-php" style="font-size:18px; color:var(--gold);">₱0.00</b></div>
     </div>
 
     <div id="player-wrapper"><div id="player"></div></div>
-    <div class="progress-container"><div id="progress-bar"></div></div>
-    <div id="timer-label" style="text-align:center; font-size: 13px; color:#aaa">Ready to watch</div>
+    
+    <div class="milestone-container">
+        <div id="m1" class="milestone-dot"></div>
+        <div id="m2" class="milestone-dot"></div>
+        <div id="m3" class="milestone-dot"></div>
+    </div>
+    <div id="timer-info" style="text-align:center; font-size:12px; color:#aaa; margin-bottom:10px;">Watch to earn 3 points per video</div>
 
-    <button class="btn-play" id="play-trigger" onclick="pressPlay()">▶ START WATCHING</button>
-    <button class="btn-next" onclick="forceNext()">⏭ SKIP VIDEO (RANDOM AD)</button>
+    <button class="btn-play" id="play-btn" onclick="triggerPlay()">▶ CLICK TO PLAY</button>
+    <button class="btn-next" onclick="skipVideo()">⏭ NEXT VIDEO (AD)</button>
 
-    <div class="section-title"><span>My Video List</span> <span style="color:var(--tg-blue)" onclick="document.getElementById('add-video-modal').style.display='flex'">+ Add New</span></div>
-    <div id="profile-video-list">
-        <!-- User videos list with watch counts -->
+    <div class="card">
+        <h4 style="margin:0 0 10px 0;">My Profile / Add Video</h4>
+        <input type="text" id="yt-link" placeholder="Paste YouTube Link">
+        <button style="background: #28a745; color: white;" onclick="addVideo()">ADD TO QUEUE</button>
+        <div id="my-vids-list" style="margin-top:10px;"></div>
     </div>
 
-    <div class="section-title">Withdrawals</div>
-    <div id="withdrawal-history" style="font-size: 13px;"></div>
-    <button onclick="submitWithdraw()" style="background: #e67e22; color:white;">Withdraw to GCash (Min 2,000 Pts)</button>
-
-    <!-- Hidden Admin Panel Trigger -->
-    <div style="margin-top:50px; text-align: center; opacity: 0.2;">
-        <span onclick="openAdmin()">Owner Dashboard</span>
+    <div class="card">
+        <h4 style="margin:0 0 10px 0;">Withdraw History</h4>
+        <div id="history-box" style="font-size: 12px; margin-bottom:10px;"></div>
+        <button style="background: #e67e22; color:white;" onclick="withdraw()">Withdraw to GCash (2k Pts)</button>
     </div>
 
-    <div id="admin-panel" class="modal">
+    <div style="text-align: center; opacity: 0.2; margin-top: 20px;">
+        <button onclick="adminLogin()" style="background:transparent; color:#777; font-size:10px; width:auto;">Owner Dash</button>
+    </div>
+
+    <div id="admin-modal" class="modal">
         <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
-            <h3>Pending Approvals</h3>
-            <div id="admin-list"></div>
-            <button onclick="document.getElementById('admin-panel').style.display='none'">Close</button>
-        </div>
-    </div>
-
-    <div id="add-video-modal" class="modal">
-        <div class="modal-content">
-            <h3>Add YouTube Video</h3>
-            <input type="text" id="new-yt-url" placeholder="Paste YouTube Link">
-            <button class="btn-play" onclick="addNewVideo()">Confirm Add</button>
-            <button onclick="document.getElementById('add-video-modal').style.display='none'">Cancel</button>
+            <h3 style="color:var(--accent)">Owner Dashboard</h3>
+            <div id="pending-list"></div>
+            <button onclick="document.getElementById('admin-modal').style.display='none'">Close</button>
         </div>
     </div>
 

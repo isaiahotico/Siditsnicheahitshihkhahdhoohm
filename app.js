@@ -1,180 +1,132 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, query, where, onSnapshot, addDoc, getDocs, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// --- CONFIGURATION ---
 const firebaseConfig = {
-    apiKey: "AIzaSyAj6o2HbMEC472gDoNuFSDmdOSJj8k9S_U",
-    authDomain: "fir-493d0.firebaseapp.com",
-    projectId: "fir-493d0",
-    storageBucket: "fir-493d0.firebasestorage.app",
-    messagingSenderId: "935141131610",
-    appId: "1:935141131610:web:7998e21d07d7b4c71b5f63"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_ID",
+    appId: "YOUR_APP_ID"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// Telegram Integration
 const tg = window.Telegram.WebApp;
 tg.expand();
+tg.ready();
 
-// Platform Settings
-const PHP_RATE = 0.0025;
-const AD_ZONES = ['10276123', '10337795', '10337853'];
-const MILESTONES = [60, 180, 360]; // 1m, 3m, 6m
+const user = tg.initDataUnsafe?.user;
+const usernameDisplay = document.getElementById('username');
+const userPhotoDisplay = document.getElementById('user-photo');
 
-let userId = String(tg.initDataUnsafe?.user?.id || "tester_local");
-let userName = tg.initDataUnsafe?.user?.username || "Guest";
-let userData = {};
+// Display User Info Immediately
+if (user) {
+    usernameDisplay.innerText = `@${user.username || user.first_name}`;
+    if (user.first_name) userPhotoDisplay.innerText = user.first_name.charAt(0);
+} else {
+    usernameDisplay.innerText = "Guest User";
+}
+
+// YouTube Player Logic
 let player;
-let videoTimer = 0;
-let lastMilestoneIndex = -1;
-let timeSinceAd = 0;
-let currentVidId = "";
+let currentPlaylist = [];
 
-// Initialize User
-async function init() {
-    document.getElementById('u-name').innerText = userName;
-    const userRef = doc(db, "users", userId);
-    
-    onSnapshot(userRef, (snap) => {
-        if (snap.exists()) {
-            userData = snap.data();
-            if (!userData.gcashNumber) document.getElementById('gcash-modal').style.display = 'flex';
-            updateUI();
-        } else {
-            setDoc(userRef, { username: userName, points: 0, slots: 5, myVideos: [], gcashNumber: "" });
-        }
-    });
-    loadHistory();
-    loadRandomVideo();
-}
-
-// UI Rendering
-async function updateUI() {
-    document.getElementById('u-pts').innerText = userData.points || 0;
-    document.getElementById('u-php').innerText = "₱" + (userData.points * PHP_RATE).toFixed(4);
-    document.getElementById('u-slots').innerText = `Slots: ${userData.myVideos?.length || 0}/${userData.slots || 5}`;
-
-    const list = document.getElementById('my-vids-list');
-    list.innerHTML = "";
-    for (const vidId of userData.myVideos || []) {
-        const vSnap = await getDoc(doc(db, "global_videos", vidId));
-        const total = vSnap.exists() ? vSnap.data().totalWatched : 0;
-        list.innerHTML += `<div class="video-item"><img src="https://img.youtube.com/vi/${vidId}/default.jpg"><span>${vidId}</span><span class="view-badge">${total} Views</span></div>`;
-    }
-}
-
-// YT API Logic
 window.onYouTubeIframeAPIReady = () => {
     player = new YT.Player('player', {
-        height: '100%', width: '100%',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'rel': 0 },
-        events: { 'onStateChange': (e) => e.data == 1 ? startEngine() : stopEngine() }
-    });
-};
-
-window.triggerPlay = () => { player.playVideo(); document.getElementById('play-btn').style.display = 'none'; };
-
-function startEngine() {
-    window.engine = setInterval(async () => {
-        videoTimer++;
-        timeSinceAd++;
-
-        // Status Text
-        document.getElementById('timer-info').innerText = `Earning: ${Math.floor(videoTimer / 60)}m ${videoTimer % 60}s`;
-
-        // Check Milestones
-        MILESTONES.forEach(async (ms, idx) => {
-            if (videoTimer === ms && lastMilestoneIndex < idx) {
-                lastMilestoneIndex = idx;
-                document.getElementById(`m${idx+1}`).classList.add('active');
-                await rewardMilestone();
-            }
-        });
-
-        // Auto Next (6 minutes reached)
-        if (videoTimer >= 360) {
-            videoTimer = 0;
-            stopEngine();
-            loadRandomVideo();
+        height: '100%',
+        width: '100%',
+        videoId: '', 
+        playerVars: { 'autoplay': 1, 'playsinline': 1 },
+        events: {
+            'onStateChange': onPlayerStateChange
         }
+    });
+};
 
-        // In-App Ad every 3 mins
-        if (timeSinceAd >= 180) { triggerAd('inApp'); timeSinceAd = 0; }
-    }, 1000);
+function onPlayerStateChange(event) {
+    // When video ends (0), play next
+    if (event.data === YT.PlayerState.ENDED) {
+        playNext();
+    }
 }
 
-function stopEngine() { clearInterval(window.engine); }
-
-async function rewardMilestone() {
-    await updateDoc(doc(db, "users", userId), { points: increment(1) });
-    if (currentVidId) await updateDoc(doc(db, "global_videos", currentVidId), { totalWatched: increment(1) });
+// Extract Video ID
+function extractVideoId(url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
 }
 
-// Navigation & Ads
-function triggerAd(type) {
-    const zone = AD_ZONES[Math.floor(Math.random() * AD_ZONES.length)];
-    if (type === 'reward') window[`show_${zone}`]().catch(e => {});
-    else window[`show_${zone}`]({ type: 'inApp', inAppSettings: { frequency: 1, capping: 0.1, interval: 30, timeout: 0, everyPage: false } });
-}
+// Firestore: Add Video
+window.addToPlaylist = async () => {
+    const urlInput = document.getElementById('video-url');
+    const videoId = extractVideoId(urlInput.value);
 
-async function loadRandomVideo() {
-    videoTimer = 0; lastMilestoneIndex = -1;
-    document.querySelectorAll('.milestone-dot').forEach(d => d.classList.remove('active'));
-    document.getElementById('play-btn').style.display = 'block';
+    if (videoId) {
+        try {
+            await addDoc(collection(db, "playlist"), {
+                videoId: videoId,
+                addedBy: user?.username || "Guest",
+                timestamp: serverTimestamp()
+            });
+            urlInput.value = "";
+            tg.HapticFeedback.notificationOccurred('success');
+        } catch (e) {
+            console.error("Error adding document: ", e);
+        }    } else {
+        tg.showAlert("Invalid YouTube URL");
+    }
+};
+
+// Firestore: Listen for updates
+const q = query(collection(db, "playlist"), orderBy("timestamp", "asc"));
+onSnapshot(q, (snapshot) => {
+    const playlistDiv = document.getElementById('playlist');
+    playlistDiv.innerHTML = "";
+    currentPlaylist = [];
     
-    const snap = await getDocs(query(collection(db, "global_videos"), limit(15)));
-    const pool = snap.docs.map(d => d.data().id);
-    currentVidId = pool.length ? pool[Math.floor(Math.random() * pool.length)] : "dQw4w9WgXcQ";
-    player.loadVideoById(currentVidId);
-    player.pauseVideo();
-}
+    document.getElementById('queue-count').innerText = `${snapshot.size} Videos`;
 
-window.skipVideo = () => { triggerAd('reward'); loadRandomVideo(); };
+    snapshot.forEach((doc) => {
+        const data = doc.data();
+        currentPlaylist.push({ id: doc.id, ...data });
 
-// User Actions
-window.saveGcash = async () => {
-    const num = document.getElementById('gcash-input').value;
-    if (num.length >= 10) {
-        await updateDoc(doc(db, "users", userId), { gcashNumber: num });
-        document.getElementById('gcash-modal').style.display = 'none';
-    }
-};
-
-window.addVideo = async () => {
-    const url = document.getElementById('yt-link').value;
-    const vidId = url.match(/(?:youtu\.be\/|youtube\.com\/(?:.*v=|\/v\/|embed\/|shorts\/))([^?&"'>]+)/)?.[1];
-    if (vidId && userData.myVideos.length < userData.slots) {
-        await updateDoc(doc(db, "users", userId), { myVideos: [...userData.myVideos, vidId] });
-        await setDoc(doc(db, "global_videos", vidId), { id: vidId, owner: userId, totalWatched: 0 }, { merge: true });
-        alert("Video Linked!");
-    }
-};
-
-window.withdraw = async () => {
-    if (userData.points < 2000) return alert("Min 2,000 points required");
-    await addDoc(collection(db, "withdrawals"), {
-        userId, username: userName, gcash: userData.gcashNumber,
-        points: userData.points, amount: (userData.points * PHP_RATE).toFixed(2),
-        status: "pending", time: Date.now()
+        const item = document.createElement('div');
+        item.className = "flex items-center gap-3 glass p-3 rounded-xl border border-gray-800";
+        item.innerHTML = `
+            <img src="https://img.youtube.com/vi/${data.videoId}/mqdefault.jpg" class="w-24 rounded-lg">
+            <div class="flex-1 overflow-hidden">
+                <p class="text-sm font-medium truncate">ID: ${data.videoId}</p>
+                <p class="text-xs text-gray-500">By @${data.addedBy}</p>
+            </div>
+            <button onclick="playNow('${data.videoId}', '${doc.id}')" class="text-blue-400 p-2">
+                <i class="fas fa-play text-xl"></i>
+            </button>
+        `;
+        playlistDiv.appendChild(item);
     });
-    await updateDoc(doc(db, "users", userId), { points: 0 });
-};
 
-function loadHistory() {
-    onSnapshot(query(collection(db, "withdrawals"), where("userId", "==", userId), orderBy("time", "desc")), snap => {
-        document.getElementById('history-box').innerHTML = snap.docs.map(d => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #333"><span>₱${d.data().amount}</span><span>${d.data().status}</span></div>`).join('');
-    });
-}
-
-window.adminLogin = () => {
-    if (prompt("Password:") === "Propetas12") {
-        document.getElementById('admin-modal').style.display = 'flex';
-        onSnapshot(query(collection(db, "withdrawals"), where("status", "==", "pending")), snap => {
-            document.getElementById('pending-list').innerHTML = snap.docs.map(d => `<div class="card" style="font-size:12px;">@${d.data().username} | ₱${d.data().amount}<br>GCash: ${d.data().gcash}<button onclick="approve('${d.id}')" style="background:green; margin-top:5px; height:25px; padding:0;">APPROVE</button></div>`).join('');
-        });
+    // Auto-play first video if player is idle
+    if (currentPlaylist.length > 0 && player && player.getPlayerState() !== 1) {
+        playNow(currentPlaylist[0].videoId, currentPlaylist[0].id);
     }
+});
+
+window.playNow = (videoId, docId) => {
+    player.loadVideoById(videoId);
+    // Optional: Delete from Firestore after playing or keep in list
+    // deleteDoc(doc(db, "playlist", docId));
 };
 
-window.approve = async (id) => { await updateDoc(doc(db, "withdrawals", id), { status: "approved" }); };
-
-init();
+async function playNext() {
+    if (currentPlaylist.length > 0) {
+        const finishedId = currentPlaylist[0].id;
+        await deleteDoc(doc(db, "playlist", finishedId));
+        // The snapshot listener will automatically trigger the next one
+    }
+}

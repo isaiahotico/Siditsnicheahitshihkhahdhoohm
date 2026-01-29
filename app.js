@@ -1,88 +1,163 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WatchPoint Pro</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://www.youtube.com/iframe_api"></script>
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, query, where, onSnapshot, addDoc, getDocs, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAj6o2HbMEC472gDoNuFSDmdOSJj8k9S_U",
+  authDomain: "fir-493d0.firebaseapp.com",
+  projectId: "fir-493d0",
+  storageBucket: "fir-493d0.firebasestorage.app",
+  messagingSenderId: "935141131610",
+  appId: "1:935141131610:web:7998e21d07d7b4c71b5f63"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const tg = window.Telegram.WebApp;
+tg.expand();
+
+// Platform Settings
+const PHP_RATE = 0.0025;
+const AD_ZONES = ['10276123', '10337795', '10337853'];
+
+let userId = String(tg.initDataUnsafe?.user?.id || "guest_dev");
+let userName = tg.initDataUnsafe?.user?.username || "Anonymous";
+let userData = {};
+let player;
+let watchTime = 0;
+let timeSinceInAppAd = 0;
+
+// 1. Initial Profile Setup
+async function initProfile() {
+    document.getElementById('display-name').innerText = userName;
+    const userRef = doc(db, "users", userId);
     
-    <!-- Monetag SDKs -->
-    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
-    <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
-    <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
+    onSnapshot(userRef, (snap) => {
+        if (snap.exists()) {
+            userData = snap.data();
+            if (!userData.gcashNumber) document.getElementById('gcash-modal').style.display = 'flex';
+            renderUI();
+        } else {
+            setDoc(userRef, { username: userName, points: 0, slots: 5, myVideos: [], gcashNumber: "" });
+        }
+    });
+    loadHistory();
+}
 
-    <style>
-        :root { --bg: #0f0f0f; --card: #1e1e1e; --accent: #ff0000; --tg: #0088cc; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 10px; overflow-x: hidden; }
-        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .stat-box { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; text-align: center; }
-        #player-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; margin-top: 10px; }
-        .timer-bar { height: 6px; background: #333; margin: 10px 0; border-radius: 10px; }
-        #progress { height: 100%; background: var(--accent); width: 0%; border-radius: 10px; }
-        button { padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; width: 100%; margin: 5px 0; transition: 0.2s; }
-        .btn-primary { background: var(--tg); color: white; }
-        .btn-withdraw { background: #f39c12; color: white; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 100%; text-align: center; }
-        input { padding: 12px; width: 90%; border-radius: 8px; border: 1px solid #444; background: #111; color: white; margin-bottom: 10px; }
-        .history-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #333; font-size: 13px; }
+function renderUI() {
+    document.getElementById('pts-val').innerText = userData.points || 0;
+    document.getElementById('php-val').innerText = "₱" + (userData.points * PHP_RATE).toFixed(2);
+    document.getElementById('slots-count').innerText = `Slots: ${userData.myVideos?.length || 0}/${userData.slots || 5}`;
+}
 
-        #admin-panel { display: none; margin-top: 30px; border: 2px solid #555; }
-    </style>
-</head>
-<body>
+// 2. YouTube Engine
+window.onYouTubeIframeAPIReady = () => {
+    player = new YT.Player('player', {
+        height: '100%', width: '100%', videoId: 'dQw4w9WgXcQ',
+        playerVars: { 'autoplay': 1, 'controls': 0, 'mute': 1 },
+        events: { 'onStateChange': (e) => (e.data == 1) ? startTick() : stopTick() }
+    });
+};
 
-    <!-- GCash Setup -->
-    <div id="gcash-modal" class="modal">
-        <div class="modal-content">
-            <h2 style="color:var(--tg)">GCash Required</h2>
-            <p>Enter your GCash number for future payouts.</p>
-            <input type="number" id="gcash-input" placeholder="09123456789">
-            <button class="btn-primary" onclick="saveGcash()">Save & Start Earning</button>
-        </div>
-    </div>
+function startTick() {
+    window.ticker = setInterval(async () => {
+        watchTime++;
+        timeSinceInAppAd++;
+        document.getElementById('progress').style.width = (watchTime / 60 * 100) + "%";
+        
+        if (timeSinceInAppAd >= 180) { triggerAd('inApp'); timeSinceInAppAd = 0; }
+        
+        if (watchTime >= 60) {
+            watchTime = 0; stopTick();
+            await updateDoc(doc(db, "users", userId), { points: increment(1) });
+            loadVideo();
+        }
+    }, 1000);
+}
+function stopTick() { clearInterval(window.ticker); }
 
-    <div class="card">
-        <div class="header">
-            <span style="color:var(--tg); font-weight: bold;">@<span id="display-name">Guest</span></span>
-            <span id="slots-count" style="font-size: 12px; opacity: 0.7;">Slots: 0/5</span>
-        </div>
-        <div class="stats">
-            <div class="stat-box">Points<br><b id="pts-val">0</b></div>
-            <div class="stat-box">PHP<br><b id="php-val">₱0.00</b></div>
-        </div>
-    </div>
+// 3. Ad Logic
+function triggerAd(type) {
+    const zone = AD_ZONES[Math.floor(Math.random() * AD_ZONES.length)];
+    if (type === 'reward') window[`show_${zone}`]().catch(() => {});
+    else window[`show_${zone}`]({ type: 'inApp', inAppSettings: { frequency: 1, capping: 0.1, interval: 30, timeout: 0, everyPage: false } });
+}
 
-    <div id="player-container"><div id="player"></div></div>
-    <div class="timer-bar"><div id="progress"></div></div>
-    <div id="timer-text" style="font-size: 12px; text-align: center;">Next point in 60s</div>
+// 4. Withdrawal & GCash
+window.saveGcash = async () => {
+    const val = document.getElementById('gcash-input').value;
+    if (val.length < 10) return alert("Enter valid GCash number");
+    await updateDoc(doc(db, "users", userId), { gcashNumber: val });
+    document.getElementById('gcash-modal').style.display = 'none';
+};
 
-    <button class="btn-primary" onclick="handleManualNext()">SKIP TO NEXT VIDEO (AD)</button>
+window.requestWithdrawal = async () => {
+    if (userData.points < 2000) return alert("Min 2,000 points (₱5) required.");
+    const amt = (userData.points * PHP_RATE).toFixed(2);
+    await addDoc(collection(db, "withdrawals"), {
+        userId, username: userName, gcash: userData.gcashNumber,
+        points: userData.points, amount: amt, status: "pending", time: Date.now()
+    });
+    await updateDoc(doc(db, "users", userId), { points: 0 });
+    alert("Withdrawal requested!");
+};
 
-    <div class="card">
-        <input type="text" id="yt-url-input" placeholder="Paste YouTube Video Link">
-        <button style="background: #27ae60; color: white;" onclick="addNewVideo()">Add Video to Global Queue</button>
-    </div>
+function loadHistory() {
+    const q = query(collection(db, "withdrawals"), where("userId", "==", userId), orderBy("time", "desc"));
+    onSnapshot(q, (snap) => {
+        document.getElementById('history-list').innerHTML = snap.docs.map(d => `
+            <div class="history-item">
+                <span>₱${d.data().amount}</span>
+                <span style="color:${d.data().status === 'pending' ? '#f39c12' : '#2ecc71'}">${d.data().status.toUpperCase()}</span>
+            </div>
+        `).join('');
+    });
+}
 
-    <div class="card">
-        <h4 style="margin:0 0 10px 0;">Withdrawals</h4>
-        <div id="history-list"></div>
-        <button class="btn-withdraw" onclick="requestWithdrawal()">Withdraw (Min 2,000 Pts)</button>
-    </div>
+// 5. Admin Dashboard (Propetas12)
+window.checkAdmin = () => {
+    const pass = prompt("Enter Owner Password:");
+    if (pass === "Propetas12") {
+        document.getElementById('admin-panel').style.display = 'block';
+        loadAdminData();
+    } else {
+        alert("Incorrect Password");
+    }
+};
 
-    <!-- OWNER LOGIN -->
-    <div style="margin-top: 50px; opacity: 0.5;">
-        <button onclick="checkAdmin()" style="background: transparent; color: #555; font-size: 10px;">Owner Login</button>
-    </div>
+function loadAdminData() {
+    const q = query(collection(db, "withdrawals"), where("status", "==", "pending"));
+    onSnapshot(q, (snap) => {
+        document.getElementById('pending-requests').innerHTML = snap.docs.map(d => `
+            <div class="card" style="font-size:12px; background:#111;">
+                User: @${d.data().username}<br>Amount: ₱${d.data().amount}<br>GCash: ${d.data().gcash}
+                <button onclick="approve('${d.id}')" style="background:#27ae60; margin-top:5px; padding:5px;">APPROVE</button>
+            </div>
+        `).join('');
+    });
+}
 
-    <div id="admin-panel" class="card">
-        <h3>Owner Dashboard</h3>
-        <div id="pending-requests"></div>
-    </div>
+window.approve = async (id) => {
+    await updateDoc(doc(db, "withdrawals", id), { status: "approved" });
+};
 
-    <script type="module" src="app.js"></script>
-</body>
-</html>
+// 6. Video Logic
+async function loadVideo() {
+    const snap = await getDocs(query(collection(db, "global_videos"), limit(20)));
+    const pool = snap.docs.map(d => d.data().id);
+    player.loadVideoById(pool.length ? pool[Math.floor(Math.random() * pool.length)] : "dQw4w9WgXcQ");
+}
+
+window.handleManualNext = () => { triggerAd('reward'); loadVideo(); };
+
+window.addNewVideo = async () => {
+    const url = document.getElementById('yt-url-input').value;
+    const vidId = url.match(/(?:youtu\.be\/|youtube\.com\/(?:.*v=|\/v\/|embed\/|shorts\/))([^?&"'>]+)/)?.[1];
+    if (vidId && userData.myVideos.length < userData.slots) {
+        await updateDoc(doc(db, "users", userId), { myVideos: [...userData.myVideos, vidId] });
+        await setDoc(doc(db, "global_videos", vidId), { id: vidId, owner: userId });
+        alert("Video linked successfully!");
+    }
+};
+
+initProfile();

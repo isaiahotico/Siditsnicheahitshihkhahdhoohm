@@ -3,122 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gold YouTube Premium</title>
+    <title>Gold YT Watch</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { 
             --gold: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fcf6ba, #aa771c);
-            --blue: linear-gradient(45deg, #00d2ff, #3a7bd5, #00d2ff);
+            --cyan-blue: linear-gradient(45deg, #00dbde, #fc00ff, #00dbde);
         }
-        body { transition: all 0.5s ease; min-height: 100vh; overflow-x: hidden; }
-        .bg-gold { background: var(--gold); background-size: 400% 400%; animation: shine 15s infinite; }
-        .bg-blue { background: var(--blue); background-size: 400% 400%; animation: shine 15s infinite; }
+        body { transition: 0.8s cubic-bezier(0.4, 0, 0.2, 1); min-height: 100vh; overflow-x: hidden; }
+        .bg-shining-gold { background: var(--gold); background-size: 400% 400%; animation: shine 10s infinite; }
+        .bg-shining-blue { background: var(--cyan-blue); background-size: 400% 400%; animation: shine 10s infinite; }
         @keyframes shine { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-        .glass { background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.4); border-radius: 24px; }
+        .glass { background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; }
         .tab-content { display: none; }
-        .tab-active { display: block; }
-        iframe { pointer-events: auto; border-radius: 16px; }
+        .active-tab { display: block; }
     </style>
 </head>
-<body class="bg-gold p-4" id="main-body">
+<body class="bg-shining-gold p-4" id="app-body" onclick="toggleBackground()">
 
-    <!-- Header Section -->
-    <div class="glass p-4 mb-4 flex justify-between items-center shadow-lg" onclick="toggleTheme(event)">
-        <div class="flex items-center gap-3">
-            <div id="u-photo" class="w-12 h-12 rounded-full bg-white flex items-center justify-center font-bold text-yellow-800 border-2 border-yellow-400">?</div>
+    <!-- TOP NAV -->
+    <div class="glass p-3 mb-4 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <div id="u-photo" class="w-10 h-10 rounded-full bg-yellow-600 text-white flex items-center justify-center font-bold">?</div>
             <div>
-                <p id="u-name" class="font-black text-gray-900 leading-none">Loading...</p>
-                <div class="flex items-center gap-1 mt-1">
-                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <span id="online-count" class="text-[10px] font-bold text-gray-700">0 Online</span>
-                </div>
+                <p id="u-username" class="text-xs font-bold text-gray-900">@Loading...</p>
+                <p class="text-[9px] font-bold text-green-800">Online: <span id="online-count">0</span></p>
             </div>
         </div>
-        <div class="text-right">
-            <div class="flex items-center gap-2 bg-black/10 px-3 py-1 rounded-full border border-white/30">
-                <i class="fas fa-coins text-yellow-600"></i>
-                <span id="coin-balance" class="font-black text-gray-900">0</span>
-
-            </div>
+        <div class="flex items-center gap-2 bg-white/40 px-3 py-1 rounded-full">
+            <i class="fas fa-coins text-yellow-700"></i>
+            <span id="coin-balance" class="font-black">0</span>
         </div>
     </div>
 
-    <!-- MAIN PLAYER TAB -->
-    <div id="home" class="tab-content tab-active">
-        <div class="glass p-2 mb-4 relative shadow-2xl overflow-hidden">
-            <div id="player"></div>
+    <!-- MAIN PLAYER SECTION -->
+    <div id="tab-watch" class="tab-content active-tab">
+        <div class="glass p-2 mb-2 overflow-hidden shadow-2xl">
+            <div id="player" class="rounded-xl w-full aspect-video"></div>
         </div>
         
+        <!-- Timer Display -->        <div class="text-center py-2 mb-4 bg-black/10 rounded-lg">
+            <p class="text-xs font-bold text-gray-800 uppercase tracking-widest">Next Coin in: <span id="watch-timer" class="text-lg">01:00</span></p>
+        </div>
+
         <div class="flex gap-2 mb-6">
-            <button onclick="playVideo()" class="flex-1 bg-gray-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-transform"><i class="fas fa-play mr-2"></i>Play</button>
-            <button onclick="playNextRandom()" class="flex-1 bg-white text-black py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-transform">Next <i class="fas fa-forward ml-2"></i></button>
+            <button onclick="startWatching()" class="flex-1 py-4 bg-green-600 text-white rounded-2xl font-bold shadow-lg">PLAY & EARN</button>
+            <button onclick="playNextRandom()" class="flex-1 py-4 bg-white text-black rounded-2xl font-bold shadow-lg">NEXT VIDEO</button>
         </div>
 
-        <div class="glass p-5 mb-20">
-            <h3 class="text-sm font-bold mb-3 uppercase tracking-widest text-gray-700">Add YouTube Video</h3>
-            <div class="flex flex-col gap-2">
-                <input type="text" id="video-url" placeholder="Paste link here..." class="w-full bg-white/50 p-4 rounded-xl focus:outline-none border-2 border-transparent focus:border-yellow-500 transition-all text-sm">
-                <button onclick="processAddVideo()" class="w-full bg-yellow-600 text-white py-3 rounded-xl font-bold hover:bg-yellow-700">Add Video (50 coins if >5)</button>
+        <div class="glass p-4">
+            <p class="text-xs font-bold mb-2">Promote Your Video</p>
+            <input type="text" id="yt-url" placeholder="YouTube URL here..." class="w-full p-3 rounded-xl bg-white/50 border-none mb-2 text-sm focus:ring-2 ring-yellow-500">
+            <button onclick="addVideoLink()" class="w-full py-2 bg-yellow-800 text-white rounded-lg font-bold">Add to Pool</button>
+        </div>
+    </div>
+
+    <!-- PROFILE SECTION -->
+    <div id="tab-profile" class="tab-content">
+        <div class="glass p-5 mb-4">
+            <h2 class="font-black text-lg mb-3">My Promotion History</h2>
+            <div id="my-links" class="space-y-2 max-h-40 overflow-y-auto">
+                <!-- Links will appear here -->
             </div>
         </div>
-    </div>
-
-    <!-- PROFILE/WITHDRAW TAB -->
-    <div id="profile" class="tab-content mb-20 space-y-4">
-        <div class="glass p-6">
-            <h2 class="text-xl font-black mb-4"><i class="fas fa-user-circle mr-2"></i>Account Stats</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-white/30 p-3 rounded-xl text-center">
-                    <p class="text-[10px] uppercase font-bold text-gray-600">Total Watched</p>
-                    <p id="stat-watched" class="text-xl font-black">0</p>
-                </div>
-                <div class="bg-white/30 p-3 rounded-xl text-center">
-                    <p class="text-[10px] uppercase font-bold text-gray-600">Invites</p>
-                    <p id="stat-invites" class="text-xl font-black">0</p>
-                </div>
-            </div>
+        <div class="glass p-5 mb-4">
+            <h2 class="font-black text-lg mb-2">Withdraw to GCash</h2>
+            <p class="text-[10px] text-gray-700 mb-3 font-bold">1 Coin = ₱0.0030 | Min: ₱1.00</p>
+            <input type="number" id="withdraw-coins" placeholder="Amount of coins" class="w-full p-3 rounded-lg mb-2">
+            <button onclick="requestPayout()" class="w-full py-3 bg-black text-white rounded-xl font-bold">Request Cashout</button>
         </div>
-
-        <div class="glass p-6">
-            <h2 class="text-xl font-black mb-2"><i class="fas fa-wallet mr-2"></i>Withdraw GCash</h2>
-            <p class="text-xs font-bold text-gray-700 mb-4">Rate: 1 Coin = 0.0030 PHP | Min: 1 PHP</p>
-            <input type="number" id="withdraw-amt" placeholder="Amount of coins" class="w-full bg-white/50 p-4 rounded-xl mb-3 focus:outline-none">
-            <button onclick="handleWithdrawal()" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold shadow-lg">Request Payout</button>
+        <div class="glass p-5">
+            <p class="text-sm">Total Invites: <span id="invite-count" class="font-bold">0</span></p>
+            <p class="text-sm">Referral Earnings: <span id="ref-earnings" class="font-bold">0</span></p>
         </div>
     </div>
 
-    <!-- LEADERBOARD TAB -->
-    <div id="leaderboard" class="tab-content mb-20 glass p-6">
-        <h2 class="text-xl font-black text-center mb-6"><i class="fas fa-trophy text-yellow-600 mr-2"></i>Top Earners</h2>
-        <div id="leader-list" class="space-y-3"></div>
+    <!-- LEADERBOARD SECTION -->
+    <div id="tab-leader" class="tab-content glass p-5">        <h2 class="text-center font-black mb-4">Top Rich Users</h2>
+        <div id="leader-list" class="space-y-2"></div>
     </div>
 
-    <!-- ADMIN TAB -->
-    <div id="admin" class="tab-content mb-20 glass p-6">
-        <h2 class="text-xl font-black text-red-700 mb-4 text-center">Admin Controls</h2>
-        <div id="admin-list" class="space-y-3"></div>
+    <!-- ADMIN PANEL -->
+    <div id="tab-admin" class="tab-content glass p-5">
+        <h2 class="font-black text-red-700 mb-4">Withdrawal Requests</h2>
+        <div id="admin-requests" class="space-y-3"></div>
     </div>
 
-    <!-- BOTTOM NAV -->
-    <div class="fixed bottom-0 left-0 w-full glass rounded-none rounded-t-[32px] p-4 flex justify-around items-center border-t-2 border-white/50 shadow-[0_-10px_20px_rgba(0,0,0,0.1)]">
-        <button onclick="showTab('home')" class="flex flex-col items-center gap-1 text-gray-800"><i class="fas fa-home text-xl"></i><span class="tex
-
-t-[10px] font-bold">Home</span></button>
-        <button onclick="showTab('profile')" class="flex flex-col items-center gap-1 text-gray-800"><i class="fas fa-wallet text-xl"></i><span class="text-[10px] font-bold">Wallet</span></button>
-        <button onclick="showTab('leaderboard')" class="flex flex-col items-center gap-1 text-gray-800"><i class="fas fa-medal text-xl"></i><span class="text-[10px] font-bold">Leader</span></button>
-        <button id="admin-nav" onclick="showTab('admin')" class="hidden flex flex-col items-center gap-1 text-red-700"><i class="fas fa-shield-alt text-xl"></i><span class="text-[10px] font-bold">Admin</span></button>
+    <!-- NAV BAR -->
+    <div class="fixed bottom-0 left-0 w-full glass rounded-none rounded-t-3xl p-4 flex justify-around border-t border-white/40">
+        <button onclick="switchTab('watch')" class="flex flex-col items-center"><i class="fas fa-play"></i><span class="text-[10px]">Watch</span></button>
+        <button onclick="switchTab('profile')" class="flex flex-col items-center"><i class="fas fa-user"></i><span class="text-[10px]">Profile</span></button>
+        <button onclick="switchTab('leader')" class="flex flex-col items-center"><i class="fas fa-trophy"></i><span class="text-[10px]">Top</span></button>
+        <button id="admin-btn" onclick="switchTab('admin')" class="hidden flex flex-col items-center text-red-800"><i class="fas fa-lock"></i><span class="text-[10px]">Admin</span></button>
     </div>
 
-    <!-- INITIAL MODAL -->
-    <div id="setup-modal" class="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-6 hidden">
-        <div class="bg-white rounded-[32px] p-8 w-full max-w-sm">
-            <h2 class="text-2xl font-black mb-2">Welcome! 🚀</h2>
-            <p class="text-gray-500 text-sm mb-6">Complete your profile to start earning coins while watching.</p>
-            <input type="text" id="modal-gcash" placeholder="GCash Number (e.g. 0912...)" class="w-full bg-gray-100 p-4 rounded-2xl mb-3 focus:outline-none focus:ring-2 ring-yellow-500">
-            <input type="text" id="modal-ref" placeholder="Referral Code (Username)" class="w-full bg-gray-100 p-4 rounded-2xl mb-6 focus:outline-none">
-            <button onclick="saveUserProfile()" class="w-full bg-yellow-600 text-white py-4 rounded-2xl font-black shadow-lg">Get Started</button>
+    <!-- ONBOARDING MODAL -->
+    <div id="login-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-6 hidden z-[100]">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm">
+            <h2 class="text-2xl font-black mb-2">Setup Your GCash</h2>
+            <p class="text-sm text-gray-500 mb-4">Required for automated payouts.</p>
+            <input type="text" id="setup-gcash" placeholder="GCash Mobile Number" class="w-full p-4 bg-gray-100 rounded-xl mb-3">
+            <input type="text" id="setup-ref" placeholder="Referral Code (Username)" class="w-full p-4 bg-gray-100 rounded-xl mb-6">
+            <button onclick="completeProfile()" class="w-full py-4 bg-yellow-600 text-white rounded-2xl font-bold">Start Earning Now</button>
         </div>
     </div>
 

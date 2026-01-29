@@ -3,99 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WatchPoint Pro | No Cooldown</title>
+    <title>Premium YT Player</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://www.youtube.com/iframe_api"></script>
-    
-    <!-- Monetag SDKs -->
-    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
-    <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
-    <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
-
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --bg: #0a0a0a; --card: #1a1a1a; --accent: #ff0000; --tg: #0088cc; --gold: #f1c40f; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #fff; margin: 0; padding: 10px; padding-bottom: 100px; }
-        .card { background: var(--card); border-radius: 15px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        
-        /* Progress System */
-        #player-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; position: relative; }
-        .milestone-container { display: flex; justify-content: space-between; margin: 10px 0; font-size: 11px; color: #777; }
-        .milestone-dot { width: 30%; height: 6px; background: #333; border-radius: 10px; position: relative; }
-        .milestone-dot.active { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
-        
-        button { padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; width: 100%; margin: 5px 0; }
-        .btn-play { background: #27ae60; color: white; font-size: 1.1em; }
-        .btn-next { background: var(--tg); color: white; }
-        
-        .video-item { background: #111; padding: 10px; border-radius: 10px; display: flex; align-items: center; margin-bottom: 8px; font-size: 13px; }
-        .video-item img { width: 60px; height: 35px; border-radius: 4px; margin-right: 10px; }
-        .view-badge { margin-left: auto; background: var(--gold); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
-
-        /* Modals */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }        .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 100%; text-align: center; }
-        input { padding: 12px; width: 90%; border-radius: 10px; border: 1px solid #444; background: #000; color: white; margin: 10px 0; }
+        body { background-color: #0f0f0f; color: white; overflow-x: hidden; }
+        .tg-gradient { background: linear-gradient(135deg, #24A1DE, #0088CC); }
+        #player { border-radius: 12px; overflow: hidden; width: 100%; aspect-ratio: 16/9; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); }
     </style>
 </head>
-<body>
-
-    <!-- Setup GCash -->
-    <div id="gcash-modal" class="modal">
-        <div class="modal-content">
-            <h2 style="color:var(--tg)">GCash Number</h2>
-            <p>Required for withdrawals.</p>
-            <input type="number" id="gcash-input" placeholder="09xxxxxxxxx">
-            <button class="btn-play" onclick="saveGcash()">Save & Continue</button>
+<body class="p-4">
+    <!-- Header: User Display -->
+    <div class="flex items-center justify-between mb-6 glass p-4 rounded-2xl border border-gray-800">
+        <div class="flex items-center gap-3">
+            <div id="user-photo" class="w-10 h-10 rounded-full tg-gradient flex items-center justify-center font-bold">?</div>
+            <div>
+                <p class="text-xs text-gray-400">Welcome,</p>
+                <p id="username" class="font-bold text-blue-400">Loading...</p>
+            </div>
         </div>
+        <i class="fab fa-youtube text-red-600 text-3xl"></i>
     </div>
 
-    <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: bold; color: var(--tg);">@<span id="u-name">Guest</span></span>
-        <span id="u-slots" style="font-size: 11px;">Slots: 0/5</span>
+    <!-- YouTube Player -->
+    <div id="player-container" class="mb-6 shadow-2xl">
+        <div id="player"></div>
     </div>
 
-    <div class="stats-grid">
-        <div class="card" style="text-align:center;">Pts: <b id="u-pts" style="font-size:18px;">0</b></div>
-        <div class="card" style="text-align:center;">PHP: <b id="u-php" style="font-size:18px; color:var(--gold);">₱0.00</b></div>
+    <!-- Input Section -->
+    <div class="flex gap-2 mb-6">
+        <input type="text" id="video-url" placeholder="Paste YouTube Link here..." 
+               class="flex-1 bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-sm">
+        <button onclick="addToPlaylist()" class="tg-gradient px-6 py-3 rounded-xl font-bold">
+            <i class="fas fa-plus"></i>
+        </button>
     </div>
 
-    <div id="player-wrapper"><div id="player"></div></div>
+    <!-- Playlist Section -->
+    <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-lg font-bold">Up Next</h2>
+        <span id="queue-count" class="text-xs bg-gray-800 px-2 py-1 rounded text-gray-400">0 Videos</span>
+    </div>
     
-    <div class="milestone-container">
-        <div id="m1" class="milestone-dot"></div>
-        <div id="m2" class="milestone-dot"></div>
-        <div id="m3" class="milestone-dot"></div>
-    </div>
-    <div id="timer-info" style="text-align:center; font-size:12px; color:#aaa; margin-bottom:10px;">Watch to earn 3 points per video</div>
-
-    <button class="btn-play" id="play-btn" onclick="triggerPlay()">▶ CLICK TO PLAY</button>
-    <button class="btn-next" onclick="skipVideo()">⏭ NEXT VIDEO (AD)</button>
-
-    <div class="card">
-        <h4 style="margin:0 0 10px 0;">My Profile / Add Video</h4>
-        <input type="text" id="yt-link" placeholder="Paste YouTube Link">
-        <button style="background: #28a745; color: white;" onclick="addVideo()">ADD TO QUEUE</button>
-        <div id="my-vids-list" style="margin-top:10px;"></div>
+    <div id="playlist" class="space-y-3 pb-20">
+        <!-- Playlist items injected here -->
     </div>
 
-    <div class="card">
-        <h4 style="margin:0 0 10px 0;">Withdraw History</h4>
-        <div id="history-box" style="font-size: 12px; margin-bottom:10px;"></div>
-        <button style="background: #e67e22; color:white;" onclick="withdraw()">Withdraw to GCash (2k Pts)</button>
-    </div>
-
-    <div style="text-align: center; opacity: 0.2; margin-top: 20px;">
-        <button onclick="adminLogin()" style="background:transparent; color:#777; font-size:10px; width:auto;">Owner Dash</button>
-    </div>
-
-    <div id="admin-modal" class="modal">
-        <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
-            <h3 style="color:var(--accent)">Owner Dashboard</h3>
-            <div id="pending-list"></div>
-            <button onclick="document.getElementById('admin-modal').style.display='none'">Close</button>
-        </div>
-    </div>
-
+    <!-- Firebase SDKs -->
     <script type="module" src="app.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy, limit, increment, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy, limit, increment, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAj6o2HbMEC472gDoNuFSDmdOSJj8k9S_U",
@@ -15,256 +15,166 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const tg = window.Telegram.WebApp;
 
-// --- CONFIGURATION ---
-const CONVERSION_RATE = 0.0030;
-const MIN_WITHDRAW_PESO = 1.0;
-const ADMIN_UIDS = [123456789, 935141131610]; // Add your Telegram ID here
+let player, userData, currentVideoId;
+let seconds = 60;
+let watchTimerInterval;
 
-let player;
-let userData = null;
-let watchTime = 0;
-let currentTab = 'home';
-let currentVideoId = 'dQw4w9WgXcQ';
-
-// --- INITIALIZATION ---
-tg.ready();
 tg.expand();
+const user = tg.initDataUnsafe?.user || { id: 1234, username: 'TestUser', first_name: 'T' };
 
-async function initUser() {
-    const user = tg.initDataUnsafe.user || { id: "test_user", username: "GuestPlayer", first_name: "Guest" };
-    document.getElementById('u-name').innerText = `@${user.username}`;
+// 1. Initial Load
+async function init() {
+    document.getElementById('u-username').innerText = `@${user.username}`;
     document.getElementById('u-photo').innerText = user.first_name[0];
-
+    
     const userRef = doc(db, "users", user.id.toString());
     const snap = await getDoc(userRef);
 
     if (!snap.exists()) {
-        document.getElementById('setup-modal').classList.remove('hidden');
+        document.getElementById('login-modal').classList.remove('hidden');
     } else {
         userData = snap.data();
-        startOnlineHeartbeat(user.id);
-        setupRealtimeSync();
-        if (ADMIN_UIDS.includes(user.id)) document.getElementById('admin-nav').classList.remove('hidden');
+        if(user.id === 935141131610) document.getElementById('admin-btn').classList.remove('hidden');
+        startRealtimeSync();
     }
 }
 
-// --- YOUTUBE ENGINE ---
+// 2. YT Player Logic
 window.onYouTubeIframeAPIReady = () => {
     player = new YT.Player('player', {
-        height: '100%',
-        width: '100%',
-        videoId: currentVideoId,
-        playerVars: { 'autoplay': 0, 'playsinline': 1, 'controls': 1 },
-        events: { 'onStateChange': onPlayerStateChange }
+        height: '100%', width: '100%', videoId: 'dQw4w9WgXcQ',
+        events: { 'onStateChange': onStateChange }
     });
 };
 
-function onPlayerStateChange(event) {
-    if (event.data === YT.PlayerState.PLAYING) {
-        startEarning();
-    } else {
-        stopEarning();
-    }
-    if (event.data === YT.PlayerState.ENDED) {
-        playNextRandom();
-    }
+function onStateChange(e) {
+    if (e.data === YT.PlayerState.PLAYING) startTimer();
+    else stopTimer();
 }
 
-let earningInterval;
-function startEarning() {
-    clearInterval(earningInterval);
-    earningInterval = setInterval(async () => {
-        watchTime++;
-        if (watchTime % 60 === 0) {
-            await giveReward(1); // 1 coin per minute
-            if (watchTime % 300 === 0) await giveReward(1); // Bonus 1 per 5 min
+function startTimer() {
+    clearInterval(watchTimerInterval);
+    watchTimerInterval = setInterval(() => {
+        seconds--;
+        document.getElementById('watch-timer').innerText = `00:${seconds < 10 ? '0'+seconds : seconds}`;
+        if (seconds <= 0) {
+            processReward();
+            seconds = 60;
         }
     }, 1000);
 }
 
-function stopEarning() {
-    clearInterval(earningInterval);
-}
+function stopTimer() { clearInterval(watchTimerInterval); }
 
-async function giveReward(amount) {
-    const userRef = doc(db, "users", userData.id.toString());
-    await updateDoc(userRef, { coins: increment(amount), totalEarned: increment(amount) });
-
+async function processReward() {
+    const userRef = doc(db, "users", user.id.toString());
+    await updateDoc(userRef, { coins: increment(1), totalEarned: increment(1) });
+    
+    // Referral 8% bonus
     if (userData.invitedBy) {
-        const q = query(collection(db, "users"), where("username", "==", userData.invitedBy));
-        onSnapshot(q, (snap) => {
-            snap.forEach(d => {
-                updateDoc(doc(db, "users", d.id), { 
-                    coins: increment(amount * 0.08), 
-                    referralEarnings: increment(amount * 0.08) 
-                });
-            });
-        }, { onlyOnce: true });
+        const inviterQ = query(collection(db, "users"), where("username", "==", userData.invitedBy));
+        onSnapshot(inviterQ, (snap) => {
+            snap.forEach(d => updateDoc(doc(db, "users", d.id), { 
+                coins: increment(0.08), 
+                referralBonus: increment(0.08) 
+            }));
+        }, {onlyOnce: true});
     }
 }
 
-// --- UTILITIES ---
-function extractVideoId(url) {
-    const reg = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
-    const match = url.match(reg);
-    return match ? match[1] : null;
-}
-
-window.toggleTheme = (e) => {
-    const body = document.getElementById('main-body');
-    body.classList.toggle('bg-gold');
-    body.classList.toggle('bg-blue');
-    tg.HapticFeedback.impactOccurred('medium');
+// 3. App Actions
+window.toggleBackground = () => {
+    const body = document.getElementById('app-body');
+    body.classList.toggle('bg-shining-gold');
+    body.classList.toggle('bg-shining-blue');
 };
 
-window.showTab = (tabId) => {
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('tab-active'));
-    document.getElementById(tabId).classList.add('tab-active');
-    tg.HapticFeedback.selectionChanged();
+window.switchTab = (tab) => {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active-tab'));
+    document.getElementById(`tab-${tab}`).classList.add('active-tab');
 };
 
-// --- CORE ACTIONS ---
-window.saveUserProfile = async () => {
-    const user = tg.initDataUnsafe.user || { id: "test_user", username: "GuestPlayer" };
-    const gcash = document.getElementById('modal-gcash').value;
-    const ref = document.getElementById('modal-ref').value;
+window.completeProfile = async () => {
+    const gcash = document.getElementById('setup-gcash').value;
+    const ref = document.getElementById('setup-ref').value;
+    if(!gcash) return alert("GCash Required");
 
-    if (gcash.length < 10) return alert("Enter valid GCash number");
-
-    const newUser = {
-        id: user.id,
-        username: user.username,
-        gcash: gcash,
-        invitedBy: ref || null,
-        coins: 0,
-        totalEarned: 0,
-        linksCount: 0,
-        referralEarnings: 0,
-        inviteCount: 0,
-        totalWatchedCount: 0,
-        createdAt: serverTimestamp()
-    };
-
-    await setDoc(doc(db, "users", user.id.toString()), newUser);
+    await setDoc(doc(db, "users", user.id.toString()), {
+        id: user.id, username: user.username, gcash, invitedBy: ref || null,
+        coins: 0, totalEarned: 0, linksCount: 0, referralBonus: 0, totalWatched: 0
+    });
     location.reload();
 };
 
-window.processAddVideo = async () => {
-    const url = document.getElementById('video-url').value;
-    const vId = extractVideoId(url);
+window.addVideoLink = async () => {
+    const url = document.getElementById('yt-url').value;
+    const vId = extractId(url);
+    if(!vId) return alert("Invalid URL");
 
-    if (!vId) return alert("Invalid YouTube URL");
+    if(userData.linksCount >= 5 && userData.coins < 50) return alert("5 Free links used. Need 50 coins for more.");
 
-    const userRef = doc(db, "users", userData.id.toString());
-    
-    if (userData.linksCount >= 5) {
-        if (userData.coins < 50) return alert("Adding more than 5 videos costs 50 coins!");
-        await updateDoc(userRef, { coins: increment(-50) });
+    if(userData.linksCount >= 5) {
+        await updateDoc(doc(db, "users", user.id.toString()), { coins: increment(-50) });
     }
 
     await addDoc(collection(db, "links"), {
-        videoId: vId,
-        addedBy: userData.username,
-        addedById: userData.id,
-        plays: 0,
-        timestamp: serverTimestamp()
+        videoId: vId, addedBy: user.username, totalViews: 0, timestamp: Date.now()
     });
-
-    await updateDoc(userRef, { linksCount: increment(1) });
-    document.getElementById('video-url').value = "";
-    alert("Video added to global pool!");
+    await updateDoc(doc(db, "users", user.id.toString()), { linksCount: increment(1) });
+    alert("Video Added Successfully!");
 };
 
 window.playNextRandom = () => {
     onSnapshot(query(collection(db, "links"), limit(20)), (snap) => {
         const docs = snap.docs;
-        if (docs.length > 0) {
-            const rand = docs[Math.floor(Math.random() * docs.length)];
-            const vid = rand.data().videoId;
-            player.loadVideoById(vid);
-            watchTime = 0;
-            updateDoc(doc(db, "users", userData.id.toString()), { totalWatchedCount: increment(1) });
+        const random = docs[Math.floor(Math.random() * docs.length)];
+        if(random) {
+            player.loadVideoById(random.data().videoId);
+            updateDoc(doc(db, "links", random.id), { totalViews: increment(1) });
         }
-    }, { onlyOnce: true });
+    }, {onlyOnce: true});
 };
 
-window.handleWithdrawal = async () => {
-    const coins = parseInt(document.getElementById('withdraw-amt').value);
-    const php = coins * CONVERSION_RATE;
+function extractId(url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
 
-    if (php < MIN_WITHDRAW_PESO) return alert(`Minimum withdrawal is ₱${MIN_WITHDRAW_PESO}`);
-    if (userData.coins < coins) return alert("Insufficient coins");
-
-    await addDoc(collection(db, "withdrawals"), {
-        userId: userData.id,
-        username: userData.username,
-        gcash: userData.gcash,
-        amountCoins: coins,
-        amountPHP: php.toFixed(2),
-        status: "pending",
-        timestamp: serverTimestamp()
-    });
-
-    await updateDoc(doc(db, "users", userData.id.toString()), { coins: increment(-coins) });
-    alert("Request sent to Admin!");
-};
-
-// --- DATA SYNC ---
-function setupRealtimeSync() {
-    // Sync Profile
-    onSnapshot(doc(db, "users", userData.id.toString()), (d) => {
+// 4. Data Sync
+function startRealtimeSync() {
+    // User Sync
+    onSnapshot(doc(db, "users", user.id.toString()), (d) => {
         userData = d.data();
         document.getElementById('coin-balance').innerText = Math.floor(userData.coins);
-        document.getElementById('stat-watched').innerText = userData.totalWatchedCount;
-        document.getElementById('stat-invites').innerText = userData.inviteCount;
+        document.getElementById('invite-count').innerText = userData.inviteCount || 0;
+        document.getElementById('ref-earnings').innerText = (userData.referralBonus || 0).toFixed(4);
+    });
+
+    // Profile History Sync
+    onSnapshot(query(collection(db, "links"), where("addedBy", "==", user.username)), (snap) => {
+        const list = document.getElementById('my-links');
+        list.innerHTML = "";
+        snap.forEach(d => {
+            list.innerHTML += `<div class="bg-white/30 p-2 rounded flex justify-between text-xs">
+                <span>ID: ${d.data().videoId}</span>
+                <span class="font-bold">Views: ${d.data().totalViews}</span>
+            </div>`;
+        });
     });
 
     // Leaderboard
-    onSnapshot(query(collection(db, "users"), orderBy("totalEarned", "desc"), limit(10)), (snap) => {
+    onSnapshot(query(collection(db, "users"), orderBy("totalEarned", "desc"), limit(5)), (snap) => {
         const list = document.getElementById('leader-list');
         list.innerHTML = "";
-        snap.forEach((d, i) => {
-            list.innerHTML += `
-                <div class="flex items-center justify-between bg-white/40 p-3 rounded-2xl">
-                    <span class="font-bold">#${i+1} @${d.data().username}</span>
-                    <span class="text-yellow-800 font-black">${Math.floor(d.data().totalEarned)} coins</span>
-                </div>`;
+        snap.forEach(d => {
+            list.innerHTML += `<div class="flex justify-between p-2 border-b"><span>@${d.data().username}</span><b>${Math.floor(d.data().totalEarned)}</b></div>`;
         });
     });
 
-    // Online Heartbeat Count
-    onSnapshot(collection(db, "online_status"), (snap) => {
-        document.getElementById('online-count').innerText = `${snap.size} Online`;
-    });
-
-    // Admin List
-    if (ADMIN_UIDS.includes(userData.id)) {
-        onSnapshot(query(collection(db, "withdrawals"), where("status", "==", "pending")), (snap) => {
-            const list = document.getElementById('admin-list');
-            list.innerHTML = "";
-            snap.forEach(d => {
-                const data = d.data();
-                list.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-red-500">
-                        <p class="font-bold">@${data.username} - ₱${data.amountPHP}</p>
-                        <p class="text-xs text-gray-500">GCash: ${data.gcash}</p>
-                        <button onclick="approveRequest('${d.id}')" class="mt-2 bg-green-600 text-white px-4 py-1 rounded-lg text-xs">Approve & Pay</button>
-                    </div>`;
-            });
-        });
-    }
+    // Online Status Heartbeat
+    setInterval(() => setDoc(doc(db, "online_status", user.id.toString()), { last: Date.now() }), 10000);
+    onSnapshot(collection(db, "online_status"), (snap) => document.getElementById('online-count').innerText = snap.size);
 }
 
-window.approveRequest = async (id) => {
-    await updateDoc(doc(db, "withdrawals", id), { status: "approved" });
-    alert("Payout Approved!");
-};
-
-function startOnlineHeartbeat(userId) {
-    const onlineRef = doc(db, "online_status", userId.toString());
-    const heartbeat = () => setDoc(onlineRef, { lastSeen: Date.now() });
-    heartbeat();
-    setInterval(heartbeat, 30000); // Update every 30s
-}
-
-initUser();
+init();

@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WatchPoint Pro v2</title>
+    <title>WatchPoint Pro | YT Booster</title>
+    <!-- Telegram & YouTube SDKs -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
     
@@ -13,88 +14,93 @@
     <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
 
     <style>
-        :root { --bg: #0f0f0f; --card: #1e1e1e; --accent: #ff0000; --tg: #0088cc; --success: #27ae60; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 10px; padding-bottom: 80px; }
-        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; }
-        .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
-        .stat-item { background: #111; padding: 10px; border-radius: 8px; text-align: center; }
-        #player-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; position: relative; }
-        .timer-bar { height: 6px; background: #333; margin: 15px 0 5px 0; border-radius: 10px; overflow: hidden; }
-        #progress { height: 100%; background: var(--accent); width: 0%; transition: width 1s linear; }
-        button { padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; width: 100%; margin: 5px 0; }
-        .btn-play { background: var(--success); color: white; font-size: 1.1em; }
-        .btn-next { background: var(--tg); color: white; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: var(--card); padding: 25px; border-radius: 20px; width: 100%; text-align: center; }
-        input { padding: 12px; width: 90%; border-radius: 8px; border: 1px solid #444; background: #111; color: white; margin: 10px 0; }
+        :root { --bg: #0a0a0a; --card: #161616; --accent: #ff0000; --tg-blue: #0088cc; --gold: #f1c40f; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #fff; margin: 0; padding: 10px; padding-bottom: 100px; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--card); border-radius: 15px; margin-bottom: 15px; border-bottom: 2px solid var(--tg-blue); }
+        .balance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .balance-card { background: var(--card); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #222; }
         
-        /* Profile & Video List */
-        .video-item { display: flex; align-items: center; background: #111; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+        /* YouTube Sliding Container */
+        #player-wrapper { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #player { width: 100%; height: 100%; }
 
-        .video-item img { width: 60px; height: 34px; border-radius: 4px; margin-right: 10px; }
-        .view-count { margin-left: auto; color: var(--success); font-weight: bold; }
-        #history-list { font-size: 12px; }
-        .status-tag { padding: 2px 6px; border-radius: 4px; font-size: 10px; text-transform: uppercase; }
+        .progress-container { height: 6px; background: #222; margin: 15px 0; border-radius: 10px; }
+        #progress-bar { height: 100%; background: var(--accent); width: 0%; border-radius: 10px; transition: width 1s linear; }
+
+        button { padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; width: 100%; margin: 5px 0; transition: 0.3s; }
+        .btn-play { background: #27ae60; color: white; font-size: 1.2em; }
+        .btn-next { background: var(--tg-blue); color: white; }
+        
+        .section-title { font-size: 14px; text-transform: uppercase; color: #777; margin: 20px 0 10px 5px; font-weight: bold; display: flex; justify-content: space-between; }
+
+        .video-item { background: var(--card); padding: 10px; border-radius: 10px; display: flex; align-items: center; margin-bottom: 8px; border: 1px solid #222; }
+        .video-item img { width: 80px; border-radius: 5px; margin-right: 12px; }
+        .watch-tag { margin-left: auto; color: var(--gold); font-size: 12px; font-weight: bold; }
+
+        /* Modals */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 10000; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: var(--card); padding: 30px; border-radius: 20px; width: 100%; text-align: center; }
+        input { padding: 12px; width: 90%; border-radius: 10px; border: 1px solid #333; background: #000; color: white; margin: 10px 0; font-size: 16px; }
     </style>
 </head>
 <body>
 
-    <!-- GCash Modal -->
+    <!-- Mandatory GCash Prompt -->
     <div id="gcash-modal" class="modal">
         <div class="modal-content">
-            <h2 style="color:var(--tg)">Withdrawal Setup</h2>
-            <p>Enter your GCash number to start earning Pesos.</p>
-            <input type="number" id="gcash-input" placeholder="09123456789">
-            <button class="btn-play" onclick="saveGcash()">Save & Continue</button>
+            <h2 style="color:var(--tg-blue)">Setup Payouts</h2>
+            <p>Enter your GCash number to receive your earnings.</p>
+            <input type="number" id="gcash-input" placeholder="09xxxxxxxxx">
+            <button class="btn-play" onclick="saveGcash()">Save & Start Earning</button>
         </div>
     </div>
 
-    <!-- Header Stats -->
-    <div class="card">
-        <div style="display: flex; justify-content: space-between;">
-            <span style="color:var(--tg); font-weight: bold;">@<span id="user-name">User</span></span>
-            <span id="slot-stats" style="font-size: 12px; opacity: 0.6;">Slots: 0/5</span>
+    <div class="top-nav">
+        <span style="font-weight: bold;">@<span id="user-display">Guest</span></span>
+        <span id="slot-count" style="font-size: 12px;">Slots: 0/5</span>
+    </div>
+
+    <div class="balance-grid">
+        <div class="balance-card"><small>Points</small><br><b id="pts-val" style="font-size: 20px;">0</b></div>
+        <div class="balance-card"><small>PHP Balance</small><br><b id="php-val" style="font-size: 20px; color:var(--gold);">₱0.00</b></div>
+    </div>
+
+    <div id="player-wrapper"><div id="player"></div></div>
+    <div class="progress-container"><div id="progress-bar"></div></div>
+    <div id="timer-label" style="text-align:center; font-size: 13px; color:#aaa">Ready to watch</div>
+
+    <button class="btn-play" id="play-trigger" onclick="pressPlay()">▶ START WATCHING</button>
+    <button class="btn-next" onclick="forceNext()">⏭ SKIP VIDEO (RANDOM AD)</button>
+
+    <div class="section-title"><span>My Video List</span> <span style="color:var(--tg-blue)" onclick="document.getElementById('add-video-modal').style.display='flex'">+ Add New</span></div>
+    <div id="profile-video-list">
+        <!-- User videos list with watch counts -->
+    </div>
+
+    <div class="section-title">Withdrawals</div>
+    <div id="withdrawal-history" style="font-size: 13px;"></div>
+    <button onclick="submitWithdraw()" style="background: #e67e22; color:white;">Withdraw to GCash (Min 2,000 Pts)</button>
+
+    <!-- Hidden Admin Panel Trigger -->
+    <div style="margin-top:50px; text-align: center; opacity: 0.2;">
+        <span onclick="openAdmin()">Owner Dashboard</span>
+    </div>
+
+    <div id="admin-panel" class="modal">
+        <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
+            <h3>Pending Approvals</h3>
+            <div id="admin-list"></div>
+            <button onclick="document.getElementById('admin-panel').style.display='none'">Close</button>
         </div>
-        <div class="stats-row">
-            <div class="stat-item"><small>Points</small><br><b id="pts">0</b></div>
-            <div class="stat-item"><small>Peso Balance</small><br><b id="php">₱0.00</b></div>
+    </div>
+
+    <div id="add-video-modal" class="modal">
+        <div class="modal-content">
+            <h3>Add YouTube Video</h3>
+            <input type="text" id="new-yt-url" placeholder="Paste YouTube Link">
+            <button class="btn-play" onclick="addNewVideo()">Confirm Add</button>
+            <button onclick="document.getElementById('add-video-modal').style.display='none'">Cancel</button>
         </div>
-    </div>
-
-    <!-- Main Player Area -->
-    <div id="player-container"><div id="player"></div></div>
-    <div class="timer-bar"><div id="progress"></div></div>
-    <div id="timer-text" style="text-align: center; font-size: 12px; margin-bottom: 10px;">Ready to watch</div>
-    
-    <button class="btn-play" id="play-btn" onclick="startVideo()">▶ PLAY VIDEO</button>
-    <button class="btn-next" onclick="handleManualNext()">⏭ SKIP TO NEXT (AD)</button>
-
-    <!-- Profile & My Videos Section -->
-    <div class="card">
-        <h4 style="margin-top:0">My Profile - Linked Videos</h4>
-        <input type="text" id="yt-url-input" placeholder="Paste YouTube Link Here">
-        <button style="background: var(--success); color:white" onclick="addNewVideo()">ADD VIDEO</button>
-        
-        <div id="my-videos-list" style="margin-top:15px;">
-            <!-- Videos and their view counts will appear here -->
-        </div>
-    </div>
-
-    <!-- Withdrawal History -->
-    <div class="card">
-        <h4 style="margin-top:0">Withdrawal Requests</h4>
-        <div id="history-list"></div>
-        <button style="background: #f39c12; color:white" onclick="requestWithdrawal()">Withdraw (Min 2,000 Pts)</button>
-    </div>
-
-    <!-- Hidden Owner Login -->
-    <div style="text-align: center; opacity: 0.3;">
-        <button onclick="checkAdmin()" style="background:transparent; color:#777; font-size: 10px; width: auto;">Owner Access</button>
-    </div>
-
-    <div id="admin-panel" class="card" style="display:none; border: 2px solid var(--accent);">
-        <h3 style="color:var(--accent)">Owner Dashboard</h3>
-        <div id="pending-requests"></div>
     </div>
 
     <script type="module" src="app.js"></script>

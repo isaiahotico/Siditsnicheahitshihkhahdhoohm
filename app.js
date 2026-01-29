@@ -3,12 +3,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, query, where, onSnapshot, addDoc, getDocs, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAj6o2HbMEC472gDoNuFSDmdOSJj8k9S_U",
-  authDomain: "fir-493d0.firebaseapp.com",
-  projectId: "fir-493d0",
-  storageBucket: "fir-493d0.firebasestorage.app",
-  messagingSenderId: "935141131610",
-  appId: "1:935141131610:web:7998e21d07d7b4c71b5f63"
+    apiKey: "AIzaSyAj6o2HbMEC472gDoNuFSDmdOSJj8k9S_U",
+    authDomain: "fir-493d0.firebaseapp.com",
+    projectId: "fir-493d0",
+    storageBucket: "fir-493d0.firebasestorage.app",
+    messagingSenderId: "935141131610",
+    appId: "1:935141131610:web:7998e21d07d7b4c71b5f63"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -16,148 +16,186 @@ const db = getFirestore(app);
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Platform Settings
+// Logic Variables
 const PHP_RATE = 0.0025;
 const AD_ZONES = ['10276123', '10337795', '10337853'];
-
-let userId = String(tg.initDataUnsafe?.user?.id || "guest_dev");
-let userName = tg.initDataUnsafe?.user?.username || "Anonymous";
+let userId = String(tg.initDataUnsafe?.user?.id || "dev_user");
+let userName = tg.initDataUnsafe?.user?.username || "GuestPlayer";
 let userData = {};
 let player;
 let watchTime = 0;
-let timeSinceInAppAd = 0;
+let timeSinceAd = 0;
+let currentVideoId = "";
 
-// 1. Initial Profile Setup
-async function initProfile() {
-    document.getElementById('display-name').innerText = userName;
+// Initialize User & Real-time Listeners
+async function initApp() {
+    document.getElementById('user-name').innerText = userName;
     const userRef = doc(db, "users", userId);
     
     onSnapshot(userRef, (snap) => {
         if (snap.exists()) {
             userData = snap.data();
             if (!userData.gcashNumber) document.getElementById('gcash-modal').style.display = 'flex';
-            renderUI();
+            updateUI();
+            updateProfileList();
         } else {
             setDoc(userRef, { username: userName, points: 0, slots: 5, myVideos: [], gcashNumber: "" });
         }
     });
-    loadHistory();
+
+    loadWithdrawalHistory();
+    loadRandomVideo();
 }
 
-function renderUI() {
-    document.getElementById('pts-val').innerText = userData.points || 0;
-    document.getElementById('php-val').innerText = "₱" + (userData.points * PHP_RATE).toFixed(2);
-    document.getElementById('slots-count').innerText = `Slots: ${userData.myVideos?.length || 0}/${userData.slots || 5}`;
+function updateUI() {
+    document.getElementById('pts').innerText = userData.points || 0;
+    document.getElementById('php').innerText = "₱" + (userData.points * PHP_RATE).toFixed(2);
+    document.getElementById('slot-stats').innerText = `Slots: ${userData.myVideos?.length || 0}/${userData.slots || 5}`;
 }
 
-// 2. YouTube Engine
+// Profile Section: Display User's Videos + Total Watches
+async function updateProfileList() {
+    const container = document.getElementById('my-videos-list');
+    container.innerHTML = "";
+    
+    if (!userData.myVideos) return;
+
+    for (const vidId of userData.myVideos) {
+        // Fetch real-time view count from global_videos
+        const vidRef = doc(db, "global_videos", vidId);
+        const vidSnap = await getDoc(vidRef);
+        const views = vidSnap.exists() ? vidSnap.data().totalWatched : 0;
+
+        const div = document.createElement('div');
+        div.className = "video-item";
+        div.innerHTML = `
+            <img src="https://img.youtube.com/vi/${vidId}/mqdefault.jpg">
+            <span>ID: ${vidId}</span>
+            <span class="view-count">${views} Watches</span>
+        `;
+        container.appendChild(div);
+    }
+}
+
+// YouTube Player & Play Button Logic
 window.onYouTubeIframeAPIReady = () => {
     player = new YT.Player('player', {
-        height: '100%', width: '100%', videoId: 'dQw4w9WgXcQ',
-        playerVars: { 'autoplay': 1, 'controls': 0, 'mute': 1 },
-        events: { 'onStateChange': (e) => (e.data == 1) ? startTick() : stopTick() }
+        height: '100%', width: '100%',
+        playerVars: { 'autoplay': 0, 'controls': 0, 'mute': 0, 'rel': 0 },
+        events: { 'onStateChange': (e) => (e.data == 1) ? startTimer() : stopTimer() }
     });
 };
 
-function startTick() {
-    window.ticker = setInterval(async () => {
-        watchTime++;
-        timeSinceInAppAd++;
+window.startVideo = () => {
+    player.playVideo();
+    document.getElementById('play-btn').style.display = 'none';
+};
+
+function startTimer() {
+    window.timerTicker = setInterval(async () => {
+        watchTime++; timeSinceAd++;
         document.getElementById('progress').style.width = (watchTime / 60 * 100) + "%";
-        
-        if (timeSinceInAppAd >= 180) { triggerAd('inApp'); timeSinceInAppAd = 0; }
-        
+        document.getElementById('timer-text').innerText = `Watching: ${60 - watchTime}s left`;
+
+        if (timeSinceAd >= 180) { triggerAd('inApp'); timeSinceAd = 0; }
+
         if (watchTime >= 60) {
-            watchTime = 0; stopTick();
-            await updateDoc(doc(db, "users", userId), { points: increment(1) });
-            loadVideo();
+            watchTime = 0; stopTimer();
+            document.getElementById('timer-text').innerText = "Rewarding...";
+            await rewardLogic();
+            loadRandomVideo();
         }
     }, 1000);
 }
-function stopTick() { clearInterval(window.ticker); }
+function stopTimer() { clearInterval(window.timerTicker); }
 
-// 3. Ad Logic
+async function rewardLogic() {
+    // 1. Give User Point
+    await updateDoc(doc(db, "users", userId), { points: increment(1) });
+    // 2. Increment Video's Global Watch Count
+    if (currentVideoId) {
+        await updateDoc(doc(db, "global_videos", currentVideoId), { totalWatched: increment(1) });
+    }
+}
+
+// Ads & Navigation
 function triggerAd(type) {
     const zone = AD_ZONES[Math.floor(Math.random() * AD_ZONES.length)];
-    if (type === 'reward') window[`show_${zone}`]().catch(() => {});
+    if (type === 'reward') window[`show_${zone}`]().catch(()=>{});
     else window[`show_${zone}`]({ type: 'inApp', inAppSettings: { frequency: 1, capping: 0.1, interval: 30, timeout: 0, everyPage: false } });
 }
 
-// 4. Withdrawal & GCash
+async function loadRandomVideo() {
+    document.getElementById('play-btn').style.display = 'block';
+    const snap = await getDocs(query(collection(db, "global_videos"), limit(20)));
+    const pool = snap.docs.map(d => d.data().id);
+    currentVideoId = pool.length ? pool[Math.floor(Math.random() * pool.length)] : "dQw4w9WgXcQ";
+    player.loadVideoById(currentVideoId);
+    player.pauseVideo();
+}
+
+window.handleManualNext = () => { triggerAd('reward'); loadRandomVideo(); };
+
+// Actions
 window.saveGcash = async () => {
     const val = document.getElementById('gcash-input').value;
-    if (val.length < 10) return alert("Enter valid GCash number");
+    if (val.length < 10) return;
     await updateDoc(doc(db, "users", userId), { gcashNumber: val });
     document.getElementById('gcash-modal').style.display = 'none';
 };
-
-window.requestWithdrawal = async () => {
-    if (userData.points < 2000) return alert("Min 2,000 points (₱5) required.");
-    const amt = (userData.points * PHP_RATE).toFixed(2);
-    await addDoc(collection(db, "withdrawals"), {
-        userId, username: userName, gcash: userData.gcashNumber,
-        points: userData.points, amount: amt, status: "pending", time: Date.now()
-    });
-    await updateDoc(doc(db, "users", userId), { points: 0 });
-    alert("Withdrawal requested!");
-};
-
-function loadHistory() {
-    const q = query(collection(db, "withdrawals"), where("userId", "==", userId), orderBy("time", "desc"));
-    onSnapshot(q, (snap) => {
-        document.getElementById('history-list').innerHTML = snap.docs.map(d => `
-            <div class="history-item">
-                <span>₱${d.data().amount}</span>
-                <span style="color:${d.data().status === 'pending' ? '#f39c12' : '#2ecc71'}">${d.data().status.toUpperCase()}</span>
-            </div>
-        `).join('');
-    });
-}
-
-// 5. Admin Dashboard (Propetas12)
-window.checkAdmin = () => {
-    const pass = prompt("Enter Owner Password:");
-    if (pass === "Propetas12") {
-        document.getElementById('admin-panel').style.display = 'block';
-        loadAdminData();
-    } else {
-        alert("Incorrect Password");
-    }
-};
-
-function loadAdminData() {
-    const q = query(collection(db, "withdrawals"), where("status", "==", "pending"));
-    onSnapshot(q, (snap) => {
-        document.getElementById('pending-requests').innerHTML = snap.docs.map(d => `
-            <div class="card" style="font-size:12px; background:#111;">
-                User: @${d.data().username}<br>Amount: ₱${d.data().amount}<br>GCash: ${d.data().gcash}
-                <button onclick="approve('${d.id}')" style="background:#27ae60; margin-top:5px; padding:5px;">APPROVE</button>
-            </div>
-        `).join('');
-    });
-}
-
-window.approve = async (id) => {
-    await updateDoc(doc(db, "withdrawals", id), { status: "approved" });
-};
-
-// 6. Video Logic
-async function loadVideo() {
-    const snap = await getDocs(query(collection(db, "global_videos"), limit(20)));
-    const pool = snap.docs.map(d => d.data().id);
-    player.loadVideoById(pool.length ? pool[Math.floor(Math.random() * pool.length)] : "dQw4w9WgXcQ");
-}
-
-window.handleManualNext = () => { triggerAd('reward'); loadVideo(); };
 
 window.addNewVideo = async () => {
     const url = document.getElementById('yt-url-input').value;
     const vidId = url.match(/(?:youtu\.be\/|youtube\.com\/(?:.*v=|\/v\/|embed\/|shorts\/))([^?&"'>]+)/)?.[1];
     if (vidId && userData.myVideos.length < userData.slots) {
-        await updateDoc(doc(db, "users", userId), { myVideos: [...userData.myVideos, vidId] });
-        await setDoc(doc(db, "global_videos", vidId), { id: vidId, owner: userId });
-        alert("Video linked successfully!");
+        const newVids = [...userData.myVideos, vidId];
+        await updateDoc(doc(db, "users", userId), { myVideos: newVids });
+        await setDoc(doc(db, "global_videos", vidId), { id: vidId, owner: userId, totalWatched: 0 }, { merge: true });
+        alert("Video Added to Queue!");
+    } else {
+        alert("Invalid URL or No Slots Available!");
     }
 };
 
-initProfile();
+window.requestWithdrawal = async () => {
+    if (userData.points < 2000) return alert("You need 2,000 pts!");
+    await addDoc(collection(db, "withdrawals"), {
+        userId, username: userName, gcash: userData.gcashNumber,
+        points: userData.points, amount: (userData.points * PHP_RATE).toFixed(2),
+        status: "pending", time: Date.now()
+    });
+    await updateDoc(doc(db, "users", userId), { points: 0 });
+    alert("Request Sent!");
+};
+
+function loadWithdrawalHistory() {
+    onSnapshot(query(collection(db, "withdrawals"), where("userId", "==", userId), orderBy("time", "desc")), (snap) => {
+        document.getElementById('history-list').innerHTML = snap.docs.map(d => `
+            <div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #333">
+                <span>₱${d.data().amount}</span>
+                <span style="color:${d.data().status == 'pending' ? 'orange' : 'green'}">${d.data().status}</span>
+            </div>
+        `).join('');
+    });
+}
+
+// Admin Dash
+window.checkAdmin = () => {
+    if (prompt("Password:") === "Propetas12") {
+        document.getElementById('admin-panel').style.display = 'block';
+        onSnapshot(query(collection(db, "withdrawals"), where("status", "==", "pending")), (snap) => {
+            document.getElementById('pending-requests').innerHTML = snap.docs.map(d => `
+                <div class="card" style="background:#000; font-size:12px;">
+                    <b>@${d.data().username}</b> - ₱${d.data().amount}<br>GCash: ${d.data().gcash}
+                    <button onclick="approveWithdrawal('${d.id}')" style="background:green; margin-top:5px; height:25px; padding:0;">APPROVE</button>
+                </div>
+            `).join('');
+        });
+    }
+};
+
+window.approveWithdrawal = async (id) => {
+    await updateDoc(doc(db, "withdrawals", id), { status: "approved" });
+};
+
+initApp();

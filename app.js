@@ -196,5 +196,36 @@ window.showPage = (id) => {
 };
 
 window.adminLogin = () => {
-    if(document.getElementById('admin-pass').value === "Propetas12") tg.showAlert("Admin logged in (Backend functions active)");
+    if(document.getElementById('admin-pass').value === "Propetas12") {
+        showPage('admin-dashboard');
+        onValue(ref(db, 'withdrawals'), snap => {
+            const list = document.getElementById('admin-list');
+            list.innerHTML = "";
+            snap.forEach(c => {
+                const w = c.val();
+                if(w.status === 'pending') {
+                    list.innerHTML += `<div class="glass p-4 rounded text-xs">
+                        ${w.username} | ${w.gcash} | ₱${w.amount.toFixed(4)}
+                        <button onclick="approve('${c.key}')" class="bg-green-600 p-1 rounded ml-2">Paid</button>
+                    </div>`;
+                }
+            });
+        });
+    }
 };
+window.approve = (key) => update(ref(db, `withdrawals/${key}`), {status: 'paid'});
+window.closeUserModal = () => document.getElementById('user-modal').classList.add('hidden');
+function loadLeaderboard() {
+    onValue(query(ref(db, 'users'), orderByChild('balance'), limitToLast(10)), (snap) => {
+        const lb = document.getElementById('leaderboard-list');
+        lb.innerHTML = '';
+        let users = [];
+        snap.forEach(c => users.push(c.val()));
+        users.reverse().forEach((u, i) => {
+            lb.innerHTML += `<div class="glass p-3 rounded-xl flex justify-between text-sm">
+                <span>${i+1}. ${u.username}</span>
+                <span class="text-yellow-500 font-bold">₱${(u.balance || 0).toFixed(4)}</span>
+            </div>`;
+        });
+    });
+}

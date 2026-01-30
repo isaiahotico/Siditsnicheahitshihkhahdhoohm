@@ -1,184 +1,195 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-import { getDatabase, ref, set, push, onValue, update, increment, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, orderBy, limit, onSnapshot, increment, where } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
     authDomain: "freegcash-ads.firebaseapp.com",
-    databaseURL: "https://freegcash-ads-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "freegcash-ads",
     storageBucket: "freegcash-ads.firebasestorage.app",
     messagingSenderId: "608086825364",
-    appId: "1:608086825364:web:3a8e628d231b52c6171781",
-    measurementId: "G-Z64B87ELGP"
+    appId: "1:608086825364:web:3a8e628d231b52c6171781"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const fb = initializeApp(firebaseConfig);
+const db = getFirestore(fb);
 
-let currentUser = null;
-let userData = { balance: 0, totalEarned: 0 };
+let user = null;
+const AD_ZONES = ['10276123', '10337795', '10337853'];
 
-const AppLogic = {
-    login: () => {
-        const name = document.getElementById('username').value;
-        if (!name) return alert("Enter name");
+window.app = {
+    login: async () => {
+        const name = document.getElementById('username').value.trim();
+        if(!name) return;
+        user = name.toLowerCase().replace(/\s/g, '_');
         
-        currentUser = name + "_" + Math.floor(Math.random() * 1000);
-        localStorage.setItem('paperhouse_user', currentUser);
+        const userRef = doc(db, "users", user);
+        const snap = await getDoc(userRef);
         
-        // Initialize user in DB
-        set(ref(db, 'users/' + currentUser), {
-            name: name,
-            balance: 0,
-            totalEarned: 0,
-            lastSeen: Date.now()
-        });
-
+        if(!snap.exists()) {
+            await setDoc(userRef, { name, balance: 0, totalEarned: 0, isAdmin: false });
+        }
+        
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('main-ui').classList.remove('hidden');
-        AppLogic.initListeners();
+        app.initApp();
     },
 
-    initListeners: () => {
-        // Balance Listener
-        onValue(ref(db, 'users/' + currentUser), (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                userData = data;
-                document.getElementById('balance').innerText = data.balance.toFixed(4);
+    initApp: () => {
+        // 1. Listen to user data
+        onSnapshot(doc(db, "users", user), (s) => {
+            const data = s.val() || s.data();
+            document.getElementById('balance').innerText = data.balance.toFixed(4);
+        });
+
+        // 2. Load History instantly
+        onSnapshot(query(collection(db, "withdrawals"), where("uid", "==", user)), (s) => {
+            const hist = document.getElementById('history-list');
+            hist.innerHTML = '';
+            s.forEach(d => {
+                const w = d.data();
+                hist.innerHTML += `<div class="glass p-2 rounded text-[10px] flex justify-between">
+                    <span>₱${w.amount} -> ${w.gcash}</span>
+                    <span class="${w.status === 'Paid' ? 'text-green-900' : 'text-orange-900'}">${w.status}</span>
+                </div>`;
+            });
+        });
+
+        // 3. Leaderboard
+        onSnapshot(query(collection(db, "users"), orderBy("totalEarned", "desc"), limit(10)), (s) => {
+            const lb = document.getElementById('leaderboard');
+            lb.innerHTML = '';
+            let i = 1;
+            s.forEach(d => {
+                const u = d.data();
+                lb.innerHTML += `<div class="flex justify-between p-3 glass rounded-xl">
+                    <span>${i++}. ${u.name}</span><span>₱${u.totalEarned.toFixed(3)}</span>
+                </div>`;
+            });
+        });
+
+        // 4. Chat
+        onSnapshot(query(collection(db, "chat"), orderBy("ts", "desc"), limit(20)), (s) => {
+            const chat = document.getElementById('chat-messages');
+            chat.innerHTML = '';
+            s.docs.reverse().forEach(d => {
+                const m = d.data();
+                chat.innerHTML += `<div class="text-sm"><b>${m.name}:</b> ${m.text}</div>`;
+            });
+            chat.scrollTop = chat.scrollHeight;
+        });
+
+        // 5. AUTO SHOW IN-APP ADS
+        app.showInAppAds();
+    },
+
+    showInAppAds: () => {
+        AD_ZONES.forEach(zone => {
+            const funcName = `show_${zone}`;
+            if(window[funcName]) {
+                window[funcName]({
+                    type: 'inApp',
+                    inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
+                });
+                // Small reward for in-app
+                app.reward(0.0002, "Bonus for In-App Ad!");
             }
         });
-
-        // Chat Listener
-        const chatRef = query(ref(db, 'chat'), limitToLast(20));
-        onValue(chatRef, (snapshot) => {
-            const msgContainer = document.getElementById('chat-messages');
-            msgContainer.innerHTML = '';
-            snapshot.forEach((child) => {
-                const m = child.val();
-                msgContainer.innerHTML += `
-                    <div class="bg-white/10 p-2 rounded">
-                        <span class="text-yellow-400 font-bold text-xs">${m.name}:</span>
-                        <span class="text-sm">${m.text}</span>
-                    </div>`;
-            });
-            msgContainer.scrollTop = msgContainer.scrollHeight;
-        });
-
-        // Leaderboard Listener
-        const leaderRef = query(ref(db, 'users'), orderByChild('totalEarned'), limitToLast(10));
-        onValue(leaderRef, (snapshot) => {
-            const list = document.getElementById('leaderboard-list');
-            list.innerHTML = '';
-            let users = [];
-            snapshot.forEach(c => users.push(c.val()));
-            users.reverse().forEach((u, i) => {
-                list.innerHTML += `
-                    <div class="flex justify-between p-2 glass-card">
-                        <span>${i+1}. ${u.name}</span>
-                        <span class="text-yellow-400">₱${u.totalEarned.toFixed(4)}</span>
-                    </div>`;
-            });
-        });
     },
 
-    watchAd: () => {
-        // Visual Effect: Turn to Lagoon
-        const bg = document.getElementById('bg-container');
-        bg.className = 'lagoon';
+    watchMainAd: () => {
+        // UI Change
+        const bg = document.getElementById('bg-layer');
+        bg.classList.remove('gold-armor');
+        bg.classList.add('lagoon-bg');
 
-        // Trigger Monetag Ad
-        if (typeof show_10276123 === 'function') {
-            show_10276123().then(() => {
-                AppLogic.rewardUser();
-                // Revert background after 5 seconds
-                setTimeout(() => { bg.className = 'gold-armor'; }, 5000);
-            }).catch(e => {
-                alert("Ad failed to load. Try again.");
-                bg.className = 'gold-armor';
-            });
-        } else {
-            // Fallback for testing if SDK is blocked by AdBlocker
-            console.log("Ad SDK not loaded");
-            AppLogic.rewardUser();
+        // Pick random zone and random format (Interstitial vs Pop)
+        const zone = AD_ZONES[Math.floor(Math.random() * AD_ZONES.length)];
+        const format = Math.random() > 0.5 ? 'pop' : ''; 
+        const adFunc = window[`show_${zone}`];
+
+        if(adFunc) {
+            adFunc(format).then(() => {
+                app.reward(0.0065, "Ad Watched Successfully!");
+            }).catch(() => alert("Ad failed to load. Try again."));
         }
+
+        setTimeout(() => {
+            bg.classList.add('gold-armor');
+            bg.classList.remove('lagoon-bg');
+        }, 5000);
     },
 
-    rewardUser: () => {
-        const reward = 0.0065;
-        update(ref(db, 'users/' + currentUser), {
-            balance: increment(reward),
-            totalEarned: increment(reward),
-            lastSeen: Date.now()
+    reward: async (amt, msg) => {
+        await updateDoc(doc(db, "users", user), {
+            balance: increment(amt),
+            totalEarned: increment(amt)
         });
+        if(amt > 0.0002) alert(msg);
     },
 
-    sendMessage: () => {
+    sendMessage: async () => {
         const input = document.getElementById('chat-input');
-        if (!input.value) return;
-        push(ref(db, 'chat'), {
-            name: userData.name,
+        if(!input.value) return;
+        await addDoc(collection(db, "chat"), {
+            name: user.toUpperCase(),
             text: input.value,
-            timestamp: Date.now()
+            ts: Date.now()
         });
         input.value = '';
     },
 
-    withdraw: () => {
+    requestWithdraw: async () => {
         const amount = parseFloat(document.getElementById('withdraw-amount').value);
         const gcash = document.getElementById('gcash-num').value;
-        
-        if (amount < 0.02) return alert("Minimum withdrawal is ₱0.02");
-        if (amount > userData.balance) return alert("Insufficient balance");
-        if (!gcash) return alert("Enter GCash number");
+        const userRef = doc(db, "users", user);
+        const userData = (await getDoc(userRef)).data();
 
-        const wId = Date.now();
-        set(ref(db, 'withdrawals/' + wId), {
-            uid: currentUser,
+        if(amount < 0.02) return alert("Min. ₱0.02");
+        if(amount > userData.balance) return alert("Low balance");
+
+        await addDoc(collection(db, "withdrawals"), {
+            uid: user,
             name: userData.name,
-            gcash: gcash,
             amount: amount,
-            status: 'pending'
+            gcash: gcash,
+            status: "Pending",
+            ts: Date.now()
         });
 
-        update(ref(db, 'users/' + currentUser), {
-            balance: increment(-amount)
-        });
-
-        alert("Withdrawal request submitted!");
+        await updateDoc(userRef, { balance: increment(-amount) });
+        alert("Request sent! Admin will approve manually.");
     },
 
-    showTab: (tabId) => {
+    switchTab: (id) => {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active-tab'));
-        document.getElementById('tab-' + tabId).classList.add('active-tab');
+        document.getElementById('tab-' + id).classList.add('active-tab');
     },
 
-    adminAuth: () => {
-        const pass = document.getElementById('admin-pass').value;
-        if (pass === "Propetas12") {
-            document.getElementById('admin-login').classList.add('hidden');
+    unlockAdmin: () => {
+        if(document.getElementById('admin-pass').value === "Propetas12") {
+            document.getElementById('admin-lock').classList.add('hidden');
             document.getElementById('admin-panel').classList.remove('hidden');
-            AppLogic.loadAdminData();
-        } else {
-            alert("Wrong password");
+            app.loadAdminPanel();
         }
     },
 
-    loadAdminData: () => {
-        onValue(ref(db, 'withdrawals'), (snapshot) => {
-            const cont = document.getElementById('admin-withdrawals');
-            cont.innerHTML = '';
-            snapshot.forEach(c => {
-                const w = c.val();
-                cont.innerHTML += `
-                    <div class="p-2 border-b border-white/10 flex justify-between items-center">
-                        <span>${w.name} (${w.gcash}) - ₱${w.amount}</span>
-                        <button class="bg-blue-600 p-1 rounded">Paid</button>
-                    </div>`;
+    loadAdminPanel: () => {
+        onSnapshot(query(collection(db, "withdrawals"), where("status", "==", "Pending")), (s) => {
+            const list = document.getElementById('admin-pending-list');
+            list.innerHTML = '';
+            s.forEach(d => {
+                const w = d.data();
+                list.innerHTML += `<div class="glass p-2 mb-2 flex justify-between items-center">
+                    <span>${w.name}: ₱${w.amount} (${w.gcash})</span>
+                    <button onclick="app.approvePayout('${d.id}')" class="bg-green-600 p-1 rounded text-white">APPROVE</button>
+                </div>`;
             });
         });
+    },
+
+    approvePayout: async (id) => {
+        await updateDoc(doc(db, "withdrawals", id), { status: "Paid" });
+        alert("Marked as Paid!");
     }
 };
-
-window.app = AppLogic;

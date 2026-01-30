@@ -2,196 +2,125 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-    
-    <!-- Monetag SDKs -->
+    <!-- Monetag SDK -->
     <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
-    <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
-    <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
-
     <style>
-        :root {
-            --charcoal: #36454f;
-            --gold: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
-            --lagoon: linear-gradient(180deg, #00B4DB 0%, #0083B0 100%);
-        }
-        body { color: var(--charcoal); font-weight: 900; overflow: hidden; height: 100vh; font-family: 'Arial Black', sans-serif; background: #000; }
-        
-        /* Dynamic Backgrounds */
-        #bg-layer { position: fixed; inset: 0; z-index: -1; transition: 0.8s ease-in-out; }
-        .gold-armor { background: var(--gold); background-size: 200% 200%; animation: shine 4s infinite linear; }
-        .lagoon-bg { background: var(--lagoon); }
-        @keyframes shine { 0% {background-position:0% 50%} 50% {background-position:100% 50%} 100% {background-position:0% 50%} }
-
-        /* Navigation Layout */
-        .sidebar { width: 280px; height: 100%; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 50; }
-        .sidebar-glass { background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(20px); border-right: 3px solid var(--charcoal); }
-        .content-area { flex: 1; height: 100%; overflow-y: auto; position: relative; }
-        
-        .tab-content { display: none; padding: 20px; }
-        .active-tab { display: block; animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        /* Sidebar Toggle for Mobile */
-        @media (max-width: 768px) {
-            .sidebar { position: fixed; left: -285px; }
-            .sidebar.open { left: 0; box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
-            .mobile-header { display: flex; }
-            .content-area { padding-top: 70px; }
-        }
-        @media (min-width: 769px) {
-
-            .mobile-header { display: none; }
-        }
-
-        .btn-main { background: var(--charcoal); color: white; transition: 0.2s; }
-        .btn-main:active { transform: scale(0.95); }
-        .glass-card { background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border: 2px solid rgba(255,255,255,0.3); border-radius: 15px; }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+        body { font-family: 'Poppins', sans-serif; background: #0f172a; color: white; overflow-x: hidden; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .sidebar { transition: 0.3s; transform: translateX(-100%); }
+        .sidebar.active { transform: translateX(0); }
+        .btn-primary { background: linear-gradient(45deg, #00f2fe 0%, #4facfe 100%); }
+        .reward-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     </style>
 </head>
-<body class="flex">
+<body>
 
-    <div id="bg-layer" class="gold-armor"></div>
+    <!-- Sidebar Overlay -->
+    <div id="overlay" class="fixed inset-0 bg-black opacity-50 hidden z-40" onclick="toggleSidebar()"></div>
 
-    <!-- Mobile Top Header -->
-    <header class="mobile-header fixed top-0 w-full h-16 glass-card rounded-none z-[60] px-4 items-center justify-between border-b-2 border-[#36454f]">
-        <button onclick="app.toggleMenu()" class="text-3xl text-[#36454f]"><i class="fas fa-bars"></i></button>
-        <div class="text-right">
-            <p class="text-[10px] leading-none">BALANCE</p>
-            <p class="text-xl font-black italic">₱<span id="m-balance">0.0000</span></p>
-        </div>
-    </header>
-
-    <!-- Login Screen -->
-    <div id="login-screen" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 text-center">
-        <div class="mb-8">
-            <h1 class="text-4xl italic mb-1">🎖 PAPERHOUSE INC</h1>
-            <p class="tracking-[0.5em] text-xs font-light">ADVERTISING SYSTEM</p>
-        </div>
-        <input type="text" id="username" placeholder="ENTER NICKNAME" class="w-full max-w-xs p-5 border-4 border-[#36454f] mb-4 text-center rounded-2xl text-xl">
-        <button onclick="app.login()" class="w-full max-w-xs btn-main p-5 rounded-2xl text-xl shadow-2xl">ENTER DASHBOARD</button>
+    <!-- Sidebar -->
+    <div id="sidebar" class="fixed top-0 left-0 h-full w-64 glass z-50 sidebar p-5">
+        <h2 class="text-xl font-bold mb-8 text-cyan-400">MENU</h2>
+        <nav class="space-y-4">
+            <button onclick="showPage('home')" class="block w-full text-left p-3 hover:bg-white/10 rounded">🏠 Dashboard</button>
+            <button onclick="showPage('leaderboard')" class="block w-full text-left p-3 hover:bg-white/10 rounded">🏆 Leaderboard</button>
+            <button onclick="showPage('chat')" class="block w-full text-left p-3 hover:bg-white/10 rounded">💬 Global Chat</button>
+            <button onclick="showPage('withdraw')" class="block w-full text-left p-3 hover:bg-white/10 rounded">💸 Withdraw</button>
+            <hr class="border-white/10">
+            <button onclick="showPage('admin-login')" class="block w-full text-left p-3 hover:bg-white/10 rounded text-red-400">🛡 Admin Panel</button>
+        </nav>
     </div>
 
-    <!-- Sidebar Navigation -->
-    <aside id="sidebar" class="sidebar sidebar-glass flex flex-col">
-        <div class="p-8 border-b border-[#36454f]/20">
-            <h2 class="text-2xl italic">🎖 ADS INC</h2>
-            <p class="text-[10px] opacity-60" id="my-uid">ID: INITIALIZING...</p>
-        </div>
+    <!-- Top Bar -->
+    <div class="p-4 glass flex justify-between items-center sticky top-0 z-30">
+        <button onclick="toggleSidebar()" class="text-2xl">☰</button>
 
-        <nav class="flex-1 p-4 space-y-3">
-            <button onclick="app.switchTab('tab-home')" class="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-white/40"><i class="fas fa-coins text-xl"></i> ADS CENTER</button>
-            <button onclick="app.switchTab('tab-yt')" class="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-white/40"><i class="fab fa-youtube text-xl"></i> VIDEO TRADE</button>
-            <button onclick="app.switchTab('tab-chat')" class="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-white/40"><i class="fas fa-comments text-xl"></i> GLOBAL CHAT</button>
-            <button onclick="app.switchTab('tab-rank')" class="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-white/40"><i class="fas fa-trophy text-xl"></i> TOP EARNERS</button>
-            <button onclick="app.switchTab('tab-wallet')" class="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-white/40"><i class="fas fa-wallet text-xl"></i> MY WALLET</button>
-        </nav>
-
-        <div class="p-4 glass-card m-2 text-[10px]">
-            <div class="mb-3">
-                <p>REFS: <span id="ref-count">0</span> | EARNED: ₱<span id="ref-earn">0.00</span></p>
-                <button onclick="app.copyRef()" class="w-full mt-2 btn-main py-2 rounded-lg text-[10px]">COPY REF LINK</button>
-            </div>
-            <p class="mb-1 opacity-70">🟢 ACTIVE USERS:</p>
-            <div id="online-list" class="h-24 overflow-y-auto bg-black/5 rounded p-2"></div>
+        <h1 class="font-bold text-sm text-cyan-400">🎖 PAPERHOUSE INC 🎖</h1>
+        <div class="text-right">
+            <p class="text-[10px] text-gray-400">Balance</p>
+            <p class="text-green-400 font-bold">₱<span id="user-balance">0.00</span></p>
         </div>
-    </aside>
+    </div>
 
     <!-- Main Content Area -->
-    <main class="content-area">
+    <main class="p-4 pb-20">
         
-        <!-- Tab: Ads -->
-        <div id="tab-home" class="tab-content active-tab">
-            <div class="flex flex-col items-center ju
-
-stify-center min-h-[60vh] text-center">
-                <button onclick="app.watchAd()" class="w-64 h-64 rounded-full border-[15px] border-[#36454f] bg-white/30 shadow-2xl flex flex-col items-center justify-center btn-main">
-                    <i class="fas fa-play text-5xl mb-2"></i>
-                    <span class="text-xl">SHOW AD</span>
-                    <span class="text-xs">EARN ₱0.0065</span>
+        <!-- HOME PAGE -->
+        <section id="page-home" class="page-section">
+            <div class="glass p-6 rounded-2xl text-center mb-6 mt-4">
+                <h2 class="text-2xl font-black mb-2">EARN REWARDS</h2>
+                <p class="text-gray-400 text-sm mb-6">Watch ads to earn ₱0.01 per view!</p>
+                <button onclick="watchAd()" class="btn-primary w-full py-4 rounded-xl font-bold text-lg shadow-lg reward-pulse">
+                    WATCH VIDEO AD 📺
                 </button>
-                <div id="proverb-box" class="mt-10 p-6 glass-card max-w-sm italic text-sm hidden"></div>
             </div>
-        </div>
-
-        <!-- Tab: YT Trade -->
-        <div id="tab-yt" class="tab-content">
-            <div class="glass-card p-6 mb-6">
-                <h3 class="text-xl mb-4 italic">UPLOAD VIDEO FOR TRADE</h3>
-                <input type="text" id="yt-url" placeholder="YOUTUBE VIDEO ID" class="w-full p-4 mb-3 rounded-xl border-2">
-                <button onclick="app.uploadVideo()" class="w-full bg-red-600 text-white py-4 rounded-xl font-black">START VIEW TRADE</button>
-            </div>
-            <div id="video-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-        </div>
-
-        <!-- Tab: Chat -->
-        <div id="tab-chat" class="tab-content h-[85vh] flex flex-col">
-            <div id="chat-messages" class="flex-1 overflow-y-auto space-y-4 pr-2"></div>
-            <div class="flex gap-2 p-3 glass-card mt-4">
-                <input type="text" id="chat-input" class="flex-1 bg-white/50 p-4 rounded-2xl outline-none" placeholder="Message to everyone...">
-                <button onclick="app.sendChat()" class="btn-main px-8 rounded-2xl">SEND</button>
-            </div>
-        </div>
-
-        <!-- Tab: Rank -->
-        <div id="tab-rank" class="tab-content">
-            <h2 class="text-3xl italic mb-8">🏆 GLOBAL RANKING</h2>
-            <div id="leaderboard" class="space-y-4"></div>
-        </div>
-
-        <!-- Tab: Wallet -->
-        <div id="tab-wallet" class="tab-content">
-            <div class="grid md:grid-cols-2 gap-8">
-                <div class="glass-card p-8">
-                    <h3 class="text-2xl mb-6 italic text-center">GCASH PAYOUT</h3>
-                    <input type="number" id="gcash-num" placeholder="GCASH MOBILE NO." class="w-full p-4 mb-3 rounded-xl border-2">
-                    <input type="number" id="withdraw-amt" placeholder="AMOUNT (MIN 0.02)" class="w-full p-4 mb-6 rounded-xl border-2">
-                    <button onclick="app.withdraw()" class="w-full bg-green-700 text-white py-5 rounded-xl text-xl shadow-lg">CLAIM PESO</button>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="glass p-4 rounded-xl text-center">
+                    <p class="text-xs text-gray-400 uppercase">Min. Withdraw</p>
+                    <p class="font-bold">₱0.02</p>
                 </div>
-                <div>
-                    <h3 class="text-xl mb-4 italic">MY PAYOUT HISTORY</h3>
-                    <div id="history-list" class="space-y-3"></div>
+                <div class="glass p-4 rounded-xl text-center">
+                    <p class="text-xs text-gray-400 uppercase">Ads Watched</p>
+                    <p id="total-watched" class="font-bold">0</p>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Tab: Admin -->
-        <div id="tab-admin" class="tab-content">
-            <div id="admin-lock" class="glass-card p-8 max-w-md mx-auto mt-20">
-                <input type="password" id="admin-pass" placeholder="ADMIN ACCESS KEY" class="w-full p-4 mb-4 rounded-xl border-2">
-                <button onclick="app.adminLogin()" class="w-full bg-red-600 text-white py-4 rounded-xl">LOGIN ADMIN</button>
+        <!-- LEADERBOARD PAGE -->
+        <section id="page-leaderboard" class="page-section hidden">
+            <h2 class="text-xl font-bold mb-4 text-center">🏆 Top Earners</h2>
+            <div id="leaderboard-list" class="space-y-2">
+                <!-- Data injected here -->
             </div>
-            <div id="admin-panel" class="hidden space-y-4"></div>
-        </div>
+        </section>
+
+        <!-- CHAT PAGE -->
+        <section id="page-chat" class="page-section hidden h-[70vh] flex flex-col">
+            <div id="chat-box" class="flex-1 glass p-4 rounded-t-xl overflow-y-auto space-y-3 mb-2">
+                <!-- Messages injected here -->
+            </div>
+            <div class="flex gap-2">
+                <input type="text" id="chat-input" class="flex-1 bg-white/10 border-none rounded-lg p-3 text-white focus:ring-2 ring-cyan-500" placeholder="Type message...">
+                <button onclick="sendMessage()" class="bg-cyan-600 px-4 rounded-lg">Send</button>
+            </div>
+        </section>
+
+        <!-- WITHDRAW PAGE -->
+        <section id="page-withdraw" class="page-section hidden text-center">
+            <div class="glass p-6 rounded-2xl">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/GCash_logo.svg/1200px-GCash_logo.svg.png" class="h-8 mx-auto mb-4" alt="GCash">
+                <h2 class="text-xl font-bold mb-4">Withdraw to GCash</h2>
+                <input type="text" id="gcash-number" class="w-full bg-white/10 p-3 rounded-lg mb-4 text-center" placeholder="GCash Number (09...)">
+                <p class="text-sm text-gray-400 mb-4">Minimum withdrawal amount is ₱0.02</p>
+                <button onclick="requestWithdraw()" class="w-full bg-green-600 py-3 rounded-xl font-bold">REQUEST CASH OUT</button>
+            </div>
+        </section>
+
+        <!-- ADMIN LOGIN PAGE -->
+        <section id="page-admin-login" class="page-section hidden">
+            <div class="glass p-6 rounded-2xl max-w-sm mx-auto">
+                <h2 class="text-xl font-bold mb-4">Admin Access</h2>
+                <input type="password" id="admin-pass" class="w-full bg-white/10 p-3 rounded-lg mb-4" placeholder="Enter Password">
+                <button onclick="checkAdmin()" class="w-full bg-red-600 py-3 rounded-xl font-bold">LOGIN</button>
+            </div>
+        </section>
+
+        <!-- ADMIN DASHBOARD -->
+        <section id="page-admin-dashboard" class="page-section hidden">
+            <h2 class="text-xl font-bold mb-4">Withdrawal Requests</h2>
+            <div id="admin-requests" class="space-y-2"></div>
+        </section>
 
     </main>
 
-    <!-- Profile Modal -->
-    <div id="profile-modal" class="fixed inset-0 z-[120] bg-black/90 hidden flex items-center justify-center p-4">
-        <div class="glass-card bg-white w-full max-w-md p-10 relative">
-            <button onclick="app.closeProfile()" class="absolute top-4 right-4 text-4xl text-\
-
- 
-[#36454f]">&times;</button>
-            <div class="text-center">
-                <i class="fas fa-user-shield text-7xl mb-6"></i>
-                <h2 id="p-name" class="text-3xl italic mb-8 underline">Name</h2>
-                <div class="grid grid-cols-2 gap-6 mb-8">
-                    <div class="p-4 bg-black/5 rounded-2xl text-sm">ADS WATCHED<br><span id="p-ads" class="text-xl">0</span></div>
-                    <div class="p-4 bg-black/5 rounded-2xl text-sm">TOTAL EARNED<br>₱<span id="p-earned" class="text-xl">0</span></div>
-                </div>
-                <div id="dm-box" class="h-40 overflow-y-auto text-left p-4 bg-black/5 rounded-2xl mb-4 text-[12px]"></div>
-                <div class="flex gap-2">
-                    <input type="text" id="dm-input" class="flex-1 p-4 border-2 rounded-2xl" placeholder="Private DM...">
-                    <button onclick="app.sendDM()" class="bg-blue-600 text-white px-8 rounded-2xl font-black">SEND</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <!-- Firebase SDKs -->
     <script type="module" src="app.js"></script>
 </body>
 </html>

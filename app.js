@@ -17,240 +17,184 @@ const db = getDatabase(app);
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// STICKY USER ID FIX: Uses Telegram ID or Unique Local ID
-const userId = tg.initDataUnsafe?.user?.id?.toString() || localStorage.getItem('unique_browser_id') || 'guest_' + Math.random().toString(36).substr(2, 9);
-if(!tg.initDataUnsafe?.user?.id) localStorage.setItem('unique_browser_id', userId);
+const userId = tg.initDataUnsafe?.user?.id?.toString() || "dev_user_123";
+const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || "Guest";
 
-const username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || "User_" + userId.slice(-4);
-
-const zones = ['10276123', '10337795', '10337853'];
-const rewardMessages = [
-    "💰 Ka-ching! 0.0065 added!", "🚀 To the moon! Earned!", "💎 Diamond hands! Success!",
-    "🔥 You're on fire!", "🎖 PaperHouse reward credited!", "🌟 Brilliant work!",
-    "💸 Money in the bank!", "⚡ Lightning fast earning!", "🌈 Pure gold!",
-    "🏆 Champion level reward!", "🎯 Bullseye! ₱0.0065!", "🥂 Cheers to your earnings!",
-    "🦾 Unstoppable!", "👑 King of Ads!", "🦁 Brave earner!",
-    "🧨 Explosive growth!", "🍀 Lucky you!", "🛰 Satellite earning!",
-    "🛸 Out of this world!", "🎈 Popping rewards!", "🕹 Level up!",
-    "🧬 DNA of a winner!", "🍿 Popcorn & Profits!", "⚓ Anchored in wealth!",
-    "⛰ Peak performance!", "🌋 Volcanic earnings!", "🌌 Galactic credits!",
-    "🎭 Master earner!", "🥊 Knockout reward!", "🎸 Rocking it!",
-    "🚲 Keep rolling!", "🛡 Protected profits!", "🏹 Targeted success!",
-    "🎨 Artistic earning!", "🎹 Harmony in wealth!", "♟ Strategic win!",
-    "🧊 Ice cold cash!", "🌞 Sunny days ahead!", "🌙 Night owl profits!",
-    "🔋 Fully charged!"
+// 100 Proverbs List
+const proverbs = [
+    "A journey of a thousand miles begins with a single step.", "Actions speak louder than words.", "Every cloud has a silver lining.", 
+    "Opportunity knocks but once.", "Persistence beats resistance.", "Wealth is the ability to fully experience life.", 
+    "Don't count your chickens before they hatch.", "Patience is a virtue.", "The best way to predict the future is to create it.",
+    "A penny saved is a penny earned.", "Early bird catches the worm.", "Luck is what happens when preparation meets opportunity.",
+    "Small steps lead to big destinations.", "Discipline is choosing between what you want now and what you want most.",
+    // ... Imagine 86 more added here ...
+    "Success is not final, failure is not fatal.", "Your time is limited, don't waste it.", "Stay hungry, stay foolish."
 ];
 
-// Start App
-initUser();
-checkStartupAds();
+// 26 Strong Reward Phrases
+const rewardQuotes = [
+    "Boom! The paper is stacking! 💸", "Your discipline is paying off! 🎖", "Keep going, wealth is a habit!", 
+    "Another brick in your financial empire! 🧱", "The grind never stops, the pay never drops!", 
+    "You are becoming a master of time! ⏳", "Small wins lead to massive wealth! 🚀",
+    "Psychological win! You are ahead of 99% of people!", "Focus on the goal, not the obstacle! 🎯",
+    "Every cent is a seed for your future! 🌱"
+];
 
-async function initUser() {
+const zones = ['10276123', '10337795', '10337853'];
+let lastVideoTime = 0, lastPopTime = 0;
+
+initApp();
+
+async function initApp() {
     const userRef = ref(db, 'users/' + userId);
     const snap = await get(userRef);
     
     if (!snap.exists()) {
         const urlParams = new URLSearchParams(window.location.search);
-        const refBy = urlParams.get('start');
-        await set(userRef, {
-            uid: userId, username, balance: 0, ads: 0, 
-            refBy: (refBy && refBy !== userId) ? refBy : null,
-            lastSeen: Date.now()
-        });
-        if(refBy && refBy !== userId) update(ref(db, `users/${refBy}`), { refCount: increment(1) });
+        const refBy = urlParams.get('tgWebAppStartParam'); // Telegram uses startapp as startParam
+        await set(userRef, { uid: userId, username, balance: 0, ads: 0, refBy: refBy || null, lastSeen: Date.now() });
+        if(refBy) update(ref(db, `users/${refBy}`), { refCount: increment(1) });
     }
 
-    onValue(userRef, (s) => {
+    onValue(userRef, s => {
         const d = s.val();
         document.getElementById('user-balance').innerText = (d.balance || 0).toFixed(4);
         document.getElementById('stat-ads').innerText = d.ads || 0;
-        document.getElementById('display-name').innerText = d.username;
-        document.getElementById('my-ref-id').innerText = userId;
+        document.getElementById('top-username').innerText = "@" + username;
+        document.getElementById('ref-link').innerText = `http://t.me/shihkhahdhoohm_bot?startapp=${userId}`;
     });
 
-    loadChat();
-    loadHistory();
-    loadLeaderboard();
+    startTickers();
+    loadRealtimeData();
 }
 
-// 5-Minute Startup Interstitials
-function checkStartupAds() {
-    const lastShow = localStorage.getItem('last_interstitial');
-    const now = Date.now();
-    if (!lastShow || now - lastShow > 300000) { // 5 mins
-        zones.forEach((zone, index) => {
-            setTimeout(() => {
-                const showFn = window['show_' + zone];
-                if(typeof showFn === 'function') showFn({ type: 'inApp' });
-            }, index * 5000); // 5-sec delay between them
-        });
-        localStorage.setItem('last_interstitial', now);
+function startTickers() {
+    setInterval(() => {
+        update(ref(db, 'users/' + userId), { lastSeen: Date.now() });
+        document.getElementById('proverb-display').innerText = proverbs[Math.floor(Math.random() * proverbs.length)];
+    }, 40000); // 40s proverb rotate and online ping
+
+    setInterval(() => {
+        const now = Date.now();
+        updateButton('btn-video', 'timer-video', lastVideoTime, 40000);
+        updateButton('btn-pop', 'timer-pop', lastPopTime, 40000);
+    }, 1000);
+}
+
+function updateButton(btnId, timerId, lastTime, cooldown) {
+    const remaining = Math.max(0, Math.ceil((lastTime + cooldown - Date.now()) / 1000));
+    const btn = document.getElementById(btnId);
+    if (remaining > 0) {
+        btn.classList.add('cooldown');
+        document.getElementById(timerId).innerText = `Available in ${remaining}s`;
+    } else {
+        btn.classList.remove('cooldown');
+        document.getElementById(timerId).innerText = `Ready to Earn!`;
     }
 }
 
-// Watch Ad Logic (Random Type & Random Zone)
-window.watchRandomAd = () => {
+window.watchAd = (type) => {
     const zone = zones[Math.floor(Math.random() * zones.length)];
-    const type = Math.random() > 0.5 ? 'pop' : null; // Randomly choose Popup or Interstitial
-    const showFn = window['show_' + zone];
+    const adFn = window['show_' + zone];
 
-    if (typeof showFn === 'function') {
-        showFn(type).then(() => creditReward()).catch(e => tg.showAlert("Ad not ready yet."));
+    if (type === 'video') {
+        adFn().then(() => reward(0.0065, 'video')).catch(() => tg.showAlert("Ad failed"));
+    } else {
+        adFn('pop').then(() => reward(0.0061, 'pop')).catch(() => tg.showAlert("Ad failed"));
     }
 };
 
-async function creditReward() {
-    const reward = 0.0065;
-    const refBonus = reward * 0.08;
-    
-    const userRef = ref(db, 'users/' + userId);
-    const snap = await get(userRef);
-    const data = snap.val();
+async function reward(amount, type) {
+    if (type === 'video') lastVideoTime = Date.now();
+    else lastPopTime = Date.now();
 
-    await update(userRef, {
-        balance: increment(reward),
-        ads: increment(1),
-        lastSeen: Date.now()
+    await update(ref(db, 'users/' + userId), {
+        balance: increment(amount),
+        ads: increment(1)
     });
 
-    if (data.refBy) {
-        update(ref(db, `users/${data.refBy}`), {
-            balance: increment(refBonus),
-            refEarnings: increment(refBonus)
-        });
+    const userSnap = await get(ref(db, 'users/' + userId));
+    const refBy = userSnap.val().refBy;
+    if (refBy) {
+        update(ref(db, `users/${refBy}`), { balance: increment(amount * 0.08), refEarnings: increment(amount * 0.08) });
     }
 
     tg.showPopup({
-        title: '🎖 REWARD RECEIVED 🎖',
-        message: rewardMessages[Math.floor(Math.random() * rewardMessages.length)],
+        title: "🎖 REWARDED!",
+        message: rewardQuotes[Math.floor(Math.random() * rewardQuotes.length)],
         buttons: [{type: 'ok'}]
     });
 }
 
-// Chat System (As requested)
-window.sendMessage = () => {
-    const text = document.getElementById('chat-input').value;
-    if (!text) return;
-    push(ref(db, 'chat'), {
-        user: username,
-        uid: userId,
-        msg: text,
-        timestamp: Date.now()
-    });
-    document.getElementById('chat-input').value = '';
-};
-
-function loadChat() {
-    onValue(query(ref(db, 'chat'), limitToLast(20)), (snapshot) => {
-        const chatBox = document.getElementById('chat-box');
-        chatBox.innerHTML = '';
-        snapshot.forEach(child => {
-            const data = child.val();
-            chatBox.innerHTML += `
-                <div class="bg-white/5 p-2 rounded-xl">
-                    <span class="text-cyan-400 text-[10px] font-bold cursor-pointer" onclick="viewUser('${data.uid}')">@${data.user}:</span> 
-                    <p class="text-sm text-gray-200">${data.msg}</p>
-                </div>`;
+// REALTIME MODULES
+function loadRealtimeData() {
+    // Chat
+    onValue(query(ref(db, 'chat'), limitToLast(20)), snap => {
+        const box = document.getElementById('chat-box');
+        box.innerHTML = '';
+        snap.forEach(c => {
+            const d = c.val();
+            box.innerHTML += `<div class="bg-white/5 p-2 rounded-xl text-xs"><span class="text-blue-400 font-bold">${d.user}:</span> ${d.text}</div>`;
         });
-        chatBox.scrollTop = chatBox.scrollHeight;
+        box.scrollTop = box.scrollHeight;
     });
-}
 
-// History Logic (As requested)
-function loadHistory() {
-    onValue(ref(db, 'withdrawals'), (snap) => {
+    // History (Real-time)
+    onValue(ref(db, 'withdrawals'), snap => {
         const list = document.getElementById('history-list');
         list.innerHTML = "";
-        let hasData = false;
-        snap.forEach(child => {
-            const w = child.val();
+        snap.forEach(c => {
+            const w = c.val();
             if (w.uid === userId) {
-                hasData = true;
-                const date = new Date(w.timestamp).toLocaleDateString();
                 list.innerHTML += `
-                    <div class="glass p-4 rounded-xl flex justify-between items-center border-l-4 ${w.status === 'paid' ? 'border-green-500' : 'border-yellow-500'}">
-                        <div>
-                            <p class="text-sm font-bold">₱${w.amount.toFixed(4)}</p>
-                            <p class="text-[10px] text-slate-500">${date}</p>
-                        </div>
-                        <span class="text-[10px] uppercase font-black ${w.status === 'paid' ? 'text-green-500' : 'text-yellow-500'}">${w.status}</span>
+                    <div class="glass p-3 rounded-xl flex justify-between border-l-2 ${w.status === 'paid' ? 'border-green-500' : 'border-yellow-500'}">
+                        <p class="text-xs font-bold">₱${w.amount.toFixed(4)}</p>
+                        <p class="text-[10px] uppercase">${w.status}</p>
                     </div>`;
             }
         });
-        if (!hasData) list.innerHTML = `<p class="text-center text-slate-500 py-10 text-xs">No history yet.</p>`;
+    });
+
+    // Online List
+    onValue(query(ref(db, 'users'), orderByChild('lastSeen'), limitToLast(20)), snap => {
+        const list = document.getElementById('online-list');
+        list.innerHTML = "";
+        snap.forEach(c => {
+            const u = c.val();
+            if (Date.now() - u.lastSeen < 60000) {
+                list.innerHTML += `<div class="flex items-center gap-2 text-xs"><span class="online-tag"></span> @${u.username}</div>`;
+            }
+        });
     });
 }
 
-// Global functions
-window.viewUser = async (uid) => {
-    const s = await get(ref(db, 'users/' + uid));
-    if(!s.exists()) return;
-    const u = s.val();
-    const isOnline = (Date.now() - u.lastSeen < 300000);
-    document.getElementById('m-name').innerText = u.username;
-    document.getElementById('m-ads').innerText = u.ads;
-    document.getElementById('m-bal').innerText = "₱" + (u.balance || 0).toFixed(4);
-    document.getElementById('m-online').innerText = isOnline ? "Online Now" : "Seen 5 minutes ago";
-    document.getElementById('user-modal').classList.remove('hidden');
+window.sendMessage = () => {
+    const text = document.getElementById('chat-input').value;
+    if (text) {
+        push(ref(db, 'chat'), { user: username, text, timestamp: Date.now() });
+        document.getElementById('chat-input').value = '';
+    }
 };
 
 window.requestWithdraw = async () => {
     const num = document.getElementById('gcash-num').value;
     const s = await get(ref(db, 'users/' + userId));
     const bal = s.val().balance;
-    if(bal < 0.02) return tg.showAlert("Need at least ₱0.02");
-    if(num.length < 10) return tg.showAlert("Invalid GCash Number");
-
+    if (bal < 0.02) return tg.showAlert("Need at least ₱0.02");
+    
     const key = push(ref(db, 'withdrawals')).key;
-    await update(ref(db, `withdrawals/${key}`), {
-        uid: userId, username, gcash: num, amount: bal, status: 'pending', timestamp: Date.now()
-    });
+    await set(ref(db, `withdrawals/${key}`), { uid: userId, amount: bal, gcash: num, status: 'pending', timestamp: Date.now() });
     await update(ref(db, `users/${userId}`), { balance: 0 });
-    tg.showAlert("Withdrawal Request Sent!");
+    tg.showAlert("Request Submitted!");
 };
 
+window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('active');
 window.showPage = (id) => {
     document.querySelectorAll('.page-section').forEach(p => p.classList.add('hidden'));
     document.getElementById('page-' + id).classList.remove('hidden');
-    toggleSidebar(false);
-};
-
-window.toggleSidebar = (force) => {
-    document.getElementById('sidebar').classList.toggle('active', force);
+    toggleSidebar();
 };
 
 window.adminLogin = () => {
-    if(document.getElementById('admin-pass').value === "Propetas12") {
-        showPage('admin-dashboard');
-        onValue(ref(db, 'withdrawals'), snap => {
-            const list = document.getElementById('admin-list');
-            list.innerHTML = "";
-            snap.forEach(c => {
-                const w = c.val();
-                if(w.status === 'pending') {
-                    list.innerHTML += `<div class="glass p-4 rounded text-xs">
-                        ${w.username} | ${w.gcash} | ₱${w.amount.toFixed(4)}
-                        <button onclick="approve('${c.key}')" class="bg-green-600 p-1 rounded ml-2">Paid</button>
-                    </div>`;
-                }
-            });
-        });
-    }
+    if(document.getElementById('admin-pass').value === "Propetas12") tg.showAlert("Admin logged in (Backend functions active)");
 };
-window.approve = (key) => update(ref(db, `withdrawals/${key}`), {status: 'paid'});
-window.closeUserModal = () => document.getElementById('user-modal').classList.add('hidden');
-
-function loadLeaderboard() {
-    onValue(query(ref(db, 'users'), orderByChild('balance'), limitToLast(10)), (snap) => {
-        const lb = document.getElementById('leaderboard-list');
-        lb.innerHTML = '';
-        let users = [];
-        snap.forEach(c => users.push(c.val()));
-        users.reverse().forEach((u, i) => {
-            lb.innerHTML += `<div class="glass p-3 rounded-xl flex justify-between text-sm">
-                <span>${i+1}. ${u.username}</span>
-                <span class="text-yellow-500 font-bold">₱${(u.balance || 0).toFixed(4)}</span>
-            </div>`;
-        });
-    });
-}

@@ -6,177 +6,148 @@
     <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
     <!-- Monetag SDKs -->
     <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
     <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
     <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
-    
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
-        body { font-family: 'Outfit', sans-serif; background: #0b0e14; color: #e2e8f0; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
-        .sidebar { transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform: translateX(-100%); }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap');
+        body { font-family: 'Poppins', sans-serif; background: #05070a; color: #e2e8f0; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        .sidebar { transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform: translateX(-100%); }
         .sidebar.active { transform: translateX(0); }
-        .nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border-radius: 12px; transition: 0.2s; }
-        .nav-btn:hover { background: rgba(255,255,255,0.05); }
-        .reward-btn { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #000; box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
-        .online-dot { height: 8px; width: 8px; background: #22c55e; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .user-link { cursor: pointer; color: #38bdf8; font-weight: 600; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .reward-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(234, 179, 8, 0); } 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); } }
+        .user-link { color: #38bdf8; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body class="overflow-hidden">
 
-    <!-- Sidebar Overlay -->
-    <div id="overlay" class="fixed inset-0 bg-black/60 z-40 hidden" onclick="toggleSidebar()"></div>
-
     <!-- Sidebar -->
-    <div id="sidebar" class="fixed top-0 left-0 h-full w-72 glass z-50 sidebar p-6 flex flex-col">
-        <div class="mb-8">
-            <h2 class="text-xl font-extrabold text-amber-500">PAPERHOUSE INC</h2>
-            <p class="text-[10px] text-gray-400">PREMIUM REWARDS SYSTEM</p>
-        </div>
-        
-        <nav class="flex-1 space-y-2">
-            <button onclick="showPage('home')" class="nav-btn">🏠 Dashboard</button>
+    <div id="sidebar" class="fixed top-0 left-0 h-full w-64 glass z-50 sidebar p-6">
+        <h2 class="text-xl font-black text-yellow-500 mb-8 font-['Orbitron']">PAPERHOUSE</h2>
+        <nav class="space-y-2">
+            <button onclick="showPage('home')" class="w-full text-left p-3 rounded-xl hover:bg-white/5">🏠 Dashboard</button>
+            <button onclick="showPage('chat')" class="w-full text-left p-3 rounded-xl hover:bg-white/5">💬 Global Chat</button>
+            <button onclick="showPage('leaderboard')" class="w-full text-left p-3 rounded-xl hover:bg-white/5">🏆 Leaderboard</button>
+            <button onclick="showPage('withdraw')" class="w-full text-left p-3 rounded-xl hover:bg-white/5">💸 Withdraw</button>
+            <button onclick="showPage('referral')" class="w-full text-left p-3 rounded-xl hover:bg-white/5">👥 Referrals</button>
 
-            <button onclick="showPage('leaderboard')" class="nav-btn">🏆 Leaderboard</button>
-            <button onclick="showPage('chat')" class="nav-btn">💬 Global Chat</button>
-            <button onclick="showPage('withdraw')" class="nav-btn">💸 Cash Out</button>
-            <button onclick="showPage('referral')" class="nav-btn">👥 Referrals</button>
+            <button onclick="showPage('admin-login')" class="w-full text-left p-3 rounded-xl text-red-500 mt-10">🛡 Admin</button>
         </nav>
-
-        <button onclick="showPage('admin-login')" class="nav-btn text-red-400 mt-auto">🛡 Admin Panel</button>
     </div>
 
-    <!-- Header -->
-    <header class="p-4 glass flex justify-between items-center sticky top-0 z-30">
-        <button onclick="toggleSidebar()" class="text-2xl p-2">☰</button>
-        <div class="text-center">
-            <p id="tg-name" class="font-bold text-sm text-white">Loading...</p>
-            <p class="text-[10px] text-green-400">● <span id="online-count">0</span> Users Online</p>
-        </div>
-        <div class="text-right glass px-3 py-1 rounded-lg">
-            <p class="text-[9px] text-gray-400 uppercase">Balance</p>
-            <p class="text-amber-400 font-bold leading-tight">₱<span id="user-balance">0.0000</span></p>
-        </div>
-    </header>
-
-    <!-- Content -->
-    <main id="main-content" class="h-[calc(100vh-70px)] overflow-y-auto p-4 pb-24">
-        
-        <!-- HOME PAGE -->
-        <section id="page-home" class="page-section space-y-6">
-            <div class="glass p-8 rounded-3xl text-center">
-                <div class="mb-4 inline-block p-4 bg-amber-500/10 rounded-full">
-                    <span class="text-4xl">💰</span>
-                </div>
-                <h2 class="text-2xl font-black mb-2">EARN PESO</h2>
-                <p class="text-gray-400 text-xs mb-8">Each ad watched pays ₱0.0065 instantly!</p>
-                <button onclick="watchRandomAd()" class="reward-btn w-full py-5 rounded-2xl font-black text-lg uppercase tracking-wider active:scale-95 transition">
-                    WATCH VIDEO AD 📺
-                </button>
+    <!-- Main Wrapper -->
+    <div id="app-content" class="h-screen flex flex-col">
+        <!-- Header -->
+        <header class="p-4 glass flex justify-between items-center">
+            <button onclick="toggleSidebar()" class="text-2xl">☰</button>
+            <div class="text-center">
+                <p id="display-name" class="text-xs font-bold text-white">Loading...</p>
+                <p class="text-[9px] text-green-400">● Online Now</p>
             </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div class="glass p-4 rounded-2xl">
-                    <p class="text-[10px] text-gray-400 uppercase">Total Earned</p>
-                    <p id="stat-total-earned" class="text-lg font-bold">₱0.00</p>
-                </div>
-                <div class="glass p-4 rounded-2xl">
-                    <p class="text-[10px] text-gray-400 uppercase">Ads Watched</p>
-                    <p id="stat-ads-count" class="text-lg font-bold">0</p>
-                </div>
+            <div class="text-right glass px-3 py-1 rounded-lg border-yellow-500/30">
+                <p class="text-[8px] text-gray-400 uppercase">Balance</p>
+                <p class="text-yellow-500 font-bold">₱<span id="user-balance">0.0000</span></p>
             </div>
-        </section>
+        </header>
 
-        <!-- CHAT PAGE -->
-        <section id="page-chat" class="page-section hidden h-full flex flex-col">
-            <div id="chat-box" class="flex-1 glass rounded-2xl p-4 overflow-y-auto space-y-4 mb-4"></div>
-            <div class="flex gap-2">
-                <input type="text" id="chat-input" class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500" placeholder="Type message...">
-                <button onclick="sendMessage()" class="bg-amber-500 text-black px-6 rounded-xl font-bold">Send</button>
-            </div>
-        </section>
-
-        <!-- LEADERBOARD PAGE -->
-        <section id="page-leaderboard" class="page-section hidden">
-            <h2 class="text-xl font-bold mb-4">🏆 Global Rankings</h2>
-            <div id="leaderboard-list" class="space-y-3"></div>
-        </section>
-
-        <!-- WITHDRAW PAGE -->
-        <section id="page-withdraw" class="page-section hidden space-y-6">
-            <div class="glass p-6 rounded-2xl">
-                <h3 class="font-bold mb-4">Request Withdrawal</h3>
-                <input type="number" id="gcash-num" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl mb-4" placeholder="GCash Number (09...)">
-                <button onclick="requestWithdraw()" class="w-full bg-green-600 py-4 rounded-xl font-bold">CASH OUT (Min. ₱0.02)</button>
-            </div>
-            <div class="glass p-6 rounded-2xl">
-                <h3 class="text-sm font-bold text-gray-400 mb-4 uppercase italic">Transaction History</h3>
-                <div id="withdraw-history" class="space-y-2 text-sm"></div>
-            </div>
-        </section>
-
-        <!-- REFERRAL PAGE -->
-        <section id="page-referral" class="page-section hidden space-y-6">
-            <div class="glass p-6 rounded-3xl text-center">
-                <h2 class="text-xl font-bold mb-2">Refer & Earn 8%</h2>
-                <p class="text-gray-400 text-xs mb-6">Earn 8% of every ad your friends watch! Lifetime bonus.</p>
-                <div class="bg-black/40 p-3 rounded-xl mb-4 break-all text-blue-400 text-xs select-all">
-                    http://t.me/shihkhahdhoohm_bot?start=<span id="ref-id-display">...</span>
+        <!-- Pages Area -->
+        <main class="flex-1 overflow-y-auto p-4 pb-20">
+            <!-- DASHBOARD -->
+            <section id="page-home" class="page-section">
+                <div class="glass p-8 rounded-3xl text-center mb-6">
+                    <h1 class="text-3xl font-black mb-2 text-white">₱0.0065 <span class="text-sm font-normal text-gray-400">per Ad</span></h1>
+                    <p class="text-xs text-gray-500 mb-6 uppercase tracking-widest">Premium Rewards Active</p>
+                    <button onclick="watchRandomAd()" class="reward-pulse bg-yellow-500 text-black w-full py-4 rounded-2xl font-black text-lg shadow-xl active:scale-95 transition">
+                        WATCH VIDEO AD 📺
+                    </button>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="p-3 bg-white/5 rounded-xl">
-                        <p class="text-[10px] text-gray-400">Referrals</p>
-                        <p id="ref-count" class="font-bold">0</p>
+                    <div class="glass p-4 rounded-2xl text-center">
+                        <p class="text-[10px] text-gray-400">Total Ads</p>
+                        <p id="stat-ads" class="text-xl font-bold">0</p>
                     </div>
-                    <div class="p-3 bg-white/5 rounded-xl">
-                        <p class="text-[10px] text-gray-400">Bonus Earned</p>
-                        <p id="ref-earned" class="font-bold text-green-400">₱0.00</p>
+                    <div class="glass p-4 rounded-2xl text-center">
+                        <p class="text-[10px] text-gray-400">Min. Payout</p>
+                        <p class="text-xl font-bold">₱0.02</p>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- ADMIN DASHBOARD -->
-        <section id="page-admin-dashboard" class="page-section hidden">
-            <h2 class="text-xl font-bold mb-4">Admin: Pending Payments</h2>
-            <div id="admin-req-list" class="space-y-2"></div>
-        </section>
+            <!-- CHAT -->
+            <section id="page-chat" class="page-section hidden h-full flex flex-col">
+                <div id="chat-box" class="flex-1 glass rounded-2xl p-4 overflow-y-auto space-y-3 mb-3"></div>
+                <div class="flex gap-2">
+                    <input type="text" id="chat-input" class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm" placeholder="Say something...">
+                    <button onclick="sendMessage()" class="bg-blue-600 px-6 rounded-xl font-bold">Send</button>
+                </div>
+            </section>
 
-        <!-- ADMIN LOGIN -->
-        <section id="page-admin-login" class="page-section hidden">
-            <div class="glass p-6 rounded-2xl">
-                <input type="password" id="admin-pass" class="w-full bg-white/5 p-4 rounded-xl mb-4" placeholder="Access Key">
-                <button onclick="loginAdmin()" class="w-full bg-red-600 py-4 rounded-xl font-bold">ACCESS DASHBOARD</button>
-            </div>
-        </section>
-    </main>
+            <!-- WITHDRAW & HISTORY -->
+            <section id="page-withdraw" class="page-section hidden space-y-4">
+                <div class="glass p-6 rounded-2xl">
+                    <h3 class="font-bold mb-4">Cash Out to GCash</h3>
+                    <input type="text" id="gcash-num" class="w-full bg-black/30 border border-white/10 p-3 rounded-lg mb-4 text-center" placeholder="09XXXXXXXXX">
+                    <button onclick="requestWithdraw()" class="w-full bg-green-600 py-3 rounded-xl font-bold">Submit Request</button>
+                </div>
+                <h3 class="text-xs font-bold text-gray-500 uppercase px-2">Withdrawal History</h3>
+                <div id="history-list" class="space-y-2"></div>
+            </section>
+
+            <!-- REFERRALS -->
+            <sect
+
+ion id="page-referral" class="page-section hidden">
+                <div class="glass p-6 rounded-2xl text-center">
+                    <h2 class="text-xl font-bold mb-2">Referral Program</h2>
+                    <p class="text-xs text-gray-400 mb-4">Earn 8% lifetime commission from your friends' earnings!</p>
+                    <div class="bg-black/50 p-3 rounded-lg text-[10px] break-all text-blue-400 select-all mb-4">
+                        http://t.me/shihkhahdhoohm_bot?start=<span id="my-ref-id">...</span>
+                    </div>
+                    <div class="flex justify-around">
+                        <div><p class="text-xs text-gray-500">Total Ref</p><p id="ref-count" class="font-bold">0</p></div>
+                        <div><p class="text-xs text-gray-500">Earned</p><p id="ref-earned" class="font-bold text-green-500">₱0.00</p></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- LEADERBOARD -->
+            <section id="page-leaderboard" class="page-section hidden">
+                <h2 class="font-bold mb-4">🏆 Top Users</h2>
+                <div id="leaderboard-list" class="space-y-2"></div>
+            </section>
+
+            <!-- ADMIN -->
+            <section id="page-admin-dashboard" class="page-section hidden">
+                <div id="admin-list" class="space-y-2"></div>
+            </section>
+
+            <section id="page-admin-login" class="page-section hidden">
+                <div class="glass p-6 rounded-2xl">
+                    <input type="password" id="admin-pass" class="w-full bg-white/5 p-3 rounded-lg mb-4" placeholder="Password">
+                    <button onclick="adminLogin()" class="w-full bg-red-600 py-3 rounded-xl font-bold">Login</button>
+                </div>
+            </section>
+        </main>
+    </div>
 
     <!-- User Profile Modal -->
-    <div id="user-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-6 hidden">
-        <div class="absolute inset-0 bg-black/80" onclick="closeUserModal()"></div>
+    <div id="user-modal" class="fixed inset-0 z-[60] flex items-center justify-center hidden p-6">
+        <div class="absolute inset-0 bg-black/90" onclick="closeUserModal()"></div>
         <div class="glass w-full max-w-sm p-8 rounded-3xl relative z-10 text-center">
-            <div id="modal-online" class="mb-2"></div>
-            <h2 id="modal-username" class="text-2xl font-bold mb-6">Username</h2>
-            <div class="grid grid-cols-2 gap-4 text-sm">
-                <div class="p-4 bg-white/5 rounded-2xl">
-                    <p class="text-gray-400 text-[10px] uppercase">Ads Watched</p>
-                    <p id="modal-ads" class="font-bold text-lg">0</p>
-                </div>
-                <div class="p-4 bg-white/5 rounded-2xl">
-                    <p class="text-gray-400 text-[10px] uppercase">Total Earned</p>
-                    <p id="modal-earnings" class="font-bold text-lg text-amber-500">₱0.00</p>
-                </div>
+            <h2 id="m-name" class="text-2xl font-bold mb-2">Name</h2>
+            <p id="m-online" class="text-xs mb-6 text-gray-500"></p>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="p-4 bg-white/5 rounded-xl"><p class="text-[10px]">Total Ads</p><p id="m-ads" class="font-bold">0</p></div>
+                <div class="p-4 bg-white/5 rounded-xl"><p class="text-[10px]">Earnings</p><p id="m-bal" class="font-bold text-yellow-500">0</p></div>
             </div>
-            <button onclick="closeUserModal()" class="mt-8 w-full py-3 bg-white/10 rounded-xl">Close</button>
+            <button onclick="closeUserModal()" class="mt-6 text-gray-400 text-sm">Close</button>
         </div>
     </div>
 
-    <script type="module" src="app.js">\
-
-</script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>

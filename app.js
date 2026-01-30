@@ -3,14 +3,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getDatabase, ref, set, get, update, onValue, push, query, orderByChild, limitToLast, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
-    authDomain: "freegcash-ads.firebaseapp.com",
-    databaseURL: "https://freegcash-ads-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "freegcash-ads",
-    storageBucket: "freegcash-ads.firebasestorage.app",
-    messagingSenderId: "608086825364",
-    appId: "1:608086825364:web:3a8e628d231b52c6171781"
+  apiKey: "AIzaSyBXYAc9-UAB0DzqYsFKAHR_OsRD2UhVLjs",
+  authDomain: "project-ads-app-telegram.firebaseapp.com",
+  projectId: "project-ads-app-telegram",
+  storageBucket: "project-ads-app-telegram.firebasestorage.app",
+  messagingSenderId: "867442007509",
+  appId: "1:867442007509:web:3fe7c9872d0ab88c1bf15c",
+  databaseURL: "https://project-ads-app-telegram-default-rtdb.firebaseio.com/" // Default based on project ID
 };
+
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);

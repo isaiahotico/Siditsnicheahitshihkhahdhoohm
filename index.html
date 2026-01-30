@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
@@ -14,129 +14,104 @@
     <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
 
     <style>
-        body { background: #0f172a; color: white; font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        .sidebar-item.active { background: #3b82f6; border-radius: 12px; }
-        .section { display: none; }
-        .section.active { display: block; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+        body { background: #0f172a; color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .sidebar { transition: 0.3s; transform: translateX(-100%); z-index: 50; }
+        .sidebar.active { transform: translateX(0); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); transition: 0.2s; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
-<body class="h-screen overflow-hidden flex">
-
-    <!-- Login Popup -->
-    <div id="loginPopup" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
-        <div class="glass p-8 rounded-2xl max-w-md w-full text-center">
-            <h1 class="text-2xl font-bold mb-4 text-blue-400">🎖🤑PAPERHOUSE INC🤑🎖</h1>
-            <p class="mb-6 text-gray-300">Enter your FaucetPay Email to start earning USDT.</p>
-            <input type="email" id="fpEmail" placeholder="FaucetPay Gmail/Email" class="w-full p-3 rounded-lg bg-slate-900 border border-gray-700 mb-2 outline-none focus:border-blue-500">
-            <input type="text" id="refBy" placeholder="Referral Code (Optional)" class="w-full p-3 rounded-lg bg-slate-900 border border-gray-700 mb-4 outline-none">
-            <button onclick="loginUser()" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-lg font-bold transition">Login / Start Earning</button>
-            <p class="mt-4 text-sm text-gray-400">No account? <a href="https://faucetpay.io/?r=5265484" target="_blank" class="text-blue-400 underline">Register Here</a></p>
-        </div>
-    </div>
+<body class="bg-slate-900">
 
     <!-- Sidebar -->
-    <nav class="w-20 md:w-64 glass h-full p-4 flex flex-col gap-4">
-
-        <div class="hidden md:block text-center font-bold text-xl mb-6 text-blue-400">PAPERHOUSE INC</div>
-        <button onclick="showSection('ads')" class="sidebar-item active p-4 flex items-center gap-4 hover:bg-slate-800 transition">
-            <i class="fas fa-play-circle text-xl"></i> <span class="hidden md:inline">Watch Ads</span>
-        </button>
-        <button onclick="showSection('leaderboard')" class="sidebar-item p-4 flex items-center gap-4 hover:bg-slate-800 transition">
-            <i class="fas fa-trophy text-xl"></i> <span class="hidden md:inline">Leaderboard</span>
-        </button>
-        <button onclick="showSection('referral')" class="sidebar-item p-4 flex items-center gap-4 hover:bg-slate-800 transition">
-            <i class="fas fa-users text-xl"></i> <span class="hidden md:inline">Referrals</span>
-        </button>
-        <button onclick="showSection('chat')" class="sidebar-item p-4 flex items-center gap-4 hover:bg-slate-800 transition">
-            <i class="fas fa-comments text-xl"></i> <span class="hidden md:inline">Chat Room</span>
-        </button>
-        <div class="mt-auto p-2 glass rounded-xl text-center">
-            <div class="text-xs text-gray-400">Balance</div>
-            <div id="balanceDisplay" class="font-bold text-green-400">0.00000000</div>
-            <div class="text-[10px]">USDT</div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="flex-1 h-full overflow-y-auto p-4 md:p-8">
+    <div id="sidebar" class="sidebar fixed top-0 left-0 w-64 h-full glass p-5 shadow-2xl">
+        <h2 class="text-xl font-bold mb-8 text-blue-400">MENU</h2>
+        <nav class="space-y-4">
+            <button onclick="showTab('home')" class="w-full text-left p-3 rounded-lg hover:bg-white/10 flex items-center"><i class="fas fa-home mr-3"></i> Home</button>
+            <button onclick="showTab('referral')" class="w-full text-left p-3 rounded-lg hover:bg-white/10 flex items-center"><i class="fas fa-users mr-3"></i> Referrals</button>
+            <button onclick="showTab('leaderboard')" class="w-full text-left p-3 rounded-lg hover:bg-white/10 flex items-center"><i class="fas fa-trophy mr-3"></i> Leaderboard</button>
+            <button onclick="showTab('chat')" class="w-full text-left p-3 rounded-lg hover:bg-white/10 flex items-center"><i class="fas fa-comments mr-3"></i> Chat Room</button>
+        </nav>
+        <button onclick="toggleSidebar()" class="absolute top-4 right-4 text-white text-xl">&times;</button>
+    </div>    <!-- Main Content -->
+    <div class="max-w-md mx-auto min-h-screen flex flex-col p-4">
         
-        <!-- Ads Section -->
-        <section id="ads" class="section active space-y-6">
-            <div class="glass p-6 rounded-2xl text-center">
-                <h2 class="text-2xl font-bold mb-2">Available Rewards</h2>
-                <p class="text-gray-400 mb-6">Click an ad, watch it fully, and earn 0.0001 USDT instantly.</p>
-                <div id="cooldownText" class="text-orange-400 font-bold hidden mb-4">Cooldown: <span id="timer">12</span>s</div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button id="adBtn1" onclick="watchAd(1)" class="bg-blue-600 p-6 rounded-xl hover:scale-105 transition">
-                        <i class="fas fa-ad text-3xl mb-2"></i><br>Ad Channel 1
-                    </button>
-                    <button id="adBtn2" onclick="watchAd(2)" class="bg-purple-600 p-6 rounded-xl hover:scale-105 transition">
-                        <i class="fas fa-ad text-3xl mb-2"></i><br>Ad Channel 2
-                    </button>
-                    <button id="adBtn3" onclick="watchAd(3)" class="bg-indigo-600 p-6 rounded-xl hover:scale-105 transition">
-                        <i class="fas fa-ad text-3xl mb-2"></i><br>Ad Channel 3
-                    </button>
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-6">
+            <button onclick="toggleSidebar()" class="text-2xl"><i class="fas fa-bars"></i></button>
+            <h1 class="text-sm font-bold text-yellow-400">🎖🤑PAPERHOUSE INC ADS🤑🎖</h1>
+            <div id="userBalance" class="glass px-3 py-1 rounded-full text-green-400 text-sm font-mono">0.0000 USDT</div>
+        </header>
+
+        <!-- Home Tab -->
+        <div id="home" class="tab-content active space-y-6">
+            <div class="glass p-8 rounded-3xl text-center shadow-inner">
+                <p class="text-gray-400 text-sm mb-2">Ready to earn?</p>
+                <h2 class="text-3xl font-bold mb-6">0.0001 USDT <br><span class="text-sm font-normal text-blue-400">per reward ad</span></h2>
+                <button id="adBtn" onclick="watchAd()" class="btn-primary w-48 h-48 rounded-full text-2xl font-bold shadow-lg shadow-blue-500/20 border-8 border-white/5 active:scale-95 mx-auto">
+                    WATCH AD
+                </button>
+                <p id="cooldownText" class="mt-4 text-orange-400 font-bold hidden">Cooldown: <span id="timer">12</span>s</p>
+            </div>
+
+            <div class="glass p-4 rounded-2xl">
+                <h3 class="font-bold mb-2">FaucetPay Setup</h3>
+                <input id="fpEmail" type="email" placeholder="Enter FaucetPay Email" class="w-full bg-black/20 border border-white/10 p-3 rounded-lg text-sm mb-2">
+                <p id="fpWarning" class="text-xs text-red-400 hidden">Register first: <a href="https://faucetpay.io/?r=5265484" class="underline">Click Here</a></p>
+                <button onclick="saveEmail()" class="w-full bg-green-600 p-2 rounded-lg text-sm font-bold">Update Wallet</button>
+            </div>
+            
+            <button onclick="withdrawMain()" class="w-full bg-blue-600 py-4 rounded-2xl font-bold text-lg shadow-xl shadow-blue-900/40">AUTO WITHDRAW TO FAUCETPAY</button>
+        </div>
+
+        <!-- Referral Tab -->
+        <div id="referral" class="tab-content space-y-4">
+            <div class="glass p-6 rounded-2xl text-center">                <h2 class="text-xl font-bold mb-2">Your Referral Code</h2>
+                <div id="myCode" class="text-2xl font-mono text-blue-400 mb-4 tracking-widest">LOADING...</div>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div class="bg-white/5 p-3 rounded-xl">
+                        <p class="text-gray-400">Total Referrals</p>
+                        <p id="refCount" class="text-xl font-bold">0</p>
+                    </div>
+                    <div class="bg-white/5 p-3 rounded-xl">
+                        <p class="text-gray-400">Referral Earned</p>
+                        <p id="refEarned" class="text-xl font-bold text-green-400">0.0000</p>
+                    </div>
                 </div>
             </div>
-            <button onclick="withdrawNow()" class="w-full bg-green-600 p-4 rounded-xl font-bold text-lg hover:bg-green-700 shadow-lg shadow-green-900/20">AUTO-WITHDRAW TO FAUCETPAY</button>
-        </section>
+
+            <div class="glass p-4 rounded-2xl">
+                <p class="text-sm mb-2 text-gray-300 italic text-center">Enter your friend's code to link (8% commission auto-added)</p>
+                <div class="flex gap-2">
+                    <input id="refInput" type="text" placeholder="Enter Code" class="flex-1 bg-black/20 border border-white/10 p-3 rounded-lg font-mono">
+                    <button onclick="applyReferral()" class="bg-blue-600 px-4 rounded-lg font-bold">SET</button>
+                </div>
+            </div>
+            
+            <button onclick="claimReferralBalance()" class="w-full bg-yellow-600 py-4 rounded-2xl font-bold">CLAIM REFERRAL REWARD (AUTO-PAY)</button>
+        </div>
 
         <!-- Leaderboard -->
-        <section id="leaderboard" class="section">
-            <h2 class="text-2xl font-bold mb-4">World Leaderboard</h2>
-            <div class="glass rounded-2xl overflow-hidden">
-                <table class="w-full text-left">
-                    <thead class="bg-slate-800">
-                        <tr>
-                            <th class="p-4">User</th>
-                            <th class="p-4 text-right">Total Earned</th>
-                        </tr>
-                    </thead>
-                    <tbody id="leaderboardList"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- Referral -->
-        <section
-
-id="referral" class="section space-y-4">
-            <div class="glass p-6 rounded-2xl">
-                <h2 class="text-2xl font-bold mb-2 text-blue-400">Referral Program (8%)</h2>
-                <p class="mb-4">Share your code and earn 8% from every ad your friend watches.</p>
-                <div class="bg-slate-900 p-4 rounded flex justify-between items-center">
-                    <span id="myCodeDisplay" class="font-mono text-xl">LOADING...</span>
-                    <button onclick="copyRef()" class="text-blue-400">Copy Code</button>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="glass p-6 rounded-2xl text-center">
-                    <div class="text-sm text-gray-400">Total Referrals</div>
-                    <div id="totalRefs" class="text-2xl font-bold">0</div>
-                </div>
-                <div class="glass p-6 rounded-2xl text-center">
-                    <div class="text-sm text-gray-400">Claimable Bonus</div>
-                    <div id="refEarned" class="text-2xl font-bold text-green-400">0.0000</div>
-                </div>
-            </div>
-            <button onclick="claimReferral()" class="w-full bg-blue-600 p-4 rounded-xl font-bold">Claim & Withdraw Referral Bonus</button>
-        </section>
+        <div id="leaderboard" class="tab-content glass rounded-2xl p-4 min-h-[400px]">
+            <h2 class="text-center font-bold text-xl mb-4 border-b border-white/10 pb-2">Top Earners</h2>
+            <div id="leaderboardList" class="space-y-2"></div>
+        </div>
 
         <!-- Chat -->
-        <section id="chat" class="section h-full flex flex-col">
-            <div id="chatBox" class="flex-1 glass rounded-2xl p-4 overflow-y-auto mb-4 space-y-2"></div>
+        <div id="chat" class="tab-content flex flex-col h-[70vh]">
+            <div id="chatBox" class="flex-1 glass rounded-2xl p-4 overflow-y-auto mb-4 text-sm space-y-2"></div>
             <div class="flex gap-2">
-                <input type="text" id="chatInput" class="flex-1 bg-slate-800 p-3 rounded-lg outline-none" placeholder="Say something...">
-                <button onclick="sendMessage()" class="bg-blue-600 px-6 rounded-lg"><i class="fas fa-paper-plane"></i></button>
+                <input id="chatInput" type="text" placeholder="Type a message..." class="flex-1 bg-black/20 border border-white/10 p-3 rounded-full">
+                <button onclick="sendMessage()" class="bg-blue-600 w-12 h-12 rounded-full"><i class="fas fa-paper-plane"></i></button>
             </div>
-        </section>
-    </main>
+        </div>
 
-    <!-- Firebase SDKs -->
-    <script type="module" src="js/app.js"></script>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>

@@ -6,42 +6,33 @@
     <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-    <!-- Monetag SDK -->
-    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
     
+    <!-- Monetag SDKs -->
+    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
+    <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
+    <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
+
     <style>
         :root {
-            --gold-gradient: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
-            --lagoon-gradient: linear-gradient(180deg, #00B4DB 0%, #0083B0 100%);
+            --charcoal: #36454f;
+            --gold-armor: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+            --lagoon: linear-gradient(180deg, #00B4DB 0%, #0083B0 100%);
         }
         
-        body, html {
-            margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif;
+        body { 
+            color: var(--charcoal); 
+            font-weight: 900; /* Thick Text */
             overflow: hidden;
+            height: 100vh;
         }
 
-        /* Background States */
-        #bg-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; transition: all 1s ease;
+        #bg-layer {
+            position: fixed; top:0; left:0; width:100%; height:100%; z-index:-1;
+            transition: all 0.8s ease-in-out;
         }
 
-        .gold-armor {
-            background: var(--gold-gradient);
-            background-size: 400% 400%;
-            animation: shine 3s infinite;
-        }
-
-        .lagoon {
-            background: var(--lagoon-gradient);
-            position: relative;
-        }
-        .lagoon::after {
-            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.2);
-            backdrop-filter: blur(2px);
-            mask-image: linear-gradient(transparent, black);
-        }
+        .gold-armor { background: var(--gold-armor); background-size: 400% 400%; animation: shine 3s infinite; }
+        .lagoon-bg { background: var(--lagoon); }
 
         @keyframes shine {
             0% { background-position: 0% 50%; }
@@ -49,115 +40,109 @@
             100% { background-position: 0% 50%; }
         }
 
-        .glass-card {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 15px;
-        }
-
-        .tab-content { display: none; height: 70vh; overflow-y: auto; }
+        .glass { background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(12px); border: 2px solid rgba(255,255,255,0.3); }
+        .tab-content { display: none; height: 72vh; overflow-y: auto; }
         .active-tab { display: block; }
-
-        .btn-reward {
-            background: #ffcc00;
-            box-shadow: 0 0 15px #ffcc00;
-            transition: transform 0.2s;
-        }
-        .btn-reward:active { transform: scale(0.9); }
+        
+        input { font-weight: 900; color: var(--charcoal); }
     </style>
 </head>
-<body class="text-white">
+<body>
 
-    <div id="bg-container" class="gold-armor"></div>
+    <div id="bg-layer" class="gold-armor"></div>
 
-    <!-- Login Overlay (Simple) -->    <div id="login-screen" class="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6">
-        <h1 class="text-2xl font-bold mb-4 text-yellow-500">🎖 PAPERHOUSE INC 🎖</h1>
-        <input type="text" id="username" placeholder="Enter Nickname" class="w-full p-3 rounded bg-gray-800 border border-yellow-500 mb-4">
-        <button onclick="app.login()" class="w-full bg-yellow-500 p-3 rounded font-bold text-black">START EARNING</button>
+    <!-- Login Screen -->
+    <div id="login-screen" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-6">
+        <h1 class="text-3xl mb-6 text-center">🎖 PAPERHOUSE INC ADS 🎖</h1>
+        <input type="text" id="username" placeholder="Enter Nickname" class="w-full p-4 rounded-xl border-4 border-[#36454f] mb-4 text-center">
+        <button onclick="app.login()" class="w-full bg-[#36454f] text-white p-4 rounded-xl text-xl">ENTER APP</button>
     </div>
 
-    <!-- Main UI -->
-    <div id="main-ui" class="hidden h-full flex flex-col">
-        <!-- Header -->
-        <header class="p-4 flex justify-between items-center glass-card m-2">
+    <!-- Main App -->
+
+    <div id="main-ui" class="hidden h-screen flex flex-col">
+        
+        <!-- Top Bar -->
+        <div class="p-4 flex justify-between items-center glass m-2 rounded-2xl">
             <div>
-                <p class="text-xs">Balance</p>
-                <p class="text-xl font-bold text-yellow-400">₱ <span id="balance">0.0000</span></p>
+                <p class="text-xs uppercase">Your Balance</p>
+                <p class="text-2xl font-black">₱ <span id="balance">0.0000</span></p>
             </div>
-            <button onclick="app.showTab('admin')" class="text-xs opacity-50">Admin</button>
-        </header>
+            <div class="text-right">
+                <p class="text-xs uppercase">Status</p>
+                <p class="text-green-800">ONLINE</p>
+            </div>
+        </div>
 
-        <!-- Dynamic Content -->
-        <main class="flex-1 p-4">
+        <!-- Content Area -->
+        <main class="flex-1 px-4">
             
-            <!-- Home Tab -->
+            <!-- Home: Ad Center -->
             <div id="tab-home" class="tab-content active-tab text-center">
-                <div class="py-10">
-                    <div class="mb-8 p-6 glass-card inline-block">
-                        <i class="fas fa-ad text-5xl mb-2 text-yellow-400"></i>
-                        <h2 class="text-xl font-bold">Watch & Earn</h2>
-                        <p class="text-sm opacity-80">Reward: ₱0.0065</p>
-                    </div>
-                    <br>
-                    <button onclick="app.watchAd()" class="btn-reward w-48 h-48 rounded-full text-black font-black text-2xl border-8 border-white">
-                        CLICK<br>FOR ADS
+                <div class="mt-10">
+                    <button onclick="app.watchMainAd()" class="w-56 h-56 rounded-full bg-white/40 border-8 border-[#36454f] shadow-2xl transition-transform active:scale-90">
+                        <i class="fas fa-play-circle text-6xl mb-2"></i><br>
+                        EARN ₱0.0065
                     </button>
+                    <p class="mt-4 bg-white/30 rounded-full py-1 px-4 inline-block">Ads are ready!</p>
                 </div>
             </div>
 
-            <!-- Chat Tab -->
+            <!-- Chat Room -->
             <div id="tab-chat" class="tab-content">
-                <div id="chat-box" class="h-full flex flex-col">
+                <div class="h-full flex flex-col">
                     <div id="chat-messages" class="flex-1 overflow-y-auto space-y-2 p-2"></div>
-                    <div class="flex gap-2 p-2">
-                        <input type="text" id="chat-input" class="flex-1 p-2 rounded bg-black/30 border border-white/20" placeholder="Type a message...">
-                        <button onclick="app.sendMessage()" class="bg-blue-500 px-4 py-2 rounded">Send</button>
+                    <div class="flex gap-2 p-2 glass rounded-xl mt-2">
+                        <input type="text" id="chat-input" class="flex-1 bg-transparent outline-none" placeholder="Type message...">
+                        <button onclick="app.sendMessage()" class="text-2xl"><i class="fas fa-paper-plane"></i></button>
                     </div>
                 </div>
             </div>
 
-            <!-- Leaderboard Tab -->
-            <div id="tab-leaderboard" class="tab-content">
-                <h3 class="text-center font-bold mb-4">🏆 Top Earners</h3>
-                <div id="leaderboard-list" class="space-y-2"></div>
+            <!-- Rank / Leaderboard -->
+            <div id="tab-rank" class="tab-content">
+                <h2 class="text-center text-xl mb-4">🏆 GLOBAL RANKING</h2>
+                <div id="leaderboard" class="space-y-2"></div>
             </div>
 
-            <!-- Wallet/Withdraw Tab -->
+            <!-- Wallet / Withdraw -->
             <div id="tab-wallet" class="tab-content">
-                <div class="glass-card p-4">
-                    <h3 class="font-bold mb-2">GCash Withdrawal</h3>
-                    <p class="text-xs mb-4">Min. Withdrawal: ₱0.02</p>
-                    <input type="number" id="gcash-num" placeholder="GCash Number" class="w-full p-2 mb-2 rounded bg-black/20">
-                    <input type="number" id="withdraw-amount" placeholder="Amount" class="w-full p-2 mb-4 rounded bg-black/20">
-                    <button onclick="app.withdraw()" class="w-full bg-green-500 py-3 rounded font-bold">Withdraw Now</button>
+                <div class="glass p-4 rounded-2xl mb-4">
+                    <h3 class="mb-2">WITHDRAW GCASH</h3>
+                    <input type="number" id="gcash-num" placeholder="GCash Number" class="w-full p-2 mb-2 rounded bg-white/50">
+                    <input type="number" id="withdraw-amount" placeholder="Amount (Min 0.02)" class="w-full p-2 mb-2 rounded bg-white/50">
+                    <button onclick="app.requestWithdraw()" class="w-full bg-[#36454f] text-white py-3 rounded-xl">SUBMIT REQUEST</button>
                 </div>
+                <h3 class="mb-2 px-2 uppercase text-xs">Transaction History</h3>
+                <div id="history-list" class="space-y-2"></div>
             </div>
 
-            <!-- Admin Tab -->
+            <!-- Admin -->
             <div id="tab-admin" class="tab-content">
-                <div id="admin-login" class="p-4">
-                    <input type="password" id="admin-pass" placeholder="Admin Password" class="w-full p-2 mb-2 rounded bg-black/20">
-                    <button onclick="app.adminAuth()" class="w-full bg-red-600 py-2 rounded">Access Dashboard</button>
+                <div id="admin-lock">
+                    <input type="password" id="admin-pass" placeholder="Admin Key" class="w-full p-4 border-4 border-[#36454f] rounded-xl mb-4 mt-10">
+                    <button onclick="app.unlockAdmin()" class="w-full bg-red-600 text-white p-4 rounded-xl">LOGIN ADMIN</button>
                 </div>
-                <div id="admin-panel" class="hidden p-4">
-                    <h2 class="font-bold border-b mb-2">Withdrawal Requests</h2>
-                    <div id="admin-withdrawals" class="text-xs"></div>
+                <div id="admin-panel" class="hidden">
+                    <h2 class="text-center text-xl mb-4">PENDING PAYMENTS</h2>
+                    <div id="admin-pending-list" class="space-y-2 text-xs"></div>
                 </div>
             </div>
 
         </main>
 
-        <!-- Footer Navigation -->
-        <nav class="flex justify-around p-4 glass-card m-2">
-            <button onclick="app.showTab('home')"><i class="fas fa-play"></i><br><span class="text-[10px]">Ads</span></button>
-            <button onclick="app.showTab('chat')"><i class="fas fa-comments"></i><br><span class="text-[10px]">Chat</span></button>
-            <button onclick="app.showTab('leaderboard')"><i class="fas fa-trophy"></i><br><span class="text-[10px]">Rank</span></button>
-            <button onclick="app.showTab('wallet')"><i class="fas fa-wallet"></i><br><span class="text-[10px]">Wallet</span></button>
+        <!-- Footer Nav -->
+        <nav cl
+
+ass="flex justify-around items-center p-4 glass m-2 rounded-2xl">
+            <button onclick="app.switchTab('home')" class="text-2xl"><i class="fas fa-coins"></i></button>
+            <button onclick="app.switchTab('chat')" class="text-2xl"><i class="fas fa-comments"></i></button>
+            <button onclick="app.switchTab('rank')" class="text-2xl"><i class="fas fa-trophy"></i></button>
+            <button onclick="app.switchTab('wallet')" class="text-2xl"><i class="fas fa-wallet"></i></button>
+            <button onclick="app.switchTab('admin')" class="text-xl opacity-30"><i class="fas fa-user-shield"></i></button>
         </nav>
     </div>
 
-    <!-- Firebase SDKs -->
     <script type="module" src="app.js"></script>
 </body>
 </html>

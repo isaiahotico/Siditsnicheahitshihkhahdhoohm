@@ -22,6 +22,11 @@
         .tab-content.active { display: block; }
         .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); transition: 0.2s; }
         .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .user-display { 
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
     </style>
 </head>
 <body class="bg-slate-900">
@@ -33,17 +38,24 @@
             <button onclick="showTab('home')" class="w-full text-left p-3 rounded-lg hover:bg-white/10 flex items-center"><i class="fas fa-home mr-3"></i> Home</button>
             <button onclick="showTab('referral')" class="w-full text-left p-3 rounded-lg hover:bg-white/10 flex items-center"><i class="fas fa-users mr-3"></i> Referrals</button>
             <button onclick="showTab('leaderboard')" class="w-full text-left p-3 rounded-lg hover:bg-white/10 flex items-center"><i class="fas fa-trophy mr-3"></i> Leaderboard</button>
+
             <button onclick="showTab('chat')" class="w-full text-left p-3 rounded-lg hover:bg-white/10 flex items-center"><i class="fas fa-comments mr-3"></i> Chat Room</button>
         </nav>
         <button onclick="toggleSidebar()" class="absolute top-4 right-4 text-white text-xl">&times;</button>
-    </div>    <!-- Main Content -->
+    </div>
+
+    <!-- Main Content -->
     <div class="max-w-md mx-auto min-h-screen flex flex-col p-4">
         
         <!-- Header -->
         <header class="flex justify-between items-center mb-6">
             <button onclick="toggleSidebar()" class="text-2xl"><i class="fas fa-bars"></i></button>
             <h1 class="text-sm font-bold text-yellow-400">🎖🤑PAPERHOUSE INC ADS🤑🎖</h1>
-            <div id="userBalance" class="glass px-3 py-1 rounded-full text-green-400 text-sm font-mono">0.0000 USDT</div>
+            <div id="userDisplay" class="user-display px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                <i class="fas fa-user-circle text-blue-400"></i>
+                <span id="userNameDisplay">Loading...</span>
+                <span id="userBalance" class="text-green-400 font-mono">0.0000 USDT</span>
+            </div>
         </header>
 
         <!-- Home Tab -->
@@ -69,7 +81,8 @@
 
         <!-- Referral Tab -->
         <div id="referral" class="tab-content space-y-4">
-            <div class="glass p-6 rounded-2xl text-center">                <h2 class="text-xl font-bold mb-2">Your Referral Code</h2>
+            <div class="glass p-6 rounded-2xl text-center">
+                <h2 class="text-xl font-bold mb-2">Your Referral Code</h2>
                 <div id="myCode" class="text-2xl font-mono text-blue-400 mb-4 tracking-widest">LOADING...</div>
                 <div class="grid grid-cols-2 gap-4 text-sm">
                     <div class="bg-white/5 p-3 rounded-xl">
@@ -84,7 +97,9 @@
             </div>
 
             <div class="glass p-4 rounded-2xl">
-                <p class="text-sm mb-2 text-gray-300 italic text-center">Enter your friend's code to link (8% commission auto-added)</p>
+                <p class="text-sm mb-2 text-gray-300 italic text-center">Ent
+
+er your friend's code to link (8% commission auto-added)</p>
                 <div class="flex gap-2">
                     <input id="refInput" type="text" placeholder="Enter Code" class="flex-1 bg-black/20 border border-white/10 p-3 rounded-lg font-mono">
                     <button onclick="applyReferral()" class="bg-blue-600 px-4 rounded-lg font-bold">SET</button>

@@ -40,9 +40,7 @@
 
             <button onclick="showPage('referral')" class="w-full text-left p-3 hover:bg-white/5 rounded-xl">👥 Referrals</button>
         </nav>
-        <button onclick="showPage('admin-login')" class="text-red-500 text-xs text-left p-3">🛡 Admin Access</button>
-    </div>
-
+        <button onclick="showPage('admin-login')" class="w-full text-left p-3 rounded-xl text-red-500 mt-10">🛡 Admin</button
     <!-- Header -->
     <header class="p-4 glass sticky top-0 z-30 flex justify-between items-center">
         <button onclick="toggleSidebar()" class="text-2xl">☰</button>
@@ -108,10 +106,7 @@
         <!-- WITHDRAW & HISTORY -->
         <section id="page-withdraw" class="page-section hidden space-y-6">
             <div class="glass p-6 rounded-3xl">
-                <h3 class="font-bold mb
-
- 
--4">Cash Out (₱0.02 Min)</h3>
+                <h3 class="font-bold mb-4">Cash Out (₱0.02 Min)</h3>
                 <input type="text" id="gcash-num" class="w-full bg-black/30 border border-white/10 p-4 rounded-xl mb-4 text-center" placeholder="GCash Number">
                 <button onclick="requestWithdraw()" class="w-full bg-green-600 py-4 rounded-xl font-bold">REQUEST GCASH</button>
             </div>
@@ -133,22 +128,27 @@
                 </div>
             </div>
         </section>
+ <!-- LEADERBOARD -->
+            <section id="page-leaderboard" class="page-section hidden">
+                <h2 class="font-bold mb-4">🏆 Top Users</h2>
+                <div id="leaderboard-list" class="space-y-2"></div>
+            </section>
+           <!-- ADMIN -->
+            <section id="page-admin-dashboard" class="page-section hidden">
+                <div id="admin-list" class="space-y-2"></div>
+            </section>
 
-        <!-- LEADERBOARD -->
-        <section id="page-leaderboard" class="page-section hidden">
-            <h2 class="font-bold mb-4">🏆 Global Ranking</h2>
-            <div id="leaderboard-list" class="space-y-2"></div>
-        </section>
+            <section id="page-admin-login" class="page-section hidden">
+                <div class="glass p-6 rounded-2xl">
+                    <input type="password" id="admin-pass" class="w-full bg-white/5 p-3 rounded-lg mb-4" placeholder="Password">
+                    <button onclick="adminLogin()" class="w-full bg-red-600 py-3 rounded-xl font-bold">Login</button>
+                </div>
+            </section>
+        </main>
+    </div>
+    
 
-        <!-- ADMIN -->
-        <section id="page-admin-login" class="page-section hidden">
-            <div class="glass p-6 rounded-2xl">
-                <input type="password" id="admin-pass" class="w-full bg-white/5 p-4 rounded-xl mb-4" placeholder="Enter Password">
-                <button onclick="adminLogin()" class="w-full bg-red-600 py-4 rounded-xl font-bold">Login Admin</button>
-            </div>
-        </section>
 
-    </main>
 
     <script type="module" src="app.js"></script>
 </body>

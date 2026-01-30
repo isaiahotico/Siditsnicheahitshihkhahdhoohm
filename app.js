@@ -30,7 +30,7 @@ window.app = {
     login: async () => {
         const name = document.getElementById('username').value.trim();
         if(!name) return;
-        uid = name.toLowerCase().replace(/\s/g, '') + "_" + Math.floor(Math.random()*999);
+        uid = name.toLowerCase().replace(/\s/g, '') + "_" + Math.floor(1000 + Math.random()*9000);
         
         const params = new URLSearchParams(window.location.search);
         const refBy = params.get('startapp') || null;
@@ -43,14 +43,16 @@ window.app = {
         if(refBy) await updateDoc(doc(db, "users", refBy), { refCount: increment(1) });
 
         user = name;
-        document.getElementById('my-uid').innerText = `ID: ${uid}`;
+        document.getElementById('my-uid').innerText = `ACCOUNT ID: ${uid}`;
         document.getElementById('login-screen').classList.add('hidden');
         app.init();
     },
 
     init: () => {
+        // Online Heartbeat
         setInterval(() => updateDoc(doc(db, "users", uid), { lastSeen: Date.now() }), 30000);
 
+        // UI Listeners
         onSnapshot(doc(db, "users", uid), s => {
             const d = s.data();
             document.getElementById('m-balance').innerText = document.getElementById('balance').innerText = d.balance.toFixed(4);
@@ -59,24 +61,23 @@ window.app = {
         });
 
         onSnapshot(query(collection(db, "users"), where("lastSeen", ">", Date.now() - 60000)), s => {
-            const list = document.getElementById('online-list');
-            list.innerHTML = s.docs.map(d => `<div class="p-1 border-b border-black/5">🟢 ${d.data().name}</div>`).join('');
+            document.getElementById('online-list').innerHTML = s.docs.map(d => `<div class="p-1 border-b border-black/5">🟢 ${d.data().name}</div>`).join('');
         });
 
-        onSnapshot(query(collection(db, "chat"), orderBy("ts", "desc"), limit(20)), s => {
+        onSnapshot(query(collection(db, "chat"), orderBy("ts", "desc"), limit(25)), s => {
             const chat = document.getElementById('chat-messages');
             chat.innerHTML = s.docs.reverse().map(d => {
                 const m = d.data();
-                return `<div class="bg-white/40 p-3 rounded-xl"><b class="cursor-pointer text-blue-800" onclick="app.viewProfile('${m.uid}')">${m.name}:</b> ${m.text}</div>`;
+                return `<div class="bg-white/40 p-4 rounded-2xl glass-card"><b class="cursor-pointer text-blue-800 underline" onclick="app.viewProfile('${m.uid}')">${m.name}:</b> ${m.text}</div>`;
             }).join('');
             chat.scrollTop = chat.scrollHeight;
         });
 
-        onSnapshot(query(collection(db, "users"), orderBy("totalEarned", "desc"), limit(10)), s => {
+        onSnapshot(query(collection(db, "users"), orderBy("totalEarned", "desc"), limit(15)), s => {
             document.getElementById('leaderboard').innerHTML = s.docs.map((d, i) => {
                 const u = d.data();
-                return `<div class="p-4 glass flex justify-between cursor-pointer" onclick="app.viewProfile('${u.id}')">
-                    <span>${i+1}. ${u.name}</span><b>₱${u.totalEarned.toFixed(2)}</b>
+                return `<div class="p-5 glass-card flex justify-between cursor-pointer" onclick="app.viewProfile('${u.id}')">
+                    <span>${i+1}. ${u.name}</span><b class="text-green-900">₱${u.totalEarned.toFixed(3)}</b>
                 </div>`;
             }).join('');
         });
@@ -84,18 +85,19 @@ window.app = {
         onSnapshot(collection(db, "videos"), s => {
             document.getElementById('video-list').innerHTML = s.docs.map(d => {
                 const v = d.data();
-                return `<div class="glass p-3"><iframe width="100%" height="150" src="https://www.youtube.com/embed/${v.ytId}"></iframe>
-                <button onclick="app.claimVideo('${d.id}')" class="w-full bg-blue-600 text-white mt-2 py-2 rounded-lg">CLAIM ₱0.0001</button></div>`;
+                return `<div class="glass-card p-4"><iframe width="100%" height="180" src="https://www.youtube.com/embed/${v.ytId}" class="rounded-lg"></iframe>
+                <button onclick="app.claimVideo('${d.id}')" class="w-full btn-main mt-4 py-3 rounded-xl">WATCH & CLAIM ₱0.0001</button></div>`;
             }).join('');
         });
 
         onSnapshot(query(collection(db, "withdrawals"), where("uid", "==", uid)), s => {
             document.getElementById('history-list').innerHTML = s.docs.map(d => {
                 const w = d.data();
-                return `<div class="p-2 glass flex justify-between text-xs"><span>₱${w.amt}</span><b>${w.status}</b></div>`;
+                return `<div class="p-3 glass-card flex justify-between text-xs mb-1"><span>₱${w.amt}</span><b class="${w.status === 'Paid' ? 'text-green-800' : 'text-orange-800'}">${w.status.toUpperCase()}</b></div>`;
             }).join('');
         });
 
+        // Initialize Background Ads
         AD_ZONES.forEach(z => {
             if(window[`show_${z}`]) {
                 window[`show_${z}`]({ type: 'inApp', inAppSettings: { frequency: 1, interval: 60 } });
@@ -114,7 +116,7 @@ window.app = {
             app.showProverb();
         }).catch(() => app.credit(0.0065, true));
         
-        setTimeout(() => document.getElementById('bg-layer').className = 'gold-armor', 5000);
+        setTimeout(() => document.getElementById('bg-layer').className = 'gold-armor', 6000);
     },
 
     credit: async (amt, isAd) => {
@@ -141,8 +143,9 @@ window.app = {
         const d = (await getDoc(doc(db, "users", id))).data();
         document.getElementById('p-name').innerText = d.name;
         document.getElementById('p-ads').innerText = d.adsWatched || 0;
-        document.getElementById('p-earned').innerText = d.totalEarned.toFixed(2);
+        document.getElementById('p-earned').innerText = d.totalEarned.toFixed(3);
         document.getElementById('profile-modal').classList.remove('hidden');
+        
         onSnapshot(query(collection(db, "private_messages"), where("chatId", "in", [`${uid}_${id}`, `${id}_${uid}`]), orderBy("ts", "desc"), limit(10)), s => {
             document.getElementById('dm-box').innerHTML = s.docs.reverse().map(m => `<div><b>${m.data().fromName}:</b> ${m.data().text}</div>`).join('');
         });
@@ -160,17 +163,17 @@ window.app = {
     copyRef: () => {
         const link = `https://t.me/shihkhahdhoohm_bot/app?startapp=${uid}`;
         navigator.clipboard.writeText(link);
-        alert("Referral Link Copied!");
+        alert("REFERRAL LINK COPIED TO CLIPBOARD!");
     },
 
     uploadVideo: async () => {
-        const ytId = document.getElementById('yt-url').value;
+        const ytId = document.getElementById('yt-url').value.trim();
         if(!ytId) return;
         await addDoc(collection(db, "videos"), { ytId, owner: uid });
         document.getElementById('yt-url').value = '';
     },
 
-    claimVideo: (id) => { app.credit(0.0001, false); alert("Reward Claimed!"); },
+    claimVideo: (id) => { app.credit(0.0001, false); alert("VIDEO TRADE REWARD CLAIMED!"); },
 
     sendChat: async () => {
         const txt = document.getElementById('chat-input').value;
@@ -182,10 +185,10 @@ window.app = {
     withdraw: async () => {
         const amt = parseFloat(document.getElementById('withdraw-amt').value);
         const num = document.getElementById('gcash-num').value;
-        if(amt < 0.02) return alert("Min. 0.02");
+        if(amt < 0.02) return alert("MINIMUM PAYOUT IS 0.02 PESO");
         await addDoc(collection(db, "withdrawals"), { uid, name: user, amt, gcash: num, status: 'Pending', ts: Date.now() });
         await updateDoc(doc(db, "users", uid), { balance: increment(-amt) });
-        alert("Request Sent!");
+        alert("WITHDRAWAL REQUEST SENT TO OWNER!");
     },
 
     adminLogin: () => {
@@ -193,8 +196,8 @@ window.app = {
             document.getElementById('admin-lock').classList.add('hidden');
             document.getElementById('admin-panel').classList.remove('hidden');
             onSnapshot(query(collection(db, "withdrawals"), where("status", "==", "Pending")), s => {
-                document.getElementById('admin-panel').innerHTML = s.docs.map(d => `<div class="p-3 glass flex justify-between">
-                <span>${d.data().name} - ₱${d.data().amt}</span><button onclick="app.approve('${d.id}')" class="bg-green-600 px-3 rounded">PAID</button></div>`).join('');
+                document.getElementById('admin-panel').innerHTML = s.docs.map(d => `<div class="p-4 glass-card flex justify-between items-center">
+                <span><b>${d.data().name}</b><br>₱${d.data().amt} (${d.data().gcash})</span><button onclick="app.approve('${d.id}')" class="bg-green-600 text-white px-6 py-2 rounded-xl">APPROVE</button></div>`).join('');
             });
         }
     },

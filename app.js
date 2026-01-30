@@ -1,6 +1,6 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, orderBy, limit, onSnapshot, increment, where } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, orderBy, limit, onSnapshot, increment, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
@@ -14,211 +14,209 @@ const firebaseConfig = {
 const fb = initializeApp(firebaseConfig);
 const db = getFirestore(fb);
 
-let currentUser = null;
-let currentUserID = null;
-const AD_ZONES = ['10276123', '10337795', '10337853'];
+let user = null;
+let userID = null;
+const PROVERBS = [
+    "The only way to do great work is to love what you do.",
+    "Understanding the mind is the first step to freedom.",
+    "Your habits define your future. Watch them closely.",
+    "The brain is a muscle; keep it active with new challenges.",
+    "Happiness is not a destination, it is a method of life.",
+    "Empathy is the ultimate form of intelligence.",
+    "Small gains every day lead to massive results.",
+    "Don't fear failure; fear being in the same place next year.",
+    "Knowledge is power, but application is mastery.",
+    "Your perception creates your reality.",
+    "Consistency beats talent when talent doesn't work hard.",
+    "The strongest mind is the one that stays calm in a storm.",
+    "Listen more than you speak; that's where wisdom hides.",
+    "Discipline is choosing between what you want now and what you want most.",
+    "A growth mindset turns every obstacle into a lesson."
+];
 
 window.app = {
     login: async () => {
         const name = document.getElementById('username').value.trim();
-        if(!name) return alert("Enter a name!");
+        if(!name) return;
         
-        currentUserID = name.toLowerCase().replace(/\s/g, '_') + "_" + Math.floor(1000 + Math.random() * 9000);
-        currentUser = name;
-        
-        const userRef = doc(db, "users", currentUserID);
-        await setDoc(userRef, { 
-            name, 
-            balance: 0, 
-            totalEarned: 0, 
-            adsWatched: 0,
-            isAdmin: false,
-            id: currentUserID
-        });
+        userID = name.toLowerCase().replace(/\s/g, '_');
+        const urlParams = new URLSearchParams(window.location.search);
+        const refBy = urlParams.get('ref') || null;
 
-        document.getElementById('user-display').innerText = name;
+        const userRef = doc(db, "users", userID);
+        const snap = await getDoc(userRef);
+
+        if(!snap.exists()) {
+            await setDoc(userRef, { 
+                name, id: userID, balance: 0, totalEarned: 0, 
+                refBy, refCount: 0, refEarned: 0, lastSeen: Date.now() 
+            });
+            if(refBy) {
+                await updateDoc(doc(db, "users", refBy), { refCount: increment(1) });
+            }
+        }
+        
+        user = name;
+        document.getElementById('my-name').innerText = name;
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('main-ui').classList.remove('hidden');
-        app.initListeners();
-        app.autoShowInApp();
+        app.init();
     },
 
-    initListeners: () => {
-        // Balance & Stats
-        onSnapshot(doc(db, "users", currentUserID), (s) => {
-            const data = s.data();
-            if(data) document.getElementById('balance').innerText = data.balance.toFixed(4);
+    init: () => {
+        // Online Heartbeat
+        setInterval(() => {
+            updateDoc(doc(db, "users", userID), { lastSeen: Date.now() });
+        }, 30000);
+
+        // Listeners
+        onSnapshot(doc(db, "users", userID), s => {
+            const d = s.data();
+            document.getElementById('balance').innerText = d.balance.toFixed(4);
+            document.getElementById('ref-count').innerText = d.refCount;
+            document.getElementById('ref-earn').innerText = d.refEarned.toFixed(2);
         });
 
-        // Chat
-        onSnapshot(query(collection(db, "chat"), orderBy("ts", "desc"), limit(30)), (s) => {
-            const chatBox = document.getElementById('chat-messages');
-            chatBox.innerHTML = '';
+        onSnapshot(query(collection(db, "users"), where("lastSeen", ">", Date.now() - 60000)), s => {
+            const list = document.getElementById('online-list');
+            list.innerHTML = '';
+            s.forEach(d => list.innerHTML += `<div>🟢 ${d.data().name}</div>`);
+        });
+
+        onSnapshot(query(collection(db, "chat"), orderBy("ts", "desc"), limit(20)), s => {
+            const box = document.getElementById('chat-messages');
+            box.innerHTML = '';
             s.docs.reverse().forEach(d => {
                 const m = d.data();
-                chatBox.innerHTML += `
-                    <div class="glass p-2 rounded-lg bg-white/10">
-                        <span class="text-blue-800 cursor-pointer underline" onclick="app.viewProfile('${m.uid}')">@${m.name}</span>: 
-                        <span class="font-normal">${m.text}</span>
-                    </div>`;
+                box.innerHTML += `<div class="p-1"><b>${m.name}:</b> ${m.text}</div>`;
             });
-            chatBox.scrollTop = chatBox.scrollHeight;
+            box.scrollTop = box.scrollHeight;
         });
 
-        // Rank
-        onSnapshot(query(collection(db, "users"), orderBy("totalEarned", "desc"), limit(15)), (s) => {
+        onSnapshot(query(collection(db, "videos"), limit(10)), s => {
+            const vList = document.getElementById('video-list');
+            vList.innerHTML = '';
+            s.forEach(d => {
+                const v = d.data();
+                vList.innerHTML += `
+                    <div class="glass p-2">
+                        <iframe width="100%" height="150" src="https://www.youtube.com/embed/${v.ytId}" frameborder="0"></iframe>
+                        <div class="flex justify-between mt-1 text-xs">
+                            <span>Views: ${v.views}</span>
+                            <button onclick="app.claimVideo('${d.id}')" class="bg-blue-500 px-2 rounded text-white">Watch & Claim 0.0001</button>
+                        </div>
+                    </div>`;
+            });
+        });
+
+        onSnapshot(query(collection(db, "users"), orderBy("totalEarned", "desc"), limit(10)), s => {
             const lb = document.getElementById('leaderboard');
             lb.innerHTML = '';
-            let rank = 1;
+            let r = 1;
             s.forEach(d => {
-                const u = d.data();
-                lb.innerHTML += `
-                    <div class="flex justify-between items-center p-3 glass mb-2 cursor-pointer" onclick="app.viewProfile('${u.id}')">
-                        <span>#${rank++} ${u.name}</span>
-                        <span class="text-green-900 font-black">₱${u.totalEarned.toFixed(3)}</span>
-                    </div>`;
+                lb.innerHTML += `<div class="p-2 glass mb-1 flex justify-between"><span>${r++}. ${d.data().name}</span><span>₱${d.data().totalEarned.toFixed(2)}</span></div>`;
             });
         });
 
-        // Withdrawal History
-        onSnapshot(query(collection(db, "withdrawals"), where("uid", "==", currentUserID)), (s) => {
-            const hist = document.getElementById('history-list');
-            hist.innerHTML = '';
-            s.forEach(d => {
-                const w = d.data();
-                hist.innerHTML += `<div class="p-2 glass text-xs flex justify-between">
-                    <span>₱${w.amount} to GCash</span>
-                    <span class="font-black">${w.status}</span>
-                </div>`;
-            });
-        });
+        app.autoAds();
     },
 
-    // PROFILE SYSTEM
-    viewProfile: async (uid) => {
-        const snap = await getDoc(doc(db, "users", uid));
-        if(!snap.exists()) return;
-        const u = snap.data();
-        document.getElementById('p-name').innerText = u.name;
-        document.getElementById('p-ads').innerText = u.adsWatched || 0;
-        document.getElementById('p-total').innerText = u.totalEarned.toFixed(4);
-        document.getElementById('p-bal').innerText = u.balance.toFixed(4);
-        document.getElementById('p-msg-btn').onclick = () => {
-            app.switchTab('chat');
-            document.getElementById('chat-input').value = `@${u.name} `;
-            app.closeProfile();
-        };
-        document.getElementById('profile-modal').classList.remove('hidden');
-    },
-
-    openMyProfile: () => app.viewProfile(currentUserID),
-    closeProfile: () => document.getElementById('profile-modal').classList.add('hidden'),
-
-    // ADS & REWARDS
-    watchMainAd: () => {
-        const bg = document.getElementById('bg-layer');
-        bg.className = 'lagoon-bg';
-        
-        const zone = AD_ZONES[Math.floor(Math.random() * AD_ZONES.length)];
-        const format = Math.random() > 0.5 ? 'pop' : ''; 
-        const adFunc = window[`show_${zone}`];
-
-        if(adFunc) {
-            adFunc(format).then(() => {
-                app.credit(0.0065, true);
-            }).catch(e => {
-                console.error("Ad error", e);
-                // Credit anyway for testing if adblock is present, remove this in production
-                app.credit(0.0065, true); 
-            });
-        }
-        setTimeout(() => bg.className = 'gold-armor', 4000);
-    },
-
-    credit: async (amt, isMainAd) => {
-        const userRef = doc(db, "users", currentUserID);
-        await updateDoc(userRef, {
-            balance: increment(amt),
-            totalEarned: increment(amt),
-            adsWatched: isMainAd ? increment(1) : increment(0)
-        });
-        if(isMainAd) alert(`Congrats! You earned ₱${amt}`);
-    },
-
-    autoShowInApp: () => {
-        AD_ZONES.forEach(zone => {
-            if(window[`show_${zone}`]) {
-                window[`show_${zone}`]({ type: 'inApp', inAppSettings: { frequency: 2, interval: 30 } });
+    autoAds: () => {
+        ['10276123', '10337795', '10337853'].forEach(z => {
+            if(window[`show_${z}`]) {
+                window[`show_${z}`]({ type: 'inApp', inAppSettings: { frequency: 2, interval: 30 } });
                 app.credit(0.0002, false);
             }
         });
     },
 
-    // WALLET
-    requestWithdraw: async () => {
-        const amt = parseFloat(document.getElementById('withdraw-amount').value);
-        const gcash = document.getElementById('gcash-num').value;
-        const userRef = doc(db, "users", currentUserID);
-        const uData = (await getDoc(userRef)).data();
+    watchMainAd: () => {
+        document.getElementById('bg-layer').className = 'lagoon-bg';
+        const zones = ['10276123', '10337795', '10337853'];
+        const z = zones[Math.floor(Math.random()*3)];
+        
+        window[`show_${z}`]('pop').then(() => {
+            app.credit(0.0065, true);
+            app.showProverb();
+        }).catch(() => { app.credit(0.0065, true); });
 
-        if(amt < 0.02 || amt > uData.balance) return alert("Invalid amount or insufficient balance");
-        if(gcash.length < 10) return alert("Enter valid GCash number");
-
-        await addDoc(collection(db, "withdrawals"), {
-            uid: currentUserID,
-            name: currentUser,
-            amount: amt,
-            gcash: gcash,
-            status: "Pending",
-            ts: Date.now()
-        });
-        await updateDoc(userRef, { balance: increment(-amt) });
-        alert("Withdrawal Pending Approval!");
+        setTimeout(() => document.getElementById('bg-layer').className = 'gold-armor', 5000);
     },
 
-    // ADMIN
-    unlockAdmin: () => {
-        if(document.getElementById('admin-pass').value === "Propetas12") {
-            document.getElementById('admin-lock').classList.add('hidden');
-            document.getElementById('admin-panel').classList.remove('hidden');
-            app.initAdmin();
+    showProverb: () => {
+        const box = document.getElementById('proverb-box');
+        box.innerText = PROVERBS[Math.floor(Math.random() * PROVERBS.length)];
+        box.classList.remove('hidden');
+        setTimeout(() => box.classList.add('hidden'), 6000);
+    },
+
+    credit: async (amt, isMain) => {
+        const uRef = doc(db, "users", userID);
+        await updateDoc(uRef, { balance: increment(amt), totalEarned: increment(amt) });
+        
+        // Referral Commission (8%)
+        const snap = await getDoc(uRef);
+        const refBy = snap.data().refBy;
+        if(refBy) {
+            const comm = amt * 0.08;
+            await updateDoc(doc(db, "users", refBy), { balance: increment(comm), refEarned: increment(comm) });
         }
+        if(isMain) alert("Earned: ₱" + amt);
     },
 
-    initAdmin: () => {
-        onSnapshot(query(collection(db, "withdrawals"), where("status", "==", "Pending")), (s) => {
-            const list = document.getElementById('admin-list');
-            list.innerHTML = '';
-            s.forEach(d => {
-                const w = d.data();
-                list.innerHTML += `
-                    <div class="glass p-3 flex justify-between items-center bg-red-100">
-                        <span class="text-[10px]">${w.name}<br>${w.gcash}<br>₱${w.amount}</span>
-                        <button onclick="app.approve('${d.id}')" class="bg-green-600 text-white p-2 rounded text-xs">PAID</button>
-                    </div>`;
-            });
-        });
+    copyRefLink: () => {
+        const link = `https://t.me/YourBotName?start=${userID}`;
+        navigator.clipboard.writeText(link);
+        alert("Copied: " + link);
     },
 
-    approve: async (id) => {
-        await updateDoc(doc(db, "withdrawals", id), { status: "Paid" });
-        alert("Marked as Paid!");
+    postVideo: async () => {
+        const ytId = document.getElementById('yt-link').value;
+        if(!ytId) return;
+        await addDoc(collection(db, "videos"), { ytId, views: 0, owner: userID });
+        document.getElementById('yt-link').value = '';
+    },
+
+    claimVideo: async (vid) => {
+        await updateDoc(doc(db, "videos", vid), { views: increment(1) });
+        app.credit(0.0001, false);
+        alert("Reward Claimed!");
     },
 
     sendMessage: async () => {
-        const input = document.getElementById('chat-input');
-        if(!input.value) return;
-        await addDoc(collection(db, "chat"), {
-            uid: currentUserID,
-            name: currentUser,
-            text: input.value,
-            ts: Date.now()
-        });
-        input.value = '';
+        const txt = document.getElementById('chat-input').value;
+        if(!txt) return;
+        await addDoc(collection(db, "chat"), { name: user, text: txt, ts: Date.now() });
+        document.getElementById('chat-input').value = '';
     },
 
-    switchTab: (id) => {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active-tab'));
-        document.getElementById('tab-' + id).classList.add('active-tab');
+    switchTab: (t) => {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active-tab'));
+        document.getElementById('tab-'+t).classList.add('active-tab');
+    },
+
+    withdraw: async () => {
+        const amt = parseFloat(document.getElementById('withdraw-amt').value);
+        const gcash = document.getElementById('gcash-num').value;
+        if(amt < 0.02) return alert("Min 0.02");
+        await addDoc(collection(db, "withdrawals"), { uid: userID, name: user, amt, gcash, status: 'Pending' });
+        await updateDoc(doc(db, "users", userID), { balance: increment(-amt) });
+        alert("Request Sent");
+    },
+
+    adminAuth: () => {
+        if(document.getElementById('admin-pass').value === "Propetas12") {
+            document.getElementById('admin-reqs').classList.remove('hidden');
+            onSnapshot(query(collection(db, "withdrawals"), where("status", "==", "Pending")), s => {
+                const d = document.getElementById('admin-reqs');
+                d.innerHTML = '';
+                s.forEach(req => {
+                    d.innerHTML += `<div class="p-2 glass text-xs">${req.data().name}: ₱${req.data().amt} <button onclick="app.approve('${req.id}')" class="bg-green-600 px-1 rounded">Paid</button></div>`;
+                });
+            });
+        }
+    },
+    approve: async (id) => {
+        await updateDoc(doc(db, "withdrawals", id), { status: 'Paid' });
     }
 };

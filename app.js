@@ -1,6 +1,6 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, push, query, orderByChild, limitToLast, orderByValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+import { getDatabase, ref, set, get, onValue, push, query, orderByChild, limitToLast, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
 // --- CONFIGURATION ---
 const firebaseConfig = {
@@ -17,8 +17,14 @@ const HIGH_REWARD = 0.0065;
 const RANDOM_REWARD = 0.0012;
 const HIGH_COOLDOWN_MS = 30 * 1000; // 30 seconds
 const RANDOM_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
+const INITIAL_AD_COOLDOWN_MS = 3 * 60 * 1000; // 3 minutes
 
-const AD_ZONES = ['show_10276123', 'show_10337795', 'show_10337853'];
+const AD_ZONES = [
+    'show_10276123', 
+    'show_10337795', 
+    'show_10337853'
+];
+
 const PSYCHOLOGICAL_TIPS = [
     "Tip: Consistency is key. Small earnings daily build a big balance!",
     "Tip: Don't chase quick riches. Focus on steady, reliable income.",
@@ -92,6 +98,7 @@ let userBalance = 0;
 let totalAds = 0;
 let lastHighReward = 0;
 let lastRandomReward = 0;
+let lastInitialAd = 0;
 
 // --- UTILITY FUNCTIONS ---
 
@@ -104,12 +111,14 @@ function updateBalance(reward) {
     const newBalance = userBalance + reward;
     const newTotal = totalAds + 1;
     
-    set(userRef, { 
+    // Use update to avoid overwriting other fields accidentally
+    update(userRef, { 
         username: userName, 
-        balance: parseFloat(newBalance.toFixed(4)), // Use 4 decimal places for precision
+        balance: parseFloat(newBalance.toFixed(4)), 
         totalAds: newTotal,
         lastHighReward: lastHighReward,
-        lastRandomReward: lastRandomReward
+        lastRandomReward: lastRandomReward,
+        lastInitialAd: lastInitialAd
     });
 
     // Show psychological tip
@@ -118,6 +127,7 @@ function updateBalance(reward) {
 }
 
 function formatTime(ms) {
+    if (ms <= 0) return "Ready!";
     const totalSeconds = Math.ceil(ms / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
@@ -131,33 +141,28 @@ function checkCooldowns() {
     const highRemaining = HIGH_COOLDOWN_MS - (now - lastHighReward);
     const highBtn = document.getElementById('btn-high-reward');
     const highText = document.getElementById('cooldown-high');
-    if (highRemaining > 0) {
-        highBtn.disabled = true;
-        highBtn.classList.remove('btn-grad');
-        highBtn.classList.add('bg-gray-400');
-        highText.innerText = `Cooldown: ${formatTime(highRemaining)}`;
-    } else {
-        highBtn.disabled = false;
-        highBtn.classList.add('btn-grad');
-        highBtn.classList.remove('bg-gray-400');
-        highText.innerText = "Ready to earn!";
-    }
-
+    
     // Random Reward Cooldown
     const randomRemaining = RANDOM_COOLDOWN_MS - (now - lastRandomReward);
     const randomBtn = document.getElementById('btn-random-reward');
     const randomText = document.getElementById('cooldown-random');
-    if (randomRemaining > 0) {
-        randomBtn.disabled = true;
-        randomBtn.classList.remove('bg-yellow-500');
-        randomBtn.classList.add('bg-gray-400');
-        randomText.innerText = `Cooldown: ${formatTime(randomRemaining)}`;
-    } else {
-        randomBtn.disabled = false;
-        randomBtn.classList.add('bg-yellow-500');
-        randomBtn.classList.remove('bg-gray-400');
-        randomText.innerText = "Ready to earn!";
-    }
+
+    [
+        { btn: highBtn, text: highText, remaining: highRemaining, cooldown: HIGH_COOLDOWN_MS },
+        { btn: randomBtn, text: randomText, remaining: randomRemaining, cooldown: RANDOM_COOLDOWN_MS }
+    ].forEach(({ btn, text, remaining, cooldown }) => {
+        const isReady = remaining <= 0;
+        btn.disabled = !isReady;
+        text.innerText = isReady ? "Ready to earn!" : `Cooldown: ${formatTime(remaining)}`;
+        
+        if (btn === highBtn) {
+            btn.classList.toggle('btn-grad', isReady);
+            btn.classList.toggle('bg-gray-400', !isReady);
+        } else {
+            btn.classList.toggle('bg-yellow-500', isReady);
+            btn.classList.toggle('bg-gray-400', !isReady);
+        }
+    });
 }
 
 setInterval(checkCooldowns, 1000); // Check cooldowns every second
@@ -171,22 +176,58 @@ onValue(userRef, (snapshot) => {
         totalAds = data.totalAds || 0;
         lastHighReward = data.lastHighReward || 0;
         lastRandomReward = data.lastRandomReward || 0;
+        lastInitialAd = data.lastInitialAd || 0;
         
         document.getElementById('user-balance').innerText = userBalance.toFixed(4);
         document.getElementById('total-ads').innerText = totalAds;
         checkCooldowns();
+        showInitialAd(); // Check and show initial ad after loading data
     } else {
+        // New user setup
         set(userRef, { 
             username: userName, 
             balance: 0, 
             totalAds: 0, 
             lastHighReward: 0, 
-            lastRandomReward: 0 
+            lastRandomReward: 0,
+            lastInitialAd: 0,
+            isBanned: false // Simple double account check flag
         });
     }
 });
 
 // --- MONETAG AD FUNCTIONS ---
+
+// Initial Random In-App Interstitial Ad (3 minute cooldown)
+function showInitialAd() {
+    const now = Date.now();
+    if (now - lastInitialAd < INITIAL_AD_COOLDOWN_MS) {
+        return; // Still in cooldown
+    }
+
+    const adFunction = getRandomAdZone();
+    
+    // Use In-App Interstitial format for non-rewarded, auto-showing ad
+    try {
+        adFunction({
+            type: 'inApp',
+            inAppSettings: {
+                frequency: 1, // Show only once
+                capping: 0.1,
+                interval: 30,
+                timeout: 5,
+                everyPage: false
+            }
+        });
+        
+        // Update the last shown time immediately after trying to show
+        lastInitialAd = now;
+        update(userRef, { lastInitialAd: now });
+
+    } catch(e) {
+        console.error("Initial ad failed:", e);
+    }
+}
 
 // 1. High Reward Ad (0.0065, 30s cooldown)
 window.watchHighRewardAd = function() {
@@ -226,16 +267,8 @@ window.watchRandomRewardAd = function() {
     });
 };
 
-// Auto-run Monetag In-App Interstitial (using one zone for simplicity)
-try {
-    show_10276123({
-        type: 'inApp',
-        inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
-    });
-} catch(e) {}
 
-
-// --- NAVIGATION & UI ---
+// --- NAVIGATION & UI (Unchanged) ---
 window.showPage = function(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(pageId).classList.add('active');
@@ -246,7 +279,7 @@ window.showPage = function(pageId) {
     if(pageId === 'wallet') loadWithdrawalHistory();
 };
 
-// --- LEADERBOARD ---
+// --- LEADERBOARD (Unchanged) ---
 function loadLeaderboard() {
     const usersQuery = query(ref(db, 'users'), orderByChild('balance'), limitToLast(10));
     get(usersQuery).then(snap => {
@@ -288,7 +321,7 @@ onValue(query(ref(db, 'chat'), limitToLast(20)), (snap) => {
     box.scrollTop = box.scrollHeight;
 });
 
-// --- WITHDRAWAL LOGIC ---
+// --- WITHDRAWAL LOGIC (Updated for Manual Approval) ---
 window.requestWithdrawal = function() {
     const gcash = document.getElementById('gcash-num').value;
     const amount = parseFloat(document.getElementById('wd-amount').value);
@@ -297,19 +330,17 @@ window.requestWithdrawal = function() {
     if(amount > userBalance) return tg.showAlert("Insufficient balance!");
     if(gcash.length < 10) return tg.showAlert("Enter valid GCash number");
 
+    // 1. Create the withdrawal request
     push(ref(db, 'withdrawals'), {
         userId, username: userName, gcash, amount: amount.toFixed(4), status: 'Pending', timestamp: Date.now()
     });
 
-    set(userRef, { 
-        ...userBalance, 
+    // 2. Deduct the balance immediately (This is standard practice, if the request is rejected, the admin must manually refund)
+    update(userRef, { 
         balance: parseFloat((userBalance - amount).toFixed(4)),
-        totalAds: totalAds,
-        lastHighReward: lastHighReward,
-        lastRandomReward: lastRandomReward
     });
     
-    tg.showAlert("Withdrawal submitted! Please check history for status.");
+    tg.showAlert("Withdrawal submitted! It is now pending admin approval.");
 };
 
 function loadWithdrawalHistory() {
@@ -323,7 +354,7 @@ function loadWithdrawalHistory() {
             const w = child.val();
             if (w.userId == userId) {
                 found = true;
-                const statusColor = w.status === 'Paid' ? 'text-green-600' : 'text-orange-500';
+                const statusColor = w.status === 'Paid' ? 'text-green-600' : (w.status === 'Pending' ? 'text-orange-500' : 'text-red-600');
                 const date = new Date(w.timestamp).toLocaleDateString();
                 
                 historyList.innerHTML = `
@@ -333,7 +364,7 @@ function loadWithdrawalHistory() {
                             <p class="text-xs text-gray-500">${date}</p>
                         </div>
                         <span class="${statusColor} font-semibold">${w.status}</span>
-                    </div>` + historyList.innerHTML; // Prepend for newest first
+                    </div>` + historyList.innerHTML;
             }
         });
 
@@ -344,7 +375,7 @@ function loadWithdrawalHistory() {
 }
 
 
-// --- ADMIN LOGIC (Updated to show all details) ---
+// --- ADMIN LOGIC (Updated to include a Reject option) ---
 window.checkAdmin = function() {
     const pass = document.getElementById('admin-pass').value;
     if(pass === "Propetas12") {
@@ -365,7 +396,7 @@ function loadAdminWithdrawals() {
         snap.forEach(child => {
             const w = child.val();
             const key = child.key;
-            const statusColor = w.status === 'Paid' ? 'bg-green-100' : 'bg-red-100';
+            const statusColor = w.status === 'Paid' ? 'bg-green-100' : (w.status === 'Pending' ? 'bg-yellow-100' : 'bg-red-100');
             
             list.innerHTML += `
                 <div class="p-3 ${statusColor} rounded-lg mb-2 shadow-sm">
@@ -373,18 +404,38 @@ function loadAdminWithdrawals() {
                     <p class="text-sm">User: ${w.username} (ID: ${w.userId})</p>
                     <p class="text-sm mb-2">GCash: ${w.gcash}</p>
                     ${w.status === 'Pending' ? 
-                        `<button class="bg-green-500 text-white px-3 py-1 rounded text-xs" onclick="markAsPaid('${key}', '${w.userId}', ${w.amount})">Mark Paid</button>` :
-                        `<span class="text-green-700 text-xs">Processed on ${new Date(w.timestamp).toLocaleDateString()}</span>`
+                        `<button class="bg-green-500 text-white px-3 py-1 rounded text-xs mr-2" onclick="markAsPaid('${key}', '${w.userId}', ${w.amount})">Mark Paid</button>
+                         <button class="bg-red-500 text-white px-3 py-1 rounded text-xs" onclick="markAsRejected('${key}', '${w.userId}', ${w.amount})">Reject & Refund</button>` :
+                        `<span class="text-gray-700 text-xs">Status: ${w.status}</span>`
                     }
                 </div>`;
         });
     });
 }
 
-window.markAsPaid = function(key, userId, amount) {
-    if (confirm(`Confirm payment of ₱${amount} to user ${userId}?`)) {
-        set(ref(db, 'withdrawals/' + key + '/status'), 'Paid')
-            .then(() => tg.showAlert(`Payment recorded for ${userId}.`))
+window.markAsPaid = function(key) {
+    if (confirm(`Confirm payment for withdrawal ${key}?`)) {
+        update(ref(db, 'withdrawals/' + key), { status: 'Paid' })
+            .then(() => tg.showAlert(`Payment recorded.`))
             .catch(e => tg.showAlert(`Error marking paid: ${e.message}`));
+    }
+};
+
+window.markAsRejected = function(key, userId, amount) {
+    if (confirm(`WARNING: Rejecting this request will refund ₱${amount} to the user. Proceed?`)) {
+        // 1. Update withdrawal status
+        update(ref(db, 'withdrawals/' + key), { status: 'Rejected' });
+
+        // 2. Refund the user's balance
+        const userToRefundRef = ref(db, 'users/' + userId);
+        get(userToRefundRef).then(snapshot => {
+            const userData = snapshot.val();
+            if (userData) {
+                const currentBalance = userData.balance || 0;
+                const newBalance = parseFloat(currentBalance) + parseFloat(amount);
+                update(userToRefundRef, { balance: parseFloat(newBalance.toFixed(4)) });
+                tg.showAlert(`Request rejected and ₱${amount} refunded to user ${userId}.`);
+            }
+        });
     }
 };

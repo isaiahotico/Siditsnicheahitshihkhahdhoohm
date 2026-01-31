@@ -8,8 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- Monetag SDK -->
+    <!-- Monetag SDKs -->
     <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
+    <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
+    <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
 
     <style>
         :root { --sky-blue: #00a8ff; --deep-sky: #0097e6; }
@@ -22,6 +24,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .btn-grad { background: linear-gradient(135deg, #00a8ff 0%, #0097e6 100%); color: white; transition: 0.3s; }
         .btn-grad:active { transform: scale(0.95); }
+        .cooldown-text { font-size: 0.75rem; color: #f97316; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -29,7 +32,7 @@
     <!-- Header -->
     <div class="p-4 btn-grad text-center rounded-b-3xl shadow-lg">
         <h1 class="text-xl font-bold">🎖🤑PAPERHOUSE INC ADS🤑🎖</h1>
-        <p class="text-sm opacity-80">Fastest GCash Rewards</p>
+        <p class="text-sm opacity-80" id="user-display-name">Loading...</p>
     </div>
 
     <div class="container mx-auto p-4">
@@ -38,18 +41,28 @@
         <div id="home" class="page active">
             <div class="glass-card p-6 text-center mb-4">
                 <p class="text-gray-500 font-semibold">Current Balance</p>
+
                 <h2 class="text-4xl font-black text-sky-600">₱ <span id="user-balance">0.00</span></h2>
             </div>
 
-            <button onclick="watchAd()" class="w-full btn-grad p-5 rounded-2xl font-bold text-xl shadow-xl mb-4 flex items-center justify-center gap-3">
+            <h3 class="text-lg font-bold text-gray-700 mb-3">EARN NOW</h3>
 
-                <i class="fas fa-play-circle"></i> WATCH ADS (+₱0.01)
+            <!-- High Reward Ad -->
+            <button id="btn-high-reward" onclick="watchHighRewardAd()" class="w-full btn-grad p-4 rounded-2xl font-bold text-lg shadow-xl mb-3 flex flex-col items-center justify-center">
+                <span class="flex items-center gap-2"><i class="fas fa-video"></i> WATCH INTERSTITIAL ADS (+₱0.0065)</span>
+                <span id="cooldown-high" class="cooldown-text">Ready to earn!</span>
+            </button>
+
+            <!-- Random Reward Ad -->
+            <button id="btn-random-reward" onclick="watchRandomRewardAd()" class="w-full bg-yellow-500 text-white p-4 rounded-2xl font-bold text-lg shadow-xl mb-4 flex flex-col items-center justify-center">
+                <span class="flex items-center gap-2"><i class="fas fa-gift"></i> RANDOM POPUP REWARD (+₱0.0012)</span>
+                <span id="cooldown-random" class="cooldown-text">Ready to earn!</span>
             </button>
 
             <div class="grid grid-cols-2 gap-4">
                 <div class="glass-card p-4 text-center">
                     <i class="fas fa-ad text-sky-500 mb-2"></i>
-                    <p class="text-xs text-gray-400">Total Ads</p>
+                    <p class="text-xs text-gray-400">Total Ads Watched</p>
                     <p class="font-bold" id="total-ads">0</p>
                 </div>
                 <div class="glass-card p-4 text-center">
@@ -81,12 +94,20 @@
 
         <!-- WALLET/WITHDRAW PAGE -->
         <div id="wallet" class="page">
-            <div class="glass-card p-6">
+            <div class="glass-card p-6 mb-4">
                 <h2 class="text-xl font-bold mb-4">Withdraw to GCash</h2>
                 <input type="number" id="gcash-num" placeholder="GCash Number (09...)" class="w-full border p-3 rounded-xl mb-3">
                 <input type="number" id="wd-amount" placeholder="Amount (Min 0.02)" class="w-full border p-3 rounded-xl mb-4">
                 <button onclick="requestWithdrawal()" class="w-full bg-green-500 text-white p-4 rounded-xl font-bold">REDEEM NOW</button>
             </div>
+
+            <div class="glass-card p-4">
+                <h2 class="text-xl font-bold mb-3 text-sky-700">Withdrawal History</h2>
+                <div id="withdrawal-history" class="space-y-2">
+                    <p class="text-gray-500 text-sm">No history yet.</p>
+                </div>
+
+</div>
         </div>
 
         <!-- ADMIN DASHBOARD -->

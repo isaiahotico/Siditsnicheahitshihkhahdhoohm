@@ -150,7 +150,7 @@ function checkCooldowns() {
     [
         { btn: highBtn, text: highText, remaining: highRemaining, cooldown: HIGH_COOLDOWN_MS },
         { btn: randomBtn, text: randomText, remaining: randomRemaining, cooldown: RANDOM_COOLDOWN_MS }
-    ].forEach(({ btn, text, remaining, cooldown }) => {
+    ].forEach(({ btn, text, remaining }) => {
         const isReady = remaining <= 0;
         btn.disabled = !isReady;
         text.innerText = isReady ? "Ready to earn!" : `Cooldown: ${formatTime(remaining)}`;
@@ -167,7 +167,7 @@ function checkCooldowns() {
 
 setInterval(checkCooldowns, 1000); // Check cooldowns every second
 
-// --- FIREBASE SYNC ---
+// --- FIREBASE SYNC & INITIAL SETUP ---
 const userRef = ref(db, 'users/' + userId);
 onValue(userRef, (snapshot) => {
     const data = snapshot.val();
@@ -191,7 +191,7 @@ onValue(userRef, (snapshot) => {
             lastHighReward: 0, 
             lastRandomReward: 0,
             lastInitialAd: 0,
-            isBanned: false // Simple double account check flag
+            isBanned: false 
         });
     }
 });
@@ -207,12 +207,11 @@ function showInitialAd() {
 
     const adFunction = getRandomAdZone();
     
-    // Use In-App Interstitial format for non-rewarded, auto-showing ad
     try {
         adFunction({
             type: 'inApp',
             inAppSettings: {
-                frequency: 1, // Show only once
+                frequency: 1, 
                 capping: 0.1,
                 interval: 30,
                 timeout: 5,
@@ -220,7 +219,7 @@ function showInitialAd() {
             }
         });
         
-        // Update the last shown time immediately after trying to show
+        // Update the last shown time
         lastInitialAd = now;
         update(userRef, { lastInitialAd: now });
 
@@ -242,7 +241,7 @@ window.watchHighRewardAd = function() {
         lastHighReward = Date.now();
         updateBalance(HIGH_REWARD);
         tg.MainButton.hide();
-    }).catch(e => {
+    }).catch(() => {
         tg.showAlert("Ad failed to load or was skipped. Please try again.");
         tg.MainButton.hide();
     });
@@ -261,14 +260,14 @@ window.watchRandomRewardAd = function() {
         lastRandomReward = Date.now();
         updateBalance(RANDOM_REWARD);
         tg.MainButton.hide();
-    }).catch(e => {
+    }).catch(() => {
         tg.showAlert("Ad failed to load or was skipped. Please try again.");
         tg.MainButton.hide();
     });
 };
 
 
-// --- NAVIGATION & UI (Unchanged) ---
+// --- NAVIGATION & UI ---
 window.showPage = function(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(pageId).classList.add('active');
@@ -279,7 +278,7 @@ window.showPage = function(pageId) {
     if(pageId === 'wallet') loadWithdrawalHistory();
 };
 
-// --- LEADERBOARD (Unchanged) ---
+// --- LEADERBOARD ---
 function loadLeaderboard() {
     const usersQuery = query(ref(db, 'users'), orderByChild('balance'), limitToLast(10));
     get(usersQuery).then(snap => {
@@ -297,7 +296,7 @@ function loadLeaderboard() {
     });
 }
 
-// --- CHAT LOGIC (Unchanged) ---
+// --- CHAT LOGIC ---
 window.sendMessage = function() {
     const text = document.getElementById('chat-input').value;
     if(!text) return;
@@ -321,7 +320,7 @@ onValue(query(ref(db, 'chat'), limitToLast(20)), (snap) => {
     box.scrollTop = box.scrollHeight;
 });
 
-// --- WITHDRAWAL LOGIC (Updated for Manual Approval) ---
+// --- WITHDRAWAL LOGIC (User Side) ---
 window.requestWithdrawal = function() {
     const gcash = document.getElementById('gcash-num').value;
     const amount = parseFloat(document.getElementById('wd-amount').value);
@@ -335,7 +334,7 @@ window.requestWithdrawal = function() {
         userId, username: userName, gcash, amount: amount.toFixed(4), status: 'Pending', timestamp: Date.now()
     });
 
-    // 2. Deduct the balance immediately (This is standard practice, if the request is rejected, the admin must manually refund)
+    // 2. Deduct the balance immediately (Admin refunds if rejected)
     update(userRef, { 
         balance: parseFloat((userBalance - amount).toFixed(4)),
     });
@@ -344,6 +343,7 @@ window.requestWithdrawal = function() {
 };
 
 function loadWithdrawalHistory() {
+    // This listener ensures auto-sync of status changes from the admin
     const historyRef = query(ref(db, 'withdrawals'), orderByChild('timestamp'));
     onValue(historyRef, snap => {
         const historyList = document.getElementById('withdrawal-history');
@@ -375,7 +375,7 @@ function loadWithdrawalHistory() {
 }
 
 
-// --- ADMIN LOGIC (Updated to include a Reject option) ---
+// --- ADMIN LOGIC ---
 window.checkAdmin = function() {
     const pass = document.getElementById('admin-pass').value;
     if(pass === "Propetas12") {
@@ -388,6 +388,7 @@ window.checkAdmin = function() {
 };
 
 function loadAdminWithdrawals() {
+    // Auto-sync admin view for new requests and status changes
     const adminQuery = query(ref(db, 'withdrawals'), orderByChild('status'));
     onValue(adminQuery, snap => {
         const list = document.getElementById('withdrawal-list');
@@ -404,7 +405,7 @@ function loadAdminWithdrawals() {
                     <p class="text-sm">User: ${w.username} (ID: ${w.userId})</p>
                     <p class="text-sm mb-2">GCash: ${w.gcash}</p>
                     ${w.status === 'Pending' ? 
-                        `<button class="bg-green-500 text-white px-3 py-1 rounded text-xs mr-2" onclick="markAsPaid('${key}', '${w.userId}', ${w.amount})">Mark Paid</button>
+                        `<button class="bg-green-500 text-white px-3 py-1 rounded text-xs mr-2" onclick="markAsPaid('${key}')">Mark Paid</button>
                          <button class="bg-red-500 text-white px-3 py-1 rounded text-xs" onclick="markAsRejected('${key}', '${w.userId}', ${w.amount})">Reject & Refund</button>` :
                         `<span class="text-gray-700 text-xs">Status: ${w.status}</span>`
                     }
@@ -413,14 +414,17 @@ function loadAdminWithdrawals() {
     });
 }
 
+// Admin Action: Mark Paid
 window.markAsPaid = function(key) {
     if (confirm(`Confirm payment for withdrawal ${key}?`)) {
+        // Update status in withdrawals. This auto-syncs the user's history.
         update(ref(db, 'withdrawals/' + key), { status: 'Paid' })
             .then(() => tg.showAlert(`Payment recorded.`))
             .catch(e => tg.showAlert(`Error marking paid: ${e.message}`));
     }
 };
 
+// Admin Action: Reject and Refund
 window.markAsRejected = function(key, userId, amount) {
     if (confirm(`WARNING: Rejecting this request will refund ₱${amount} to the user. Proceed?`)) {
         // 1. Update withdrawal status

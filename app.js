@@ -1,442 +1,313 @@
 
-// --- CONFIGURATION ---
-const REWARD_PER_AD = 0.01;
-const MIN_WITHDRAWAL = 0.02;
-const ADMIN_PASSWORD = "Propetas12";
-
-// Firebase Configuration
+// app.js — client-side (Firestore + Monetag + UX)
+// Replace firebaseConfig below with your project config (or keep provided example and replace in deployment).
 const firebaseConfig = {
-    apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
-    authDomain: "freegcash-ads.firebaseapp.com",
-    databaseURL: "https://freegcash-ads-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "freegcash-ads",
-    storageBucket: "freegcash-ads.firebasestorage.app",
-    messagingSenderId: "608086825364",
-    appId: "1:608086825364:web:3a8e628d231b52c6171781",
-    measurementId: "G-Z64B87ELGP"
+  apiKey: "AIzaSyBXYAc9-UAB0DzqYsFKAHR_OsRD2UhVLjs",
+  authDomain: "project-ads-app-telegram.firebaseapp.com",
+  projectId: "project-ads-app-telegram",
+  storageBucket: "project-ads-app-telegram.firebasestorage.app",
+  messagingSenderId: "867442007509",
+  appId: "1:867442007509:web:3fe7c9872d0ab88c1bf15c"
 };
 
-// Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const auth = app.auth();
-const db = app.database();
-const analytics = firebase.analytics();
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-let currentUserData = null;
-let currentUserId = null;
-let isAdmin = false;
+// Configs
+const MAX_REWARD = 0.0001; // USDT
+const COOLDOWN_SECONDS = 12;
+const REF_PERCENT = 8; // 8%
 
-// --- UTILITY FUNCTIONS ---
+// UI refs
+const adInfo = document.getElementById('adInfo');
+const balanceEl = document.getElementById('balance');
+const totalEarnedEl = document.getElementById('totalEarned');
+const totalRefsEl = document.getElementById('totalRefs');
+const myRefCodeEl = document.getElementById('myRefCode');
+const refInputEl = document.getElementById('refInput');
+const applyRefBtn = document.getElementById('applyRef');
+const fpEmailEl = document.getElementById('fpEmail');
+const autoPayEl = document.getElementById('autoPay');
+const claimBtn = document.getElementById('claimBtn');
+const logsEl = document.getElementById('logs');
+const leaderboardEl = document.getElementById('leaderboard');
+const chatBox = document.getElementById('chatBox');
+const chatMsg = document.getElementById('chatMsg');
+const sendMsgBtn = document.getElementById('sendMsg');
 
-/**
- * Switches between content sections based on the navigation bar click.
- * @param {string} targetId 
- */
-function switchContent(targetId) {
-    document.querySelectorAll('.content-section').forEach(section => {
-        section.classList.remove('active');
-    });
-    document.getElementById(targetId).classList.add('active');
+let currentUser = null;
+let lastAdTimestamp = 0;
 
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
-    });
-    document.querySelector(`.nav-item[data-target="${targetId}"]`).classList.add('active');
-
-    // Special handling for sections that need real-time updates
-    if (targetId === 'leaderboard') {
-        loadLeaderboard();
-    }
-    if (targetId === 'withdraw') {
-        loadWithdrawalHistory();
-        document.getElementById('withdraw-balance').textContent = currentUserData.balance.toFixed(2);
-        document.getElementById('gcash-number').value = currentUserData.gcash_number || '';
-    }
-    if (targetId === 'admin-panel' && isAdmin) {
-        loadPendingWithdrawals();
-    }
+function log(msg){
+  const p = document.createElement('div');
+  p.textContent = `${new Date().toLocaleTimeString()} — ${msg}`;
+  logsEl.prepend(p);
 }
 
-// Attach navigation listeners
-document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', (e) => {
-        const target = e.target.getAttribute('data-target');
-        if (target) {
-            switchContent(target);
-        }
+// Authenticate (anonymous) and ensure user doc exists
+async function initAuth(){
+  try {
+    const userCredential = await auth.signInAnonymously();
+    currentUser = userCredential.user;
+    const uid = currentUser.uid;
+    const refCode = uid.slice(0,8);
+
+    myRefCodeEl.value = refCode;
+
+    const userDocRef = db.collection('users').doc(uid);
+    const doc = await userDocRef.get();
+    if (!doc.exists) {
+      await userDocRef.set({
+        uid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        balance: 0,
+        totalEarned: 0,
+        totalRefs: 0,
+        faucetpayEmail: null,
+        referrer: null,
+        refCode
+      });
+      log('New user created.');
+    } else {
+      const data = doc.data();
+      if (data.faucetpayEmail) fpEmailEl.value = data.faucetpayEmail;
+      balanceEl.textContent = Number(data.balance||0).toFixed(8);
+      totalEarnedEl.textContent = Number(data.totalEarned||0).toFixed(8);
+      totalRefsEl.textContent = data.totalRefs||0;
+    }
+
+    // Listen for user changes
+    userDocRef.onSnapshot(snap => {
+      if (!snap.exists) return;
+      const data = snap.data();
+      balanceEl.textContent = Number(data.balance||0).toFixed(8);
+      totalEarnedEl.textContent = Number(data.totalEarned||0).toFixed(8);
+      totalRefsEl.textContent = data.totalRefs||0;
     });
+
+  } catch (e) {
+    console.error('Auth error', e);
+    alert('Auth failed: ' + e.message);
+  }
+}
+
+// Apply referral: only once — set user's referrer to found user's uid
+applyRefBtn.onclick = async () => {
+  const code = refInputEl.value.trim();
+  if (!code) return alert('Paste referral code');
+  if (!currentUser) return alert('Not authenticated yet');
+  const uid = currentUser.uid;
+  try {
+    // Find user by refCode
+    const q = await db.collection('users').where('refCode','==',code).limit(1).get();
+    if (q.empty) return alert('Referral code not found');
+    const refDoc = q.docs[0];
+    if (refDoc.id === uid) return alert('Cannot refer yourself');
+
+    const myRef = db.collection('users').doc(uid);
+    const mySnap = await myRef.get();
+    const myData = mySnap.data();
+    if (myData.referrer) return alert('Referral already set');
+
+    // Set referrer (client is allowed to set referrer only if currently null — enforced by security rules)
+    await myRef.update({ referrer: refDoc.id });
+
+    // Increment referrer's totalRefs — this must be done by a server in secure apps,
+    // but here we attempt to increment via client transaction (subject to security rules).
+    // Prefer moving this increment to server side (recommended).
+    await db.collection('users').doc(refDoc.id).update({
+      totalRefs: firebase.firestore.FieldValue.increment(1)
+    });
+
+    log('Referral applied. Referred by ' + code);
+    alert('Referral applied successfully.');
+  } catch (e) {
+    console.error(e);
+    alert('Referral error: ' + e.message);
+  }
+};
+
+// Save FaucetPay email locally to Firestore (user can update their faucetpayEmail)
+fpEmailEl.onchange = async () => {
+  if (!currentUser) return;
+  const email = fpEmailEl.value.trim() || null;
+  try {
+    await db.collection('users').doc(currentUser.uid).update({ faucetpayEmail: email });
+    log('FaucetPay email updated.');
+  } catch (e) {
+    console.error(e);
+    alert('Failed to save email: ' + e.message);
+  }
+};
+
+// Chat
+sendMsgBtn.onclick = async () => {
+  const text = chatMsg.value.trim();
+  if (!text) return;
+  try {
+    await db.collection('chat').add({
+      uid: currentUser.uid,
+      text,
+      at: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    chatMsg.value = '';
+  } catch (e) {
+    console.error(e);
+    alert('Chat send error: ' + e.message);
+  }
+};
+
+db.collection('chat').orderBy('at','asc').limitToLast(200)
+  .onSnapshot(sn => {
+    chatBox.innerHTML = '';
+    sn.docs.forEach(d => {
+      const m = d.data();
+      const el = document.createElement('div');
+      const ts = m.at && m.at.toDate ? m.at.toDate().toLocaleTimeString() : '';
+      el.style.padding = '6px';
+      el.style.borderBottom = '1px solid rgba(255,255,255,0.02)';
+      el.textContent = `[${ts}] ${m.uid.slice(0,6)}: ${m.text}`;
+      chatBox.appendChild(el);
+    });
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+
+// Leaderboard (top by totalEarned)
+db.collection('users').orderBy('totalEarned','desc').limit(20).onSnapshot(sn => {
+  leaderboardEl.innerHTML = '';
+  sn.docs.forEach(d => {
+    const u = d.data();
+    const el = document.createElement('div');
+    el.textContent = `${u.refCode || d.id.slice(0,6)} — ${Number(u.totalEarned||0).toFixed(8)} USDT`;
+    leaderboardEl.appendChild(el);
+  });
 });
 
-/**
- * Toggles between Login and Register forms.
- * @param {boolean} showLogin 
- */
-function toggleAuth(showLogin) {
-    document.getElementById('login-form').classList.toggle('hidden', !showLogin);
-    document.getElementById('register-form').classList.toggle('hidden', showLogin);
+// Claim / Withdraw
+claimBtn.onclick = async () => {
+  if (!currentUser) return alert('Not authenticated');
+  claimBtn.disabled = true;
+  try {
+    const uid = currentUser.uid;
+    const meDoc = await db.collection('users').doc(uid).get();
+    const me = meDoc.data();
+    const amount = Number(me.balance || 0);
+    if (amount <= 0) { alert('No balance to withdraw'); claimBtn.disabled=false; return; }
+    const faucetpayEmail = me.faucetpayEmail || null;
+    if (!faucetpayEmail) {
+      if (!confirm('No FaucetPay email found — open registration page?')) { claimBtn.disabled=false; return; }
+      window.open('https://faucetpay.io/?r=5265484','_blank');
+      claimBtn.disabled=false;
+      return;
+    }
+
+    // Get idToken to authenticate with your server
+    const idToken = await currentUser.getIdToken(true);
+
+    // Call server endpoint to process withdraw (server verifies token and performs send via FaucetPay API)
+    const resp = await fetch('/api/withdraw', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization': 'Bearer ' + idToken },
+      body: JSON.stringify({ uid, amount, faucetpayEmail })
+    });
+    const data = await resp.json();
+    if (data.success) {
+      log(`Withdraw requested: ${amount} USDT. Tx: ${data.tx || 'n/a'}`);
+      alert('Withdraw request processed. Check transactions.');
+      // balance will be updated by server via Admin SDK; client will reflect update via snapshot listener
+    } else {
+      alert('Withdraw failed: ' + (data.message || 'unknown'));
+    }
+
+  } catch (e) {
+    console.error(e);
+    alert('Withdraw error: ' + e.message);
+  } finally {
+    claimBtn.disabled = false;
+  }
+};
+
+// rewardUser: called after ad watched successfully
+async function rewardUser(amount) {
+  if (!currentUser) return alert('Not authenticated');
+  const now = Date.now();
+  if (now - lastAdTimestamp < COOLDOWN_SECONDS * 1000) {
+    return alert(`Please wait cooldown (${COOLDOWN_SECONDS}s)`);
+  }
+  lastAdTimestamp = now;
+
+  amount = Math.min(Number(amount), MAX_REWARD);
+
+  try {
+    const idToken = await currentUser.getIdToken(true);
+    const meDoc = await db.collection('users').doc(currentUser.uid).get();
+    const me = meDoc.data();
+
+    // Send credit request to server — server will validate token and credit balance or autopay if requested
+    const payload = {
+      uid: currentUser.uid,
+      amount,
+      faucetpayEmail: me.faucetpayEmail || null,
+      autoPay: document.getElementById('autoPay').checked
+    };
+    const resp = await fetch('/api/credit', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + idToken },
+      body: JSON.stringify(payload)
+    });
+    const r = await resp.json();
+    if (r.success) {
+      log(`You earned ${amount} USDT`);
+    } else {
+      alert('Credit failed: ' + (r.message || 'unknown'));
+    }
+  } catch (e) {
+    console.error('credit error', e);
+    alert('Credit error: ' + e.message);
+  }
 }
 
-// --- AUTHENTICATION ---
+// Wire Monetag ad buttons
+document.getElementById('ad1').onclick = () => {
+  if (typeof show_10276123 !== 'function') return alert('Ad SDK not loaded');
+  show_10276123().then(() => {
+    rewardUser(MAX_REWARD);
+  }).catch(e => {
+    console.warn('ad1 error', e);
+    alert('Ad failed or closed.');
+  });
+};
 
-auth.onAuthStateChanged(user => {
-    if (user) {
-        currentUserId = user.uid;
-        document.getElementById('auth-section').classList.add('hidden');
-        document.getElementById('main-app').classList.remove('hidden');
-        loadUserData(user.uid);
-        setupChatListener();
-    } else {
-        currentUserId = null;
-        currentUserData = null;
-        isAdmin = false;
-        document.getElementById('auth-section').classList.remove('hidden');
-        document.getElementById('main-app').classList.add('hidden');
-        document.getElementById('admin-nav').style.display = 'none';
+document.getElementById('ad2').onclick = () => {
+  if (typeof show_10337795 !== 'function') return alert('Ad SDK not loaded');
+  show_10337795().then(() => {
+    rewardUser(MAX_REWARD);
+  }).catch(e => {
+    console.warn('ad2 error', e);
+    alert('Ad failed or closed.');
+  });
+};
+
+document.getElementById('ad3').onclick = () => {
+  if (typeof show_10337853 !== 'function') return alert('Ad SDK not loaded');
+  show_10337853().then(() => {
+    rewardUser(MAX_REWARD);
+  }).catch(e => {
+    console.warn('ad3 error', e);
+    alert('Ad failed or closed.');
+  });
+};
+
+// Listen transactions collection for logs (optional)
+db.collection('transactions').orderBy('at','desc').limit(50).onSnapshot(sn => {
+  sn.docChanges().forEach(ch => {
+    if (ch.type === 'added') {
+      const t = ch.doc.data();
+      log(`Tx: ${t.uid ? t.uid.slice(0,6) : 'srv'} ${t.type || ''} +${t.amount || 0}`);
     }
+  });
 });
 
-async function registerUser() {
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-    const username = document.getElementById('register-username').value;
-    const gcash = document.getElementById('register-gcash').value;
-
-    if (!email || !password || !username || !gcash) {
-        alert("Please fill all fields.");
-        return;
-    }
-
-    try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        const uid = userCredential.user.uid;
-
-        await db.ref('users/' + uid).set({
-            username: username,
-            gcash_number: gcash,
-            balance: 0.00,
-            ads_watched: 0,
-            is_admin: false
-        });
-        alert("Registration successful! Logging in...");
-    } catch (error) {
-        alert("Registration failed: " + error.message);
-    }
-}
-
-function loginUser() {
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-
-    auth.signInWithEmailAndPassword(email, password)
-        .catch(error => {
-            alert("Login failed: " + error.message);
-        });
-}
-
-function loginAdmin() {
-    // Simple way to trigger admin login form view
-    const adminEmail = prompt("Enter Admin Email:");
-    if (!adminEmail) return;
-    const adminPassword = prompt("Enter Admin Password:");
-    if (!adminPassword) return;
-
-    auth.signInWithEmailAndPassword(adminEmail, adminPassword)
-        .then(() => {
-            // Check if the user is actually an admin in the database
-            db.ref('users/' + auth.currentUser.uid).once('value', snapshot => {
-                if (snapshot.val() && snapshot.val().is_admin === true) {
-                    alert("Admin Login Successful!");
-                } else {
-                    alert("User is not registered as Admin. Logging out.");
-                    auth.signOut();
-                }
-            });
-        })
-        .catch(error => {
-            alert("Admin Login failed: " + error.message);
-        });
-}
-
-function logoutUser() {
-    auth.signOut();
-}
-
-// --- USER DATA MANAGEMENT ---
-
-function loadUserData(uid) {
-    db.ref('users/' + uid).on('value', (snapshot) => {
-        currentUserData = snapshot.val();
-        if (currentUserData) {
-            updateDashboardUI();
-        }
-    });
-}
-
-function updateDashboardUI() {
-    document.getElementById('user-balance').textContent = currentUserData.balance.toFixed(2);
-    document.getElementById('ads-watched-count').textContent = currentUserData.ads_watched;
-    
-    // Check for Admin status
-    isAdmin = currentUserData.is_admin || false;
-    document.getElementById('admin-nav').style.display = isAdmin ? 'block' : 'none';
-}
-
-// --- MONETAG AD INTEGRATION & REWARDING ---
-
-function rewardUser() {
-    if (!currentUserId || !currentUserData) return;
-
-    const newBalance = currentUserData.balance + REWARD_PER_AD;
-    const newAdsWatched = currentUserData.ads_watched + 1;
-
-    // Update Firebase
-    db.ref('users/' + currentUserId).update({
-        balance: newBalance,
-        ads_watched: newAdsWatched
-    }).then(() => {
-        alert(`Success! You earned ₱${REWARD_PER_AD.toFixed(2)}. New Balance: ₱${newBalance.toFixed(2)}`);
-    }).catch(error => {
-        console.error("Failed to update user balance:", error);
-        alert("Error rewarding user. Please try again.");
-    });
-}
-
-function watchRewardedAd() {
-    const watchButton = document.getElementById('watch-ad-btn');
-    watchButton.textContent = "Loading Ad...";
-    watchButton.classList.add('btn-disabled');
-    watchButton.disabled = true;
-
-    // Monetag Rewarded Interstitial Call
-    show_10276123().then(() => {
-        // This block executes when the user successfully watches the ad
-        rewardUser();
-    }).catch(e => {
-        // This block executes if there's an error or the ad is closed prematurely (depending on Monetag's specific implementation)
-        console.error("Ad failed or closed:", e);
-        alert("Ad failed or was closed. Please try again.");
-    }).finally(() => {
-        // Re-enable the button regardless of the outcome
-        watchButton.textContent = "WATCH AD & EARN ₱0.01";
-        watchButton.classList.remove('btn-disabled');
-        watchButton.disabled = false;
-    });
-}
-
-// --- WITHDRAWAL LOGIC ---
-
-function submitWithdrawal() {
-    if (!currentUserData) return;
-
-    const amount = parseFloat(document.getElementById('withdraw-amount').value);
-    const gcash = document.getElementById('gcash-number').value;
-    const currentBalance = currentUserData.balance;
-
-    if (isNaN(amount) || amount < MIN_WITHDRAWAL) {
-        alert(`Minimum withdrawal is ₱${MIN_WITHDRAWAL.toFixed(2)}.`);
-        return;
-    }
-    if (amount > currentBalance) {
-        alert("Insufficient balance.");
-        return;
-    }
-    if (!gcash || gcash.length !== 11 || !gcash.startsWith('09')) {
-        alert("Please enter a valid 11-digit GCash number (starting with 09).");
-        return;
-    }
-
-    if (!confirm(`Confirm withdrawal of ₱${amount.toFixed(2)} to GCash ${gcash}?`)) {
-        return;
-    }
-
-    const newBalance = currentBalance - amount;
-    const withdrawalRef = db.ref('withdrawals').push();
-
-    // 1. Create the withdrawal request
-    withdrawalRef.set({
-        userId: currentUserId,
-        username: currentUserData.username,
-        amount: amount,
-        gcash_number: gcash,
-        status: 'Pending',
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    }).then(() => {
-        // 2. Deduct the balance
-        return db.ref('users/' + currentUserId).update({
-            balance: newBalance
-        });
-    }).then(() => {
-        alert("Withdrawal request submitted successfully! Please wait for admin processing.");
-        document.getElementById('withdraw-amount').value = '';
-    }).catch(error => {
-        console.error("Withdrawal failed:", error);
-        alert("Error submitting withdrawal. Please try again.");
-    });
-}
-
-function loadWithdrawalHistory() {
-    const historyList = document.getElementById('withdrawal-history');
-    historyList.innerHTML = '<li>Loading history...</li>';
-
-    db.ref('withdrawals').orderByChild('userId').equalTo(currentUserId).limitToLast(10).on('value', snapshot => {
-        historyList.innerHTML = '';
-        if (!snapshot.exists()) {
-            historyList.innerHTML = '<li>No withdrawal history found.</li>';
-            return;
-        }
-
-        snapshot.forEach(childSnapshot => {
-            const req = childSnapshot.val();
-            const li = document.createElement('li');
-            li.className = 'leaderboard-item';
-            
-            let statusColor = 'yellow';
-            if (req.status === 'Completed') statusColor = '#4CAF50';
-            if (req.status === 'Rejected') statusColor = 'red';
-
-            li.innerHTML = `
-                <span>₱${req.amount.toFixed(2)}</span>
-                <span style="color: ${statusColor};">${req.status}</span>
-            `;
-            historyList.prepend(li); // Show newest first
-        });
-    });
-}
-
-// --- CHAT ROOM LOGIC ---
-
-function setupChatListener() {
-    const chatMessages = document.getElementById('chat-messages');
-    
-    // Listen for new messages
-    db.ref('chat').limitToLast(50).on('child_added', (snapshot) => {
-        const message = snapshot.val();
-        const msgElement = document.createElement('div');
-        msgElement.className = 'chat-message';
-        
-        const time = new Date(message.timestamp).toLocaleTimeString();
-        
-        msgElement.innerHTML = `
-            <span class="chat-user">${message.user} (${time}):</span>
-            <span>${message.message}</span>
-        `;
-        chatMessages.appendChild(msgElement);
-        chatMessages.scrollTop = chatMessages.scrollHeight; // Auto scroll to bottom
-    });
-}
-
-function sendMessage() {
-    const chatInput = document.getElementById('chat-input');
-    const messageText = chatInput.value.trim();
-
-    if (!messageText || !currentUserData) return;
-
-    db.ref('chat').push().set({
-        user: currentUserData.username || 'Anonymous',
-        message: messageText,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    }).then(() => {
-        chatInput.value = '';
-    }).catch(error => {
-        alert("Failed to send message: " + error.message);
-    });
-}
-
-// --- LEADERBOARD LOGIC ---
-
-function loadLeaderboard() {
-    const leaderboardList = document.getElementById('leaderboard-list');
-    leaderboardList.innerHTML = '<li>Loading top earners...</li>';
-
-    // Query users ordered by ads_watched descending
-    db.ref('users').orderByChild('ads_watched').limitToLast(10).once('value', snapshot => {
-        const users = [];
-        snapshot.forEach(childSnapshot => {
-            users.push(childSnapshot.val());
-        });
-
-        // Reverse the array to show highest first
-        users.reverse();
-
-        leaderboardList.innerHTML = '';
-        users.forEach((user, index) => {
-            const li = document.createElement('li');
-            li.className = 'leaderboard-item';
-            li.innerHTML = `
-                <span>#${index + 1} ${user.username}</span>
-                <span>${user.ads_watched} Ads Watched</span>
-            `;
-            leaderboardList.appendChild(li);
-        });
-    }).catch(error => {
-        leaderboardList.innerHTML = '<li>Error loading leaderboard.</li>';
-        console.error("Leaderboard error:", error);
-    });
-}
-
-// --- ADMIN PANEL LOGIC ---
-
-function authenticateAdmin() {
-    const passwordInput = document.getElementById('admin-password-input').value;
-    if (passwordInput === ADMIN_PASSWORD && isAdmin) {
-        document.getElementById('admin-login-form').classList.add('hidden');
-        document.getElementById('admin-content').classList.remove('hidden');
-        loadPendingWithdrawals();
-    } else {
-        alert("Invalid Admin Password or you are not an authorized admin user.");
-    }
-}
-
-function loadPendingWithdrawals() {
-    const list = document.getElementById('pending-withdrawals-list');
-    list.innerHTML = '<li>Loading pending requests...</li>';
-
-    db.ref('withdrawals').orderByChild('status').equalTo('Pending').on('value', snapshot => {
-        list.innerHTML = '';
-        if (!snapshot.exists()) {
-            list.innerHTML = '<li>No pending withdrawals.</li>';
-            return;
-        }
-
-        snapshot.forEach(childSnapshot => {
-            const reqId = childSnapshot.key;
-            const req = childSnapshot.val();
-            const date = new Date(req.timestamp).toLocaleString();
-            
-            const li = document.createElement('li');
-            li.className = 'leaderboard-item';
-            li.style.flexDirection = 'column';
-            li.innerHTML = `
-                <strong>User: ${req.username} (ID: ${req.userId.substring(0, 5)}...)</strong>
-                <p>Amount: ₱${req.amount.toFixed(2)} | GCash: ${req.gcash_number}</p>
-                <small>Requested: ${date}</small>
-                <div style="margin-top: 10px;">
-                    <button style="background: #4CAF50; color: white; border: none; padding: 5px 10px; margin-right: 5px; cursor: pointer;" 
-                        onclick="updateWithdrawalStatus('${reqId}', 'Completed')">Complete</button>
-                    <button style="background: red; color: white; border: none; padding: 5px 10px; cursor: pointer;"
-                        onclick="updateWithdrawalStatus('${reqId}', 'Rejected')">Reject</button>
-                </div>
-            `;
-            list.appendChild(li);
-        });
-    });
-}
-
-function updateWithdrawalStatus(requestId, status) {
-    if (!isAdmin) {
-        alert("Access denied.");
-        return;
-    }
-
-    if (confirm(`Are you sure you want to mark request ${requestId} as ${status}?`)) {
-        db.ref('withdrawals/' + requestId).update({
-            status: status,
-            processed_by: currentUserId,
-            processed_timestamp: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
-            alert(`Request ${requestId} marked as ${status}.`);
-        }).catch(error => {
-            alert("Failed to update status: " + error.message);
-        });
-    }
-}
+// Start
+initAuth();

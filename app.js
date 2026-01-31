@@ -1,445 +1,382 @@
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, push, query, orderByChild, limitToLast, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-
-// --- CONFIGURATION ---
+// =================================================================
+// 1. FIREBASE CONFIGURATION (REPLACE WITH YOUR ACTUAL CREDENTIALS)
+// =================================================================
 const firebaseConfig = {
-    apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
-    authDomain: "freegcash-ads.firebaseapp.com",
-    databaseURL: "https://freegcash-ads-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "freegcash-ads",
-    storageBucket: "freegcash-ads.firebasestorage.app",
-    messagingSenderId: "608086825364",
-    appId: "1:608086825364:web:3a8e628d231b52c6171781"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
 };
 
-const HIGH_REWARD = 0.0065;
-const RANDOM_REWARD = 0.0012;
-const HIGH_COOLDOWN_MS = 30 * 1000; // 30 seconds
-const RANDOM_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
-const INITIAL_AD_COOLDOWN_MS = 3 * 60 * 1000; // 3 minutes
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-const AD_ZONES = [
-    'show_10276123', 
-    'show_10337795', 
-    'show_10337853'
-];
+// =================================================================
+// 2. GLOBAL GAME VARIABLES & CONSTANTS
+// =================================================================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-const PSYCHOLOGICAL_TIPS = [
-    "Tip: Consistency is key. Small earnings daily build a big balance!",
-    "Tip: Don't chase quick riches. Focus on steady, reliable income.",
-    "Tip: Think of your balance as a savings account. Every cent counts!",
-    "Tip: The best time to earn was yesterday. The second best time is now.",
-    "Tip: Set a daily earning goal and stick to it!",
-    "Tip: Use the chat room to find earning strategies from others.",
-    "Tip: Patience pays off. Cooldowns are designed to protect the ad revenue.",
-    "Tip: Invite friends! More users mean more ad revenue and better payouts.",
-    "Tip: Check the leaderboard to motivate yourself to earn more.",
-    "Tip: Treat this like a micro-job. Dedicate 5 minutes every hour.",
-    "Tip: Don't let a low balance discourage you. It grows faster than you think.",
-    "Tip: The power of compound earnings starts with the first cent.",
-    "Tip: Financial success is 80% behavior and 20% knowledge.",
-    "Tip: Avoid checking your balance too often; focus on the clicks!",
-    "Tip: Remember, every ad view helps keep the system running for everyone.",
-    "Tip: The secret to wealth is simple: spend less than you earn.",
-    "Tip: Small habits, when repeated, lead to massive results.",
-    "Tip: Never depend on a single source of income. Diversify!",
-    "Tip: The best investment you can make is in yourself.",
-    "Tip: Success is the sum of small efforts repeated day in and day out.",
-    "Tip: Don't wait for opportunity. Create it.",
-    "Tip: Discipline is choosing between what you want now and what you want most.",
-    "Tip: Learning to manage small amounts is the first step to managing large ones.",
-    "Tip: Wealth is not about having a lot of money, it's about having options.",
-    "Tip: Your net worth is determined by your network.",
-    "Tip: The biggest risk is not taking any risk.",
-    "Tip: Focus on being productive, not just busy.",
-    "Tip: A budget is telling your money where to go instead of wondering where it went.",
-    "Tip: Prioritize earning over spending.",
-    "Tip: The earlier you start earning, the better.",
-    "Tip: Don't underestimate the power of consistency.",
-    "Tip: Every penny saved or earned is a soldier fighting for your financial freedom.",
-    "Tip: Financial freedom starts with small, deliberate actions.",
-    "Tip: Don't just work for money; make money work for you.",
-    "Tip: The difference between a rich person and a poor person is how they use their time.",
-    "Tip: Never stop learning new ways to earn.",
-    "Tip: Be patient with the results, but impatient with the action.",
-    "Tip: The key to earning is to start before you are ready.",
-    "Tip: Your attitude determines your altitude.",
-    "Tip: Don't compare your beginning to someone else's middle.",
-    "Tip: Focus on the process, not just the outcome.",
-    "Tip: The most valuable asset you have is your time.",
-    "Tip: Small changes eventually add up to huge results.",
-    "Tip: Stop buying things you don't need to impress people you don't like.",
-    "Tip: The journey of a thousand miles begins with a single click.",
-    "Tip: Use the chat to share your success stories!",
-    "Tip: Remember to take breaks and come back refreshed.",
-    "Tip: Your future self will thank you for earning today.",
-    "Tip: Don't quit because of slow progress; slow progress is still progress.",
-    "Tip: Every ad view is a step closer to your GCash payout!"
-];
+// Game Dimensions
+const WIDTH = canvas.width;
+const HEIGHT = canvas.height;
 
-// --- INITIALIZATION ---
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+// Player Settings
+const PLAYER_SIZE = 30;
+let playerY = HEIGHT - PLAYER_SIZE - 20;
+let playerX = 50;
+let isJumping = false;
+let jumpVelocity = 0;
+const GRAVITY = 1.2;
+const JUMP_FORCE = -20;
 
-const tg = window.Telegram.WebApp;
-tg.expand();
+// Game State
+let isPlaying = false;
+let score = 0;
+let obstacles = [];
+let frameCount = 0;
+let speed = 5;
+let obstacleInterval = 90; // Frames between obstacles
 
-// Get actual Telegram user data
-const user = tg.initDataUnsafe?.user || { id: "Guest_" + Date.now(), first_name: "User", username: "GuestUser" };
-const userId = user.id;
-const userName = user.username ? `@${user.username}` : user.first_name || "Anonymous User";
+// Economy
+const BARRIERS_PER_PESO = 1000;
+let userBalance = 0; // Stored in Pesos
 
-// Display user name immediately
-document.getElementById('user-display-name').innerText = `Welcome, ${userName}`;
+// User ID (In a real Telegram bot, this would be the Telegram User ID)
+// For this demo, we use a simple placeholder or generate a random one.
+const USER_ID = "tg_user_" + Math.floor(Math.random() * 10000); 
 
-// Global State
-let userBalance = 0;
-let totalAds = 0;
-let lastHighReward = 0;
-let lastRandomReward = 0;
-let lastInitialAd = 0;
+// =================================================================
+// 3. UI ELEMENTS
+// =================================================================
+const startScreen = document.getElementById('startScreen');
+const gameOverScreen = document.getElementById('gameOverScreen');
+const withdrawalModal = document.getElementById('withdrawalModal');
 
-// --- UTILITY FUNCTIONS ---
+const currentBarriersDisplay = document.getElementById('currentBarriers');
+const pesoBalanceDisplay = document.getElementById('pesoBalance');
+const withdrawBalanceDisplay = document.getElementById('withdrawBalanceDisplay');
+const finalBarriersDisplay = document.getElementById('finalBarriers');
+const pesoEarnedDisplay = document.getElementById('pesoEarned');
+const modalBalanceDisplay = document.getElementById('modalBalance');
+const withdrawalMessage = document.getElementById('withdrawalMessage');
 
-function getRandomAdZone() {
-    const randomIndex = Math.floor(Math.random() * AD_ZONES.length);
-    return window[AD_ZONES[randomIndex]];
+
+// =================================================================
+// 4. GAME CORE FUNCTIONS
+// =================================================================
+
+/** Draws the player (a simple square) */
+function drawPlayer() {
+    ctx.fillStyle = '#ff5722'; // Orange/Red
+    ctx.fillRect(playerX, playerY, PLAYER_SIZE, PLAYER_SIZE);
 }
 
-function updateBalance(reward) {
-    const newBalance = userBalance + reward;
-    const newTotal = totalAds + 1;
-    
-    // Use update to avoid overwriting other fields accidentally
-    update(userRef, { 
-        username: userName, 
-        balance: parseFloat(newBalance.toFixed(4)), 
-        totalAds: newTotal,
-        lastHighReward: lastHighReward,
-        lastRandomReward: lastRandomReward,
-        lastInitialAd: lastInitialAd
-    });
+/** Handles the jump physics */
+function updatePlayer() {
+    if (isJumping) {
+        playerY += jumpVelocity;
+        jumpVelocity += GRAVITY;
 
-    // Show psychological tip
-    const tip = PSYCHOLOGICAL_TIPS[Math.floor(Math.random() * PSYCHOLOGICAL_TIPS.length)];
-    tg.showAlert(`✅ Earned ₱${reward.toFixed(4)}!\n\n${tip}`);
-}
-
-function formatTime(ms) {
-    if (ms <= 0) return "Ready!";
-    const totalSeconds = Math.ceil(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}m ${seconds}s`;
-}
-
-function checkCooldowns() {
-    const now = Date.now();
-    
-    // High Reward Cooldown
-    const highRemaining = HIGH_COOLDOWN_MS - (now - lastHighReward);
-    const highBtn = document.getElementById('btn-high-reward');
-    const highText = document.getElementById('cooldown-high');
-    
-    // Random Reward Cooldown
-    const randomRemaining = RANDOM_COOLDOWN_MS - (now - lastRandomReward);
-    const randomBtn = document.getElementById('btn-random-reward');
-    const randomText = document.getElementById('cooldown-random');
-
-    [
-        { btn: highBtn, text: highText, remaining: highRemaining, cooldown: HIGH_COOLDOWN_MS },
-        { btn: randomBtn, text: randomText, remaining: randomRemaining, cooldown: RANDOM_COOLDOWN_MS }
-    ].forEach(({ btn, text, remaining }) => {
-        const isReady = remaining <= 0;
-        btn.disabled = !isReady;
-        text.innerText = isReady ? "Ready to earn!" : `Cooldown: ${formatTime(remaining)}`;
-        
-        if (btn === highBtn) {
-            btn.classList.toggle('btn-grad', isReady);
-            btn.classList.toggle('bg-gray-400', !isReady);
-        } else {
-            btn.classList.toggle('bg-yellow-500', isReady);
-            btn.classList.toggle('bg-gray-400', !isReady);
+        // Check if player lands back on the ground
+        if (playerY >= HEIGHT - PLAYER_SIZE - 20) {
+            playerY = HEIGHT - PLAYER_SIZE - 20;
+            isJumping = false;
+            jumpVelocity = 0;
         }
-    });
+    }
 }
 
-setInterval(checkCooldowns, 1000); // Check cooldowns every second
-
-// --- FIREBASE SYNC & INITIAL SETUP ---
-const userRef = ref(db, 'users/' + userId);
-onValue(userRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        userBalance = data.balance || 0;
-        totalAds = data.totalAds || 0;
-        lastHighReward = data.lastHighReward || 0;
-        lastRandomReward = data.lastRandomReward || 0;
-        lastInitialAd = data.lastInitialAd || 0;
+/** Handles the creation and movement of obstacles */
+function updateObstacles() {
+    // Add new obstacle
+    if (frameCount % obstacleInterval === 0) {
+        const obstacleHeight = Math.random() * (100 - 30) + 30;
+        const obstacleWidth = 20;
+        const obstacleY = HEIGHT - obstacleHeight - 20; // Ensure it sits on the ground line
         
-        document.getElementById('user-balance').innerText = userBalance.toFixed(4);
-        document.getElementById('total-ads').innerText = totalAds;
-        checkCooldowns();
-        showInitialAd(); // Check and show initial ad after loading data
-    } else {
-        // New user setup
-        set(userRef, { 
-            username: userName, 
-            balance: 0, 
-            totalAds: 0, 
-            lastHighReward: 0, 
-            lastRandomReward: 0,
-            lastInitialAd: 0,
-            isBanned: false 
+        obstacles.push({
+            x: WIDTH,
+            y: obstacleY,
+            width: obstacleWidth,
+            height: obstacleHeight,
+            passed: false
         });
-    }
-});
 
-// --- MONETAG AD FUNCTIONS ---
-
-// Initial Random In-App Interstitial Ad (3 minute cooldown)
-function showInitialAd() {
-    const now = Date.now();
-    if (now - lastInitialAd < INITIAL_AD_COOLDOWN_MS) {
-        return; // Still in cooldown
+        // Increase difficulty slightly
+        speed += 0.05;
+        obstacleInterval = Math.max(60, 90 - Math.floor(score / 50));
     }
 
-    const adFunction = getRandomAdZone();
+    // Move and draw obstacles
+    for (let i = 0; i < obstacles.length; i++) {
+        let obs = obstacles[i];
+        obs.x -= speed;
+
+        ctx.fillStyle = '#333'; // Dark gray
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+
+        // Check if obstacle is passed
+        if (obs.x + obs.width < playerX && !obs.passed) {
+            obs.passed = true;
+            score++;
+            currentBarriersDisplay.textContent = score;
+        }
+
+        // Collision detection (AABB)
+        if (
+            playerX < obs.x + obs.width &&
+            playerX + PLAYER_SIZE > obs.x &&
+            playerY < obs.y + obs.height &&
+            playerY + PLAYER_SIZE > obs.y
+        ) {
+            gameOver();
+            return;
+        }
+    }
+
+    // Remove off-screen obstacles
+    obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
+}
+
+/** Main game loop */
+function gameLoop() {
+    if (!isPlaying) return;
+
+    // 1. Clear canvas and draw ground
+    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    ctx.fillStyle = '#4CAF50'; // Green ground
+    ctx.fillRect(0, HEIGHT - 20, WIDTH, 20);
+
+    // 2. Update and draw elements
+    updatePlayer();
+    updateObstacles();
+    drawPlayer();
+
+    frameCount++;
+    requestAnimationFrame(gameLoop);
+}
+
+/** Starts the game */
+function startGame() {
+    if (isPlaying) return;
+
+    // Reset state
+    isPlaying = true;
+    score = 0;
+    speed = 5;
+    obstacles = [];
+    frameCount = 0;
+    playerY = HEIGHT - PLAYER_SIZE - 20;
+    isJumping = false;
     
+    // UI
+    startScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    currentBarriersDisplay.textContent = 0;
+
+    gameLoop();
+}
+
+/** Ends the game and saves score */
+async function gameOver() {
+    isPlaying = false;
+    
+    // Calculate earnings
+    const pesoEarned = score / BARRIERS_PER_PESO;
+
+    // Update UI
+    finalBarriersDisplay.textContent = score;
+    pesoEarnedDisplay.textContent = pesoEarned.toFixed(2);
+    gameOverScreen.classList.remove('hidden');
+
+    // Save score and update balance
+    await saveGameResult(score, pesoEarned);
+}
+
+// =================================================================
+// 5. FIREBASE / ECONOMY FUNCTIONS
+// =================================================================
+
+/** Saves the game result (barriers and peso earned) to Firestore */
+async function saveGameResult(barriers, peso) {
     try {
-        adFunction({
-            type: 'inApp',
-            inAppSettings: {
-                frequency: 1, 
-                capping: 0.1,
-                interval: 30,
-                timeout: 5,
-                everyPage: false
+        // 1. Add game session record (for auditing)
+        await db.collection('game_sessions').add({
+            userId: USER_ID,
+            barriers: barriers,
+            pesoEarned: peso,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 2. Update the user's main balance atomically
+        const userRef = db.collection('users').doc(USER_ID);
+
+        await db.runTransaction(async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+
+            if (!userDoc.exists) {
+                // Create new user record
+                transaction.set(userRef, {
+                    balance: peso,
+                    totalBarriers: barriers,
+                    gcashNumber: null,
+                    lastPlayed: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } else {
+                // Update existing user record
+                const newBalance = userDoc.data().balance + peso;
+                const newTotalBarriers = userDoc.data().totalBarriers + barriers;
+                
+                transaction.update(userRef, {
+                    balance: newBalance,
+                    totalBarriers: newTotalBarriers,
+                    lastPlayed: firebase.firestore.FieldValue.serverTimestamp()
+                });
             }
         });
+
+        console.log(`Score saved. Balance updated by ₱${peso.toFixed(2)}.`);
+        // Reload balance display after successful save
+        await loadUserBalance();
+
+    } catch (error) {
+        console.error("Error saving game result:", error);
+    }
+}
+
+/** Loads the user's current balance from Firestore */
+async function loadUserBalance() {
+    try {
+        const userDoc = await db.collection('users').doc(USER_ID).get();
+        if (userDoc.exists) {
+            userBalance = userDoc.data().balance || 0;
+        } else {
+            userBalance = 0;
+        }
         
-        // Update the last shown time
-        lastInitialAd = now;
-        update(userRef, { lastInitialAd: now });
+        pesoBalanceDisplay.textContent = userBalance.toFixed(2);
+        withdrawBalanceDisplay.textContent = userBalance.toFixed(2);
+        modalBalanceDisplay.textContent = userBalance.toFixed(2);
 
-    } catch(e) {
-        console.error("Initial ad failed:", e);
+    } catch (error) {
+        console.error("Error loading balance:", error);
+        userBalance = 0;
     }
 }
 
-// 1. High Reward Ad (0.0065, 30s cooldown)
-window.watchHighRewardAd = function() {
-    if (Date.now() - lastHighReward < HIGH_COOLDOWN_MS) {
-        return tg.showAlert("Please wait for the 30-second cooldown.");
-    }
+/** Handles the withdrawal request submission */
+async function submitWithdrawalRequest() {
+    const amountInput = document.getElementById('withdrawAmount');
+    const gcashInput = document.getElementById('gcashNumber');
     
-    tg.MainButton.setText("LOADING AD...").show();
-    const adFunction = getRandomAdZone();
+    const amount = parseFloat(amountInput.value);
+    const gcashNumber = gcashInput.value.trim();
+    
+    withdrawalMessage.textContent = '';
 
-    adFunction().then(() => {
-        lastHighReward = Date.now();
-        updateBalance(HIGH_REWARD);
-        tg.MainButton.hide();
-    }).catch(() => {
-        tg.showAlert("Ad failed to load or was skipped. Please try again.");
-        tg.MainButton.hide();
-    });
-};
-
-// 2. Random Popup Reward Ad (0.0012, 10 min cooldown)
-window.watchRandomRewardAd = function() {
-    if (Date.now() - lastRandomReward < RANDOM_COOLDOWN_MS) {
-        return tg.showAlert("Please wait for the 10-minute cooldown.");
+    if (isNaN(amount) || amount <= 0) {
+        withdrawalMessage.textContent = 'Please enter a valid amount.';
+        return;
+    }
+    if (amount < 50) {
+        withdrawalMessage.textContent = 'Minimum withdrawal is ₱50.00.';
+        return;
+    }
+    if (amount > userBalance) {
+        withdrawalMessage.textContent = 'Insufficient balance.';
+        return;
+    }
+    if (!gcashNumber || gcashNumber.length < 11) {
+        withdrawalMessage.textContent = 'Please enter a valid GCash number.';
+        return;
     }
 
-    tg.MainButton.setText("LOADING REWARD...").show();
-    const adFunction = getRandomAdZone();
+    try {
+        // 1. Deduct the amount from the user's balance and submit request atomically
+        const userRef = db.collection('users').doc(USER_ID);
 
-    adFunction('pop').then(() => {
-        lastRandomReward = Date.now();
-        updateBalance(RANDOM_REWARD);
-        tg.MainButton.hide();
-    }).catch(() => {
-        tg.showAlert("Ad failed to load or was skipped. Please try again.");
-        tg.MainButton.hide();
-    });
-};
+        await db.runTransaction(async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            const currentBalance = userDoc.data().balance;
 
+            if (currentBalance < amount) {
+                throw new Error("Insufficient funds during transaction.");
+            }
 
-// --- NAVIGATION & UI ---
-window.showPage = function(pageId) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(pageId).classList.add('active');
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('nav-active'));
-    event.currentTarget.classList.add('nav-active');
-    
-    if(pageId === 'leaderboard') loadLeaderboard();
-    if(pageId === 'wallet') loadWithdrawalHistory();
-};
+            // Update user balance
+            const newBalance = currentBalance - amount;
+            transaction.update(userRef, {
+                balance: newBalance,
+                gcashNumber: gcashNumber // Save GCash number for future use
+            });
 
-// --- LEADERBOARD ---
-function loadLeaderboard() {
-    const usersQuery = query(ref(db, 'users'), orderByChild('balance'), limitToLast(10));
-    get(usersQuery).then(snap => {
-        const list = document.getElementById('leaderboard-list');
-        list.innerHTML = "";
-        let players = [];
-        snap.forEach(child => { players.push(child.val()); });
-        players.reverse().forEach((p, i) => {
-            list.innerHTML += `
-                <div class="glass-card p-3 flex justify-between items-center ${p.username === userName ? 'border-2 border-sky-500' : ''}">
-                    <span class="font-bold text-sky-600">#${i+1} ${p.username}</span>
-                    <span class="font-black text-gray-700">₱${p.balance.toFixed(4)}</span>
-                </div>`;
+            // Create a withdrawal request record for the admin dashboard
+            await db.collection('withdrawals').add({
+                userId: USER_ID,
+                amount: amount,
+                gcash: gcashNumber,
+                status: 'Pending', // Admin manually changes this to 'Approved'/'Rejected'
+                requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
         });
-    });
+
+        withdrawalMessage.textContent = `Withdrawal request for ₱${amount.toFixed(2)} submitted! Processing...`;
+        amountInput.value = '';
+        gcashInput.value = gcashNumber; // Keep number filled
+        
+        // Update UI balance
+        await loadUserBalance();
+
+    } catch (error) {
+        console.error("Withdrawal error:", error);
+        withdrawalMessage.textContent = `Error: ${error.message || 'Failed to submit request.'}`;
+    }
 }
 
-// --- CHAT LOGIC ---
-window.sendMessage = function() {
-    const text = document.getElementById('chat-input').value;
-    if(!text) return;
-    push(ref(db, 'chat'), {
-        user: userName,
-        text: text,
-        timestamp: Date.now()
-    });
-    document.getElementById('chat-input').value = "";
-};
+// =================================================================
+// 6. EVENT LISTENERS
+// =================================================================
 
-onValue(query(ref(db, 'chat'), limitToLast(20)), (snap) => {
-    const box = document.getElementById('chat-box');
-    box.innerHTML = "";
-    snap.forEach(child => {
-        const m = child.val();
-        box.innerHTML += `<div class="p-2 bg-blue-50 rounded-lg text-sm shadow-sm">
-            <b class="text-sky-600">${m.user}:</b> ${m.text}
-        </div>`;
-    });
-    box.scrollTop = box.scrollHeight;
+// Keyboard input (Spacebar or Up Arrow for Jump)
+document.addEventListener('keydown', (e) => {
+    if (isPlaying && (e.code === 'Space' || e.code === 'ArrowUp')) {
+        if (!isJumping) {
+            isJumping = true;
+            jumpVelocity = JUMP_FORCE;
+        }
+    }
 });
 
-// --- WITHDRAWAL LOGIC (User Side) ---
-window.requestWithdrawal = function() {
-    const gcash = document.getElementById('gcash-num').value;
-    const amount = parseFloat(document.getElementById('wd-amount').value);
-    
-    if(amount < 0.02) return tg.showAlert("Minimum withdrawal is ₱1");
-    if(amount > userBalance) return tg.showAlert("Insufficient balance!");
-    if(gcash.length < 10) return tg.showAlert("Enter valid GCash number");
+// UI Buttons
+document.getElementById('startButton').addEventListener('click', startGame);
+document.getElementById('retryButton').addEventListener('click', startGame);
 
-    // 1. Create the withdrawal request
-    push(ref(db, 'withdrawals'), {
-        userId, username: userName, gcash, amount: amount.toFixed(4), status: 'Pending', timestamp: Date.now()
-    });
+document.getElementById('withdrawalButton').addEventListener('click', () => {
+    startScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    withdrawalModal.classList.remove('hidden');
+    // Ensure modal balance is updated
+    modalBalanceDisplay.textContent = userBalance.toFixed(2);
+});
 
-    // 2. Deduct the balance immediately (Admin refunds if rejected)
-    update(userRef, { 
-        balance: parseFloat((userBalance - amount).toFixed(4)),
-    });
-    
-    tg.showAlert("Withdrawal submitted! It is now pending admin approval.");
-};
+document.getElementById('closeModal').addEventListener('click', () => {
+    withdrawalModal.classList.add('hidden');
+    startScreen.classList.remove('hidden');
+    withdrawalMessage.textContent = '';
+});
 
-function loadWithdrawalHistory() {
-    // This listener ensures auto-sync of status changes from the admin
-    const historyRef = query(ref(db, 'withdrawals'), orderByChild('timestamp'));
-    onValue(historyRef, snap => {
-        const historyList = document.getElementById('withdrawal-history');
-        historyList.innerHTML = "";
-        let found = false;
-
-        snap.forEach(child => {
-            const w = child.val();
-            if (w.userId == userId) {
-                found = true;
-                const statusColor = w.status === 'Paid' ? 'text-green-600' : (w.status === 'Pending' ? 'text-orange-500' : 'text-red-600');
-                const date = new Date(w.timestamp).toLocaleDateString();
-                
-                historyList.innerHTML = `
-                    <div class="p-3 border-b flex justify-between items-center text-sm">
-                        <div>
-                            <p class="font-bold">₱${w.amount} to ${w.gcash}</p>
-                            <p class="text-xs text-gray-500">${date}</p>
-                        </div>
-                        <span class="${statusColor} font-semibold">${w.status}</span>
-                    </div>` + historyList.innerHTML;
-            }
-        });
-
-        if (!found) {
-            historyList.innerHTML = '<p class="text-gray-500 text-sm p-2">No withdrawal history found.</p>';
-        }
-    });
-}
+document.getElementById('submitWithdrawal').addEventListener('click', submitWithdrawalRequest);
 
 
-// --- ADMIN LOGIC ---
-window.checkAdmin = function() {
-    const pass = document.getElementById('admin-pass').value;
-    if(pass === "Propetas12") {
-        document.getElementById('admin-login').classList.add('hidden');
-        document.getElementById('admin-content').classList.remove('hidden');
-        loadAdminWithdrawals();
-    } else {
-        alert("Wrong Password");
-    }
-};
-
-function loadAdminWithdrawals() {
-    // Auto-sync admin view for new requests and status changes
-    const adminQuery = query(ref(db, 'withdrawals'), orderByChild('status'));
-    onValue(adminQuery, snap => {
-        const list = document.getElementById('withdrawal-list');
-        list.innerHTML = "";
-        
-        snap.forEach(child => {
-            const w = child.val();
-            const key = child.key;
-            const statusColor = w.status === 'Paid' ? 'bg-green-100' : (w.status === 'Pending' ? 'bg-yellow-100' : 'bg-red-100');
-            
-            list.innerHTML += `
-                <div class="p-3 ${statusColor} rounded-lg mb-2 shadow-sm">
-                    <p class="font-bold">Amount: ₱${w.amount} (${w.status})</p>
-                    <p class="text-sm">User: ${w.username} (ID: ${w.userId})</p>
-                    <p class="text-sm mb-2">GCash: ${w.gcash}</p>
-                    ${w.status === 'Pending' ? 
-                        `<button class="bg-green-500 text-white px-3 py-1 rounded text-xs mr-2" onclick="markAsPaid('${key}')">Mark Paid</button>
-                         <button class="bg-red-500 text-white px-3 py-1 rounded text-xs" onclick="markAsRejected('${key}', '${w.userId}', ${w.amount})">Reject & Refund</button>` :
-                        `<span class="text-gray-700 text-xs">Status: ${w.status}</span>`
-                    }
-                </div>`;
-        });
-    });
-}
-
-// Admin Action: Mark Paid
-window.markAsPaid = function(key) {
-    if (confirm(`Confirm payment for withdrawal ${key}?`)) {
-        // Update status in withdrawals. This auto-syncs the user's history.
-        update(ref(db, 'withdrawals/' + key), { status: 'Paid' })
-            .then(() => tg.showAlert(`Payment recorded.`))
-            .catch(e => tg.showAlert(`Error marking paid: ${e.message}`));
-    }
-};
-
-// Admin Action: Reject and Refund
-window.markAsRejected = function(key, userId, amount) {
-    if (confirm(`WARNING: Rejecting this request will refund ₱${amount} to the user. Proceed?`)) {
-        // 1. Update withdrawal status
-        update(ref(db, 'withdrawals/' + key), { status: 'Rejected' });
-
-        // 2. Refund the user's balance
-        const userToRefundRef = ref(db, 'users/' + userId);
-        get(userToRefundRef).then(snapshot => {
-            const userData = snapshot.val();
-            if (userData) {
-                const currentBalance = userData.balance || 0;
-                const newBalance = parseFloat(currentBalance) + parseFloat(amount);
-                update(userToRefundRef, { balance: parseFloat(newBalance.toFixed(4)) });
-                tg.showAlert(`Request rejected and ₱${amount} refunded to user ${userId}.`);
-            }
-        });
-    }
+// =================================================================
+// 7. INITIALIZATION
+// =================================================================
+window.onload = () => {
+    // Load initial balance when the app starts
+    loadUserBalance();
+    console.log(`Initialized for User ID: ${USER_ID}`);
 };

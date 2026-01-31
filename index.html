@@ -1,132 +1,334 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <!-- Monetag SDKs -->
-    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
-    <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
-    <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
-
+    <title>🎖🤑PAPERHOUSE INC ADS🤑</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { background: #0f172a; color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        .sidebar { transition: 0.3s; transform: translateX(-100%); z-index: 50; }
-        .sidebar.active { transform: translateX(0); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); transition: 0.2s; }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-        .user-display { 
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255,255,255,0.1);
+        :root {
+            --primary-color: #ff4d4d; /* GCash Red/Pink */
+            --secondary-color: #333;
+            --background-color: #f0f2f5;
+            --card-color: #ffffff;
+            --success-color: #4CAF50;
         }
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--secondary-color);
+            overflow-x: hidden;
+        }
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        /* Sliding Bar Navigation */
+        .tab-bar {
+            display: flex;
+            justify-content: space-around;
+            background-color: var(--card-color);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .tab {
+            flex-grow: 1;
+            text-align: center;
+            padding: 15px 0;
+            cursor: pointer;
+            font-weight: 700;
+            color: var(--secondary-color);
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+        .content-section {
+            display: none;
+            padding: 20px 0;
+        }
+        .content-section.active {
+            display: block;
+        }
+        /* UI Components */
+        .card {
+            background-color: var(--card-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+        .balance-display {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .balance-display h2 {
+            margin: 0;
+            font-size: 1.2em;
+
+            color: #666;
+        }
+        .balance-display p {
+            font-size: 3em;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 5px 0 0 0;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #e63939;
+        }
+        input[type="text"], input[type="number"], input[type="password"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        /* Chat Styling */
+        #chat-window {
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            margin-bottom: 10px;
+        }
+        .chat-message {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .chat-user {
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-right: 5px;
+        }
+        /* Leaderboard Styling */
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+        .rank {
+            font-weight: 700;
+            width: 30px;
+            text-align: center;
+        }
+        .name {
+            flex-grow: 1;
+        }
+        .score {
+            font-weight: 700;
+            color: var(--success-color);
+        }
+        /* Admin Panel */
+        #admin-panel {
+            border-top: 2px solid var(--primary-color);
+            margin-top: 20px;
+            padding-top: 15px;
+        }
+        .request-item {
+            background-color: #fff3e0;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 5px solid orange;
+        }
+        .request-item button {
+            width: auto;
+            padding: 5px 10px;
+            margin-left: 5px;
+            font-size: 0.9em;
+        }
+        .btn-success { background-color: var(--success-color); color: white; }
+        .btn-danger { background-color: #f44336; color: white; }
+        .hidden { display: none !important; }
     </style>
+    <!-- Monetag SDK -->
+    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
 </head>
-<body class="bg-slate-900">
+<body>
 
-    <!-- Sidebar -->
-    <div id="sidebar" class="sidebar fixed top-0 left-0 w-64 h-full glass p-5 shadow-2xl">
-        <h2 class="text-xl font-bold mb-8 text-blue-400">MENU</h2>
-        <nav class="space-y-4">
-            <button onclick="showTab('home')" class="w-full text-left p-3 rounded-lg hover:bg-white/10 flex items-center"><i class="fas fa-home mr-3"></i> Home</button>
-            <button onclick="showTab('referral')" class="w-full text-left p-3 rounded-lg hover:bg-white/10 flex items-center"><i class="fas fa-users mr-3"></i> Referrals</button>
-            <button onclick="showTab('leaderboard')" class="w-full text-left p-3 rounded-lg hover:bg-white/10 flex items-center"><i class="fas fa-trophy mr-3"></i> Leaderboard</button>
+    <header>
+        <h1>🎖🤑PAPERHOUSE INC ADS🤑</h1>
+    </header>
 
-            <button onclick="showTab('chat')" class="w-full text-left p-3 rounded-lg hover:bg-white/10 flex items-center"><i class="fas fa-comments mr-3"></i> Chat Room</button>
-        </nav>
-        <button onclick="toggleSidebar()" class="absolute top-4 right-4 text-white text-xl">&times;</button>
-    </div>
-
-    <!-- Main Content -->
-    <div class="max-w-md mx-auto min-h-screen flex flex-col p-4">
+    <div class="container">
         
-        <!-- Header -->
-        <header class="flex justify-between items-center mb-6">
-            <button onclick="toggleSidebar()" class="text-2xl"><i class="fas fa-bars"></i></button>
-            <h1 class="text-sm font-bold text-yellow-400">🎖🤑PAPERHOUSE INC ADS🤑🎖</h1>
-            <div id="userDisplay" class="user-display px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                <i class="fas fa-user-circle text-blue-400"></i>
-                <span id="userNameDisplay">Loading...</span>
-                <span id="userBalance" class="text-green-400 font-mono">0.0000 USDT</span>
+        <!-- Authentication Section (Initial View) -->
+        <div id="auth-section">
+            <div class="card">
+                <h2>Welcome!</h2>
+                <input type="text" id="auth-username" placeholder="Enter Username">
+                <button class="btn-primary" onclick="loginOrRegister()">Start Earning</button>
+                <p style="text-align: center; margin-top: 15px; font-size: 0.9em;">
+                    By clicking, you agree to the terms and create an account.
+                </p>
             </div>
-        </header>
-
-        <!-- Home Tab -->
-        <div id="home" class="tab-content active space-y-6">
-            <div class="glass p-8 rounded-3xl text-center shadow-inner">
-                <p class="text-gray-400 text-sm mb-2">Ready to earn?</p>
-                <h2 class="text-3xl font-bold mb-6">0.0001 USDT <br><span class="text-sm font-normal text-blue-400">per reward ad</span></h2>
-                <button id="adBtn" onclick="watchAd()" class="btn-primary w-48 h-48 rounded-full text-2xl font-bold shadow-lg shadow-blue-500/20 border-8 border-white/5 active:scale-95 mx-auto">
-                    WATCH AD
-                </button>
-                <p id="cooldownText" class="mt-4 text-orange-400 font-bold hidden">Cooldown: <span id="timer">12</span>s</p>
-            </div>
-
-            <div class="glass p-4 rounded-2xl">
-                <h3 class="font-bold mb-2">FaucetPay Setup</h3>
-                <input id="fpEmail" type="email" placeholder="Enter FaucetPay Email" class="w-full bg-black/20 border border-white/10 p-3 rounded-lg text-sm mb-2">
-                <p id="fpWarning" class="text-xs text-red-400 hidden">Register first: <a href="https://faucetpay.io/?r=5265484" class="underline">Click Here</a></p>
-                <button onclick="saveEmail()" class="w-full bg-green-600 p-2 rounded-lg text-sm font-bold">Update Wallet</button>
-            </div>
-            
-            <button onclick="withdrawMain()" class="w-full bg-blue-600 py-4 rounded-2xl font-bold text-lg shadow-xl shadow-blue-900/40">AUTO WITHDRAW TO FAUCETPAY</button>
         </div>
 
-        <!-- Referral Tab -->
-        <div id="referral" class="tab-content space-y-4">
-            <div class="glass p-6 rounded-2xl text-center">
-                <h2 class="text-xl font-bold mb-2">Your Referral Code</h2>
-                <div id="myCode" class="text-2xl font-mono text-blue-400 mb-4 tracking-widest">LOADING...</div>
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                    <div class="bg-white/5 p-3 rounded-xl">
-                        <p class="text-gray-400">Total Referrals</p>
-                        <p id="refCount" class="text-xl font-bold">0</p>
+        <!-- Main App Section -->
+        <div id="main-app" class="hidden">
+            
+            <div class="tab-bar">
+                <div class="tab active" data-tab="earn">Earn</div>
+
+<div class="tab" data-tab="withdraw">Withdraw</div>
+                <div class="tab" data-tab="chat">Chat</div>
+                <div class="tab" data-tab="leaderboard">Leaderboard</div>
+            </div>
+
+            <!-- 1. Earn Section -->
+            <div id="earn" class="content-section active">
+                <div class="card balance-display">
+                    <h2>Current Balance (PHP)</h2>
+                    <p id="user-balance">0.00</p>
+                    <small>Total Earned: <span id="user-total-earned">0.00</span> PHP</small>
+                </div>
+
+                <div class="card">
+                    <h3>Watch Ad & Earn</h3>
+                    <p>Click the button below to watch a rewarded ad. You will earn <strong>0.01 PHP</strong> per successful view.</p>
+                    <button class="btn-primary" id="watch-ad-btn" onclick="watchRewardedAd()">WATCH AD (0.01 PHP)</button>
+                </div>
+            </div>
+
+            <!-- 2. Withdraw Section -->
+            <div id="withdraw" class="content-section">
+                <div class="card">
+                    <h3>Withdraw GCash</h3>
+                    <p>Minimum Withdrawal: <strong>0.02 PHP</strong></p>
+                    <p id="withdraw-status" style="color: var(--primary-color); font-weight: bold;"></p>
+
+                    <label for="gcash-number">GCash Number:</label>
+                    <input type="number" id="gcash-number" placeholder="e.g., 0917xxxxxxx">
+                    
+                    <label for="withdraw-amount">Amount to Withdraw (PHP):</label>
+                    <input type="number" id="withdraw-amount" placeholder="Minimum 0.02">
+                    
+                    <button class="btn-primary" onclick="submitWithdrawal()">Submit Withdrawal Request</button>
+                </div>
+
+                <div class="card">
+                    <h3>My Withdrawal History</h3>
+                    <div id="withdrawal-history">No history yet.</div>
+                </div>
+            </div>
+
+            <!-- 3. Chat Room Section -->
+            <div id="chat" class="content-section">
+                <div class="card">
+                    <h3>Live Chat Room</h3>
+                    <div id="chat-window">
+                        <!-- Messages will be injected here -->
                     </div>
-                    <div class="bg-white/5 p-3 rounded-xl">
-                        <p class="text-gray-400">Referral Earned</p>
-                        <p id="refEarned" class="text-xl font-bold text-green-400">0.0000</p>
+                    <input type="text" id="chat-input" placeholder="Type your message...">
+                    <button class="btn-primary" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+
+            <!-- 4. Leaderboard Section -->
+            <div id="leaderboard" class="content-section">
+                <div class="card">
+                    <h3>Top Earners (Total Earned)</h3>
+                    <div id="leaderboard-list">
+                        <p>Loading leaderboard...</p>
                     </div>
                 </div>
             </div>
 
-            <div class="glass p-4 rounded-2xl">
-                <p class="text-sm mb-2 text-gray-300 italic text-center">Ent
+            <!-- 5. Admin Panel (Hidden by default) -->
+            <div id="admin-login" class="card">
+                <h3>Admin Login</h3>
+                <input type="password" id="admin-password" placeholder="Admin Password">
+                <button onclick="adminLogin()">Login as Admin</button>
+            </div>
 
-er your friend's code to link (8% commission auto-added)</p>
-                <div class="flex gap-2">
-                    <input id="refInput" type="text" placeholder="Enter Code" class="flex-1 bg-black/20 border border-white/10 p-3 rounded-lg font-mono">
-                    <button onclick="applyReferral()" class="bg-blue-600 px-4 rounded-lg font-bold">SET</button>
+            <div id="admin-panel" class="card hidden">
+                <h3>Admin Dashboard</h3>
+                <p>Pending Withdrawal Requests:</p>
+                <div id="pending-requests">
+                    No pending requests.
                 </div>
+                <button onclick="logoutUser()" class="btn-danger">Logout</button>
             </div>
-            
-            <button onclick="claimReferralBalance()" class="w-full bg-yellow-600 py-4 rounded-2xl font-bold">CLAIM REFERRAL REWARD (AUTO-PAY)</button>
-        </div>
 
-        <!-- Leaderboard -->
-        <div id="leaderboard" class="tab-content glass rounded-2xl p-4 min-h-[400px]">
-            <h2 class="text-center font-bold text-xl mb-4 border-b border-white/10 pb-2">Top Earners</h2>
-            <div id="leaderboardList" class="space-y-2"></div>
-        </div>
-
-        <!-- Chat -->
-        <div id="chat" class="tab-content flex flex-col h-[70vh]">
-            <div id="chatBox" class="flex-1 glass rounded-2xl p-4 overflow-y-auto mb-4 text-sm space-y-2"></div>
-            <div class="flex gap-2">
-                <input id="chatInput" type="text" placeholder="Type a message..." class="flex-1 bg-black/20 border border-white/10 p-3 rounded-full">
-                <button onclick="sendMessage()" class="bg-blue-600 w-12 h-12 rounded-full"><i class="fas fa-paper-plane"></i></button>
-            </div>
         </div>
 
     </div>
 
-    <!-- Scripts -->
-    <script type="module" src="app.js"></script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import the functions you need fr
+
+om the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, push, serverTimestamp, update, query, limitToLast, orderByChild, get } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
+            authDomain: "freegcash-ads.firebaseapp.com",
+            databaseURL: "https://freegcash-ads-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "freegcash-ads",
+            storageBucket: "freegcash-ads.firebasestorage.app",
+            messagingSenderId: "608086825364",
+            appId: "1:608086825364:web:3a8e628d231b52c6171781",
+            measurementId: "G-Z64B87ELGP"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Expose Firebase functions to global scope for use in app.js
+        window.db = db;
+        window.ref = ref;
+        window.onValue = onValue;
+        window.set = set;
+        window.push = push;
+        window.serverTimestamp = serverTimestamp;
+        window.update = update;
+        window.query = query;
+        window.limitToLast = limitToLast;
+        window.orderByChild = orderByChild;
+        window.get = get;
+    </script>
+    <script src="app.js"></script>
 </body>
 </html>

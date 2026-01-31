@@ -1,262 +1,111 @@
-<!DOCTYPE html>
+
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎖🤑PAPERHOUSE INC ADS🤑Gcash</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        /* Basic Reset and Styling */
-        body {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #000000 0%, #1a1a2e 100%);
-            color: #fff;
-            overflow-x: hidden;
-        }
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 20px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            min-height: 100vh;
-            position: relative;
-        }
-
-        /* Header and Title */
-        h1 {
-            text-align: center;
-            color: #ffcc00;
-            margin-bottom: 20px;
-            font-size: 1.5em;
-            text-shadow: 0 0 5px #ff6600;
-        }
-
-        /* Navigation (Sliding Bar Concept) */
-        .nav-bar {
-            display: flex;
-            justify-content: space-around;
-            background-color: #1f1f3a;
-            border-radius: 15px;
-            padding: 5px;
-            margin-bottom: 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .nav-item {
-            flex-grow: 1;
-            text-align: center;
-            padding: 10px 0;
-            cursor: pointer;
-            color: #aaa;
-            transition: all 0.3s ease;
-            font-weight: bold;
-        }
-        .nav-item.active {
-            background-color: #ffcc00;
-            color: #000;
-            border-radius: 10px;
-            box-shadow: 0 0 10px #ffcc00;
-        }
-
-        /* Content Sections */
-        .content-section {
-            display: none;
-            padding: 15px;
-            background-color: #1f1f3a;
-            border-radius: 15px;
-            margin-top: 15px;
-        }
-        .content-section.active {
-            display: block;
-        }
-
-        /* Dashboard/Balance */
-        .balance-card {
-            background: #2a2a44;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        }
-        .balance-card h2 {
-            color: #ffcc00;
-            margin-top: 0;
-        }        .leaderboard-item:nth-child(1) { background: gold; color: black; }
-        .leaderboard-item:nth-child(2) { background: silver; color: black; }
-        .leaderboard-item:nth-child(3) { background: #cd7f32; color: black; }
-
-        /* Withdrawal Form */
-        .input-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #ffcc00;
-        }
-        .input-group input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            border: none;
-            background: #3a3a55;
-            color: #fff;
-        }
-        .min-withdraw-info {
-            font-size: 0.9em;
-            color: #4CAF50;
-            margin-top: -10px;
-            margin-bottom: 15px;
-        }
-
-        /* Authentication Forms */
-        #auth-section {
-            text-align: center;
-        }
-        #auth-section input {
-            margin-bottom: 10px;
-        }
-        .toggle-auth {
-            color: #ffcc00;
-            cursor: pointer;
-            margin-top: 10px;
-            display: block;
-        }
-        .hidden { display: none; }
-    </style>
+  <meta charset="utf-8" />
+  <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body{font-family: Arial, Helvetica, sans-serif; margin:0; background:#0f1724; color:#e6eef8;}
+    .container{display:flex; height:100vh;}
+    .sidebar{width:320px;background:#071233;padding:20px;box-shadow:2px 0 8px rgba(0,0,0,.6);}
+    .main{flex:1;padding:20px; overflow:auto;}
+    .card{background:#08233f;padding:16px;border-radius:8px;margin-bottom:12px;}
+    .title{font-size:20px;margin-bottom:8px}
+    button{background:#ffcc00;border:0;padding:10px 12px;border-radius:6px;cursor:pointer}
+    input,select{width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #234;background:#0b2940;color:#e6eef8}
+    .ads-row{display:flex;gap:12px;flex-wrap:wrap;}
+    .ad-btn{flex:1;min-width:220px}
+    .chat{height:240px;overflow:auto;background:#071a2b;padding:8px;border-radius:6px;}
+    .leaderboard{background:#071a2b;padding:8px;border-radius:6px;max-height:240px;overflow:auto;}
+    .ref{font-size:14px;color:#cfe8ff}
+    .small{font-size:13px;color:#cfe8ff;margin-top:6px}
+    a{color:#7bd0ff}
+  </style>
 </head>
 <body>
+  <div class="container">
+    <div class="sidebar">
+      <div class="card">
+        <div class="title">🎖🤑PAPERHOUSE INC ADS🤑🎖</div>
+        <div class="small">Monetag IDs: 3136495, 3152686, 3152703</div>
+      </div>
 
-    <div class="container">
-        <h1>🎖🤑PAPERHOUSE INC ADS🤑</h1>
+      <div class="card">
+        <div class="small">FaucetPay email (for auto-payout):</div>
+        <input id="fpEmail" placeholder="you@faucetpay.io" />
+        <label style="display:block;margin-top:6px"><input type="checkbox" id="autoPay" /> Auto-pay on credit (server must be configured)</label>
+        <div class="small">If you don't have FaucetPay account: <a href="https://faucetpay.io/?r=5265484" target="_blank">Register FaucetPay</a></div>
+      </div>
 
-        <!-- Authentication Section (Initial View) -->
-        <div id="auth-section">
-            <h2>Welcome!</h2>
-            <div id="login-form">
-                <input type="email" id="login-email" placeholder="Email" required>
-                <input type="password" id="login-password" placeholder="Password" required>
-                <button class="btn btn-primary" onclick="loginUser()">Login</button>
-                <span class="toggle-auth" onclick="toggleAuth(false)">Need an account? Register</span>
-                <span class="toggle-auth" onclick="loginAdmin()">Login as Admin</span>
-            </div>
-            <div id="register-form" class="hidden">
-                <input type="text" id="register-username" placeholder="Username" required>
-                <input type="email" id="register-email" placeholder="Email" required>
-                <input type="password" id="register-password" placeholder="Password" required>
-                <input type="tel" id="register-gcash" placeholder="GCash Number (09xxxxxxxxx)" required>
-                <button class="btn btn-primary" onclick="registerUser()">Register</button>
-                <span class="toggle-auth" onclick="toggleAuth(true)">Already have an account? Login</span>
-            </div>
-        </div>
+      <div class="card">
+        <div class="small">Your referral code (share):</div>
+        <input id="myRefCode" readonly />
+        <div class="small">Enter referral code here to apply (one-time):</div>
+        <input id="refInput" placeholder="paste ref-code here" />
+        <button id="applyRef">Apply referral</button>
+      </div>
 
-        <!-- Main App Content (Hidden until login) -->
-        <div id="main-app" class="hidden">
-            
-            <!-- Navigation Bar -->
-            <div class="nav-bar">
-                <div class="nav-item active" data-target="dashboard">Ads</div>
-                <div class="nav-item" data-target="withdraw">Withdraw</div>
-                <div class="nav-item" data-target="chat">Chat</div>
-                <div class="nav-item" data-target="leaderboard">Top</div>
-                <div class="nav-item" data-target="admin-panel" id="admin-nav" style="display:none;">Admin</div>
-            </div>
+      <div class="card">
+        <div class="small">Balance (USDT): <span id="balance">0.00000000</span></div>
+        <div class="small">Total Earned: <span id="totalEarned">0.00000000</span></div>
 
-            <!-- Dashboard/Ads Section -->
-            <div id="dashboard" class="content-section active">
-                <div class="balance-card">
-                    <h2>Your Balance</h2>
-                    <p>₱<span id="user-balance">0.00</span></p>
-                    <p class="reward-info">Reward per Ad: ₱0.01</p>
-                    <p class="reward-info">Ads Watched: <span id="ads-watched-count">0</span></p>
-                </div>
-                
-                <button class="btn btn-primary" id="watch-ad-btn" onclick="watchRewardedAd()">
-                    WATCH AD & EARN ₱0.01
-                </button>
-                <button class="btn btn-primary" onclick="logoutUser()">Logout</button>
-            </div>
+        <div class="small">Total Referrals: <span id="totalRefs">0</span></div>
+        <button id="claimBtn">Claim / Withdraw</button>
+      </div>
 
-            <!-- Withdrawal Section -->
-            <div id="withdraw" class="content-section">
-                <h2>GCash Withdrawal</h2>
-                <div class="balance-card">
-                    <p>Current Balance: ₱<span id="withdraw-balance">0.00</span></p>
-                </div>
-                <div class="min-withdraw-info">
-                    Minimum Withdrawal: ₱0.02
-                </div>
-                
-                <div class="input-group">
-                    <label for="withdraw-amount">Amount to Withdraw (₱)</label>
-                    <input type="number" id="withdraw-amount" min="0.02" step="0.01" placeholder="e.g., 0.05">
-                </div>
-                <div class="input-group">
-                    <label for="gcash-number">GCash Number</label>
-                    <input type="tel" id="gcash-number" placeholder="09xxxxxxxxx" readonly>
-                </div>
-                
-                <button class="btn btn-primary" id="submit-withdraw-btn" onclick="submitWithdrawal()">
-                    Submit Withdrawal Request
-                </button>
-                
-                <h3 style="margin-top: 20px;">Your Requests</h3>
-                <ul id="withdrawal-history" style="list-style: none; padding: 0;">
-                    <!-- Withdrawal history will be loaded here -->
-                </ul>
-            </div>
-
-            <!-- Chat Room Section -->
-            <div id="chat" class="content-section">
-                <h2>Global Chat Room</h2>
-                <div id="chat-messages">
-                    <!-- Messages will be loaded here -->
-                </div>
-                <div style="display: flex;">
-                    <input type="text" id="chat-input" placeholder="Type your message...">
-                    <button id="send-chat-btn" onclick="sendMessage()">Send</button>
-                </div>
-            </div>
-
-            <!-- Leaderboard Section -->
-            <div id="leaderboard" class="content-section">
-                <h2>Top Earners (Ads Watched)</h2>
-                <ul id="leaderboard-list">
-                    <!-- Leaderboard items will be loaded here -->
-                </ul>
-            </div>
-
-            <!-- Admin Panel (Hidden by default) -->
-            <div id="admin-panel" class="content-section" style="display:none;">
-                <h2>Admin Dashboard</h2>
-                <div id="admin-login-form">
-                    <input type="password" id="admin-password-input" placeholder="Admin Password">
-                    <button class="btn btn-primary" onclick="authenticateAdmin()">Unlock Admin Panel</button>
-                </div>
-
-                <div id="admin-content" class="hidden">
-                    <h3>Pending Withdrawals</h3>
-                    <ul id="pending-withdrawals-list" style="list-style: none; padding: 0;">
-                        <!-- Pending requests loaded here -->
-                    </ul>
-                </div>
-            </div>
-
-        </div>
+      <div class="card">
+        <div class="small">Leaderboard</div>
+        <div class="leaderboard" id="leaderboard"></div>
+      </div>
     </div>
 
-    <!-- Monetag SDK Script -->
-    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
+    <div class="main">
+      <div class="card">
+        <div class="title">Ads area — click ad to earn (max 0.0001 USDT) | Cooldown 12s</div>
+        <div class="ads-row">
+          <div class="ad-btn card">
+            <div>Monetag #1 (Zone 10276123)</div>
+            <button id="ad1">Watch Ad #1</button>
+          </div>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics-compat.js"></script>
-    
-    <!-- Custom Application Logic -->
-    <script src="app.js"></script>
+          <div class="ad-btn card">
+            <div>Monetag #2 (Zone 10337795)</div>
+            <button id="ad2">Watch Ad #2</button>
+          </div>
+
+          <div class="ad-btn card">
+            <div>Monetag #3 (Zone 10337853)</div>
+            <button id="ad3">Watch Ad #3</button>
+          </div>
+        </div>
+        <div class="small" id="adInfo"></div>
+      </div>
+
+      <div class="card">
+        <div class="small">Chat room</div>
+        <div class="chat" id="chatBox"></div>
+        <input id="chatMsg" placeholder="Type message..." />
+        <button id="sendMsg">Send</button>
+      </div>
+
+      <div class="card">
+        <div class="small">Activity / logs</div>
+        <div id="logs" style="max-height:200px;overflow:auto;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monetag SDKs -->
+  <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
+  <script src='//libtl.com/sdk.js' data-zone='10337795' data-sdk='show_10337795'></script>
+  <script src='//libtl.com/sdk.js' data-zone='10337853' data-sdk='show_10337853'></script>
+
+  <!-- Firebase (compat for easier migration) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <script src="app.js"></script>
 </body>
 </html>

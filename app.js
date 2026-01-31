@@ -1,416 +1,442 @@
 
 // --- CONFIGURATION ---
-const REWARD_PER_AD = 0.01; // PHP
-const MIN_WITHDRAW = 0.02; // PHP
+const REWARD_PER_AD = 0.01;
+const MIN_WITHDRAWAL = 0.02;
 const ADMIN_PASSWORD = "Propetas12";
 
-let currentUser = null;
+// Firebase Configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
+    authDomain: "freegcash-ads.firebaseapp.com",
+    databaseURL: "https://freegcash-ads-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "freegcash-ads",
+    storageBucket: "freegcash-ads.firebasestorage.app",
+    messagingSenderId: "608086825364",
+    appId: "1:608086825364:web:3a8e628d231b52c6171781",
+    measurementId: "G-Z64B87ELGP"
+};
+
+// Initialize Firebase
+const app = firebase.initializeApp(firebaseConfig);
+const auth = app.auth();
+const db = app.database();
+const analytics = firebase.analytics();
+
+let currentUserData = null;
 let currentUserId = null;
+let isAdmin = false;
 
 // --- UTILITY FUNCTIONS ---
 
 /**
- * Switches the active tab content.
- * @param {string} tabName - The ID of the content section to show.
+ * Switches between content sections based on the navigation bar click.
+ * @param {string} targetId 
  */
-function switchTab(tabName) {
+function switchContent(targetId) {
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
     });
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
+    document.getElementById(targetId).classList.add('active');
 
-    document.getElementById(tabName).classList.add('active');
-    document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    document.querySelector(`.nav-item[data-target="${targetId}"]`).classList.add('active');
+
+    // Special handling for sections that need real-time updates
+    if (targetId === 'leaderboard') {
+        loadLeaderboard();
+    }
+    if (targetId === 'withdraw') {
+        loadWithdrawalHistory();
+        document.getElementById('withdraw-balance').textContent = currentUserData.balance.toFixed(2);
+        document.getElementById('gcash-number').value = currentUserData.gcash_number || '';
+    }
+    if (targetId === 'admin-panel' && isAdmin) {
+        loadPendingWithdrawals();
+    }
 }
 
-// Initialize tab switching
-document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-        switchTab(tab.dataset.tab);
+// Attach navigation listeners
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+        const target = e.target.getAttribute('data-target');
+        if (target) {
+            switchContent(target);
+        }
     });
 });
 
-// --- FIREBASE AUTH & USER MANAGEMENT ---
-
 /**
- * Simple login/registration using username as a unique identifier (UID).
+ * Toggles between Login and Register forms.
+ * @param {boolean} showLogin 
  */
-async function loginOrRegister() {
-    const usernameInput = document.getElementById('auth-username').value.trim();
-    if (!usernameInput) {
-        alert("Please enter a username.");
+function toggleAuth(showLogin) {
+    document.getElementById('login-form').classList.toggle('hidden', !showLogin);
+    document.getElementById('register-form').classList.toggle('hidden', showLogin);
+}
+
+// --- AUTHENTICATION ---
+
+auth.onAuthStateChanged(user => {
+    if (user) {
+        currentUserId = user.uid;
+        document.getElementById('auth-section').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        loadUserData(user.uid);
+        setupChatListener();
+    } else {
+        currentUserId = null;
+        currentUserData = null;
+        isAdmin = false;
+        document.getElementById('auth-section').classList.remove('hidden');
+        document.getElementById('main-app').classList.add('hidden');
+        document.getElementById('admin-nav').style.display = 'none';
+    }
+});
+
+async function registerUser() {
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+    const username = document.getElementById('register-username').value;
+    const gcash = document.getElementById('register-gcash').value;
+
+    if (!email || !password || !username || !gcash) {
+        alert("Please fill all fields.");
         return;
     }
 
-    // Use a simplified UID based on the username for this example
-    const uid = btoa(usernameInput).replace(/=/g, ''); 
-
-    const userRef = ref(db, 'users/' + uid);
-    currentUserId = uid;
-    currentUser = usernameInput;
-
     try {
-        const snapshot = await get(userRef);
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const uid = userCredential.user.uid;
 
-        if (snapshot.exists()) {
-            // Login
-            console.log("User logged in:", usernameInput);
-        } else {
-            // Register
-            await set(userRef, {
-                username: usernameInput,
-                balance: 0.00,
-                totalEarned: 0.00,
-                gcashNumber: ""
-            });
-            console.log("User registered:", usernameInput);
-        }
-
-        // Setup UI and listeners
-        document.getElementById('auth-section').classList.add('hidden');
-        document.getElementById('main-app').classList.remove('hidden');
-        
-        // Start listening to user data and chat
-        listenToUserData(uid);
-        listenToChat();
-        listenToLeaderboard();
-        listenToWithdrawalHistory(uid);
-
+        await db.ref('users/' + uid).set({
+            username: username,
+            gcash_number: gcash,
+            balance: 0.00,
+            ads_watched: 0,
+            is_admin: false
+        });
+        alert("Registration successful! Logging in...");
     } catch (error) {
-        console.error("Authentication error:", error);
-        alert("An error occurred during login/registration.");
+        alert("Registration failed: " + error.message);
     }
+}
+
+function loginUser() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+
+    auth.signInWithEmailAndPassword(email, password)
+        .catch(error => {
+            alert("Login failed: " + error.message);
+        });
+}
+
+function loginAdmin() {
+    // Simple way to trigger admin login form view
+    const adminEmail = prompt("Enter Admin Email:");
+    if (!adminEmail) return;
+    const adminPassword = prompt("Enter Admin Password:");
+    if (!adminPassword) return;
+
+    auth.signInWithEmailAndPassword(adminEmail, adminPassword)
+        .then(() => {
+            // Check if the user is actually an admin in the database
+            db.ref('users/' + auth.currentUser.uid).once('value', snapshot => {
+                if (snapshot.val() && snapshot.val().is_admin === true) {
+                    alert("Admin Login Successful!");
+                } else {
+                    alert("User is not registered as Admin. Logging out.");
+                    auth.signOut();
+                }
+            });
+        })
+        .catch(error => {
+            alert("Admin Login failed: " + error.message);
+        });
 }
 
 function logoutUser() {
-    currentUser = null;
-    currentUserId = null;
-    document.getElementById('auth-section').classList.remove('hidden');
-    document.getElementById('main-app').classList.add('hidden');
-    document.getElementById('admin-panel').classList.add('hidden');
-    document.getElementById('admin-login').classList.remove('hidden');
-    document.getElementById('auth-username').value = '';
-    alert("Logged out successfully.");
+    auth.signOut();
 }
 
-/**
- * Listens for real-time updates to the user's balance and profile.
- * @param {string} uid - The user's ID.
- */
-function listenToUserData(uid) {
-    const userRef = ref(db, 'users/' + uid);
-    onValue(userRef, (snapshot) => {
-        const userData = snapshot.val();
-        if (userData) {
-            document.getElementById('user-balance').textContent = userData.balance.toFixed(2);
-            document.getElementById('user-total-earned').textContent = userData.totalEarned.toFixed(2);
-            document.getElementById('gcash-number').value = userData.gcashNumber || '';
+// --- USER DATA MANAGEMENT ---
+
+function loadUserData(uid) {
+    db.ref('users/' + uid).on('value', (snapshot) => {
+        currentUserData = snapshot.val();
+        if (currentUserData) {
+            updateDashboardUI();
         }
     });
 }
 
-// --- MONETAG AD INTEGRATION ---
+function updateDashboardUI() {
+    document.getElementById('user-balance').textContent = currentUserData.balance.toFixed(2);
+    document.getElementById('ads-watched-count').textContent = currentUserData.ads_watched;
+    
+    // Check for Admin status
+    isAdmin = currentUserData.is_admin || false;
+    document.getElementById('admin-nav').style.display = isAdmin ? 'block' : 'none';
+}
+
+// --- MONETAG AD INTEGRATION & REWARDING ---
+
+function rewardUser() {
+    if (!currentUserId || !currentUserData) return;
+
+    const newBalance = currentUserData.balance + REWARD_PER_AD;
+    const newAdsWatched = currentUserData.ads_watched + 1;
+
+    // Update Firebase
+    db.ref('users/' + currentUserId).update({
+        balance: newBalance,
+        ads_watched: newAdsWatched
+    }).then(() => {
+        alert(`Success! You earned ₱${REWARD_PER_AD.toFixed(2)}. New Balance: ₱${newBalance.toFixed(2)}`);
+    }).catch(error => {
+        console.error("Failed to update user balance:", error);
+        alert("Error rewarding user. Please try again.");
+    });
+}
 
 function watchRewardedAd() {
-    if (!currentUserId) {
-        alert("Please log in first.");
-        return;
-    }
+    const watchButton = document.getElementById('watch-ad-btn');
+    watchButton.textContent = "Loading Ad...";
+    watchButton.classList.add('btn-disabled');
+    watchButton.disabled = true;
 
-    const adButton = document.getElementById('watch-ad-btn');
-    adButton.disabled = true;
-    adButton.textContent = "Loading Ad...";
-
-    // Rewarded Interstitial Ad Call
+    // Monetag Rewarded Interstitial Call
     show_10276123().then(() => {
-        // This block executes if the user successfully views the ad.
+        // This block executes when the user successfully watches the ad
         rewardUser();
-        adButton.textContent = "WATCH AD (0.01 PHP)";
-        adButton.disabled = false;
     }).catch(e => {
-        // This block executes if the ad fails to load or is closed early (depending on Monetag's exact implementation)
-        alert('Ad failed or was closed early. Please try again.');
-        adButton.textContent = "WATCH AD (0.01 PHP)";
-        adButton.disabled = false;
+        // This block executes if there's an error or the ad is closed prematurely (depending on Monetag's specific implementation)
+        console.error("Ad failed or closed:", e);
+        alert("Ad failed or was closed. Please try again.");
+    }).finally(() => {
+        // Re-enable the button regardless of the outcome
+        watchButton.textContent = "WATCH AD & EARN ₱0.01";
+        watchButton.classList.remove('btn-disabled');
+        watchButton.disabled = false;
     });
 }
 
-/**
- * Rewards the user by updating their balance in Firebase.
- */
-async function rewardUser() {
-    if (!currentUserId) return;
+// --- WITHDRAWAL LOGIC ---
 
-    const userRef = ref(db, 'users/' + currentUserId);
-
-    try {
-        const snapshot = await get(userRef);
-        if (snapshot.exists()) {
-            const userData = snapshot.val();
-            const newBalance = (userData.balance || 0) + REWARD_PER_AD;
-            const newTotalEarned = (userData.totalEarned || 0) + REWARD_PER_AD;
-
-            await update(userRef, {
-                balance: parseFloat(newBalance.toFixed(2)),
-                totalEarned: parseFloat(newTotalEarned.toFixed(2))
-            });
-            alert(`Success! You earned ${REWARD_PER_AD.toFixed(2)} PHP!`);
-        }
-    } catch (error) {
-        console.error("Error rewarding user:", error);
-        alert("Failed to reward user due to a database error.");
-    }
-}
-
-// --- WITHDRAWAL SYSTEM ---
-
-async function submitWithdrawal() {
-    if (!currentUserId) return alert("Please log in.");
+function submitWithdrawal() {
+    if (!currentUserData) return;
 
     const amount = parseFloat(document.getElementById('withdraw-amount').value);
-    const gcashNumber = document.getElementById('gcash-number').value.trim();
-    const balance = parseFloat(document.getElementById('user-balance').textContent);
+    const gcash = document.getElementById('gcash-number').value;
+    const currentBalance = currentUserData.balance;
 
-    if (isNaN(amount) || amount < MIN_WITHDRAW) {
-        return alert(`Minimum withdrawal amount is ${MIN_WITHDRAW.toFixed(2)} PHP.`);
+    if (isNaN(amount) || amount < MIN_WITHDRAWAL) {
+        alert(`Minimum withdrawal is ₱${MIN_WITHDRAWAL.toFixed(2)}.`);
+        return;
     }
-    if (amount > balance) {
-        return alert("Insufficient balance.");
+    if (amount > currentBalance) {
+        alert("Insufficient balance.");
+        return;
     }
-    if (!gcashNumber || gcashNumber.length < 10) {
-        return alert("Please enter a valid GCash number.");
-    }
-
-    if (!confirm(`Confirm withdrawal of ${amount.toFixed(2)} PHP to GCash: ${gcashNumber}?`)) {
+    if (!gcash || gcash.length !== 11 || !gcash.startsWith('09')) {
+        alert("Please enter a valid 11-digit GCash number (starting with 09).");
         return;
     }
 
-    try {
-        const userRef = ref(db, 'users/' + currentUserId);
-        const withdrawRef = push(ref(db, 'withdrawRequests'));
-
-        // 1. Deduct balance immediately
-        const newBalance = balance - amount;
-        await update(userRef, {
-            balance: parseFloat(newBalance.toFixed(2)),
-            gcashNumber: gcashNumber // Save GCash number
-        });
-
-        // 2. Create withdrawal request
-        await set(withdrawRef, {
-            userId: currentUserId,
-            username: currentUser,
-            amount: amount,
-            gcashNumber: gcashNumber,
-            timestamp: serverTimestamp(),
-            status: "Pending"
-        });
-
-        document.getElementById('withdraw-status').textContent = "Withdrawal request submitted successfully! Pending admin approval.";
-        document.getElementById('withdraw-amount').value = '';
-
-    } catch (error) {
-        console.error("Withdrawal error:", error);
-        // If database error, attempt to revert balance
-        alert("Withdrawal failed due to a server error. Please contact support.");
+    if (!confirm(`Confirm withdrawal of ₱${amount.toFixed(2)} to GCash ${gcash}?`)) {
+        return;
     }
+
+    const newBalance = currentBalance - amount;
+    const withdrawalRef = db.ref('withdrawals').push();
+
+    // 1. Create the withdrawal request
+    withdrawalRef.set({
+        userId: currentUserId,
+        username: currentUserData.username,
+        amount: amount,
+        gcash_number: gcash,
+        status: 'Pending',
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+        // 2. Deduct the balance
+        return db.ref('users/' + currentUserId).update({
+            balance: newBalance
+        });
+    }).then(() => {
+        alert("Withdrawal request submitted successfully! Please wait for admin processing.");
+        document.getElementById('withdraw-amount').value = '';
+    }).catch(error => {
+        console.error("Withdrawal failed:", error);
+        alert("Error submitting withdrawal. Please try again.");
+    });
 }
 
-/**
- * Listens to the user's withdrawal history.
- */
-function listenToWithdrawalHistory(uid) {
-    const historyRef = query(ref(db, 'withdrawRequests'), orderByChild('userId'), equalTo(uid));
-    
-    // Note: Firebase 9 requires `equalTo` if you use `orderByChild`
-    // Since we are using simple onValue here, we will filter manually or rely on admin rules for security.
-    
-    // For simplicity, we read all and filter client-side (less secure, but easier for this example)
-    const allRequestsRef = ref(db, 'withdrawRequests');
+function loadWithdrawalHistory() {
+    const historyList = document.getElementById('withdrawal-history');
+    historyList.innerHTML = '<li>Loading history...</li>';
 
-    onValue(allRequestsRef, (snapshot) => {
-        const historyDiv = document.getElementById('withdrawal-history');
-        historyDiv.innerHTML = '';
-        let found = false;
+    db.ref('withdrawals').orderByChild('userId').equalTo(currentUserId).limitToLast(10).on('value', snapshot => {
+        historyList.innerHTML = '';
+        if (!snapshot.exists()) {
+            historyList.innerHTML = '<li>No withdrawal history found.</li>';
+            return;
+        }
 
         snapshot.forEach(childSnapshot => {
             const req = childSnapshot.val();
-            if (req.userId === uid) {
-                found = true;
-                const statusColor = req.status === 'Completed' ? 'green' : (req.status === 'Rejected' ? 'red' : 'orange');
-                const item = document.createElement('p');
-                item.innerHTML = `
-                    Amount: <strong>${req.amount.toFixed(2)} PHP</strong> | GCash: ${req.gcashNumber} <br>
-                    Status: <strong style="color: ${statusColor}">${req.status}</strong>
-                `;
-                historyDiv.appendChild(item);
-            }
-        });
+            const li = document.createElement('li');
+            li.className = 'leaderboard-item';
+            
+            let statusColor = 'yellow';
+            if (req.status === 'Completed') statusColor = '#4CAF50';
+            if (req.status === 'Rejected') statusColor = 'red';
 
-        if (!found) {
-            historyDiv.innerHTML = '<p>No withdrawal history found.</p>';
-        }
+            li.innerHTML = `
+                <span>₱${req.amount.toFixed(2)}</span>
+                <span style="color: ${statusColor};">${req.status}</span>
+            `;
+            historyList.prepend(li); // Show newest first
+        });
     });
 }
 
+// --- CHAT ROOM LOGIC ---
 
-// --- CHAT ROOM ---
+function setupChatListener() {
+    const chatMessages = document.getElementById('chat-messages');
+    
+    // Listen for new messages
+    db.ref('chat').limitToLast(50).on('child_added', (snapshot) => {
+        const message = snapshot.val();
+        const msgElement = document.createElement('div');
+        msgElement.className = 'chat-message';
+        
+        const time = new Date(message.timestamp).toLocaleTimeString();
+        
+        msgElement.innerHTML = `
+            <span class="chat-user">${message.user} (${time}):</span>
+            <span>${message.message}</span>
+        `;
+        chatMessages.appendChild(msgElement);
+        chatMessages.scrollTop = chatMessages.scrollHeight; // Auto scroll to bottom
+    });
+}
 
 function sendMessage() {
     const chatInput = document.getElementById('chat-input');
-    const message = chatInput.value.trim();
+    const messageText = chatInput.value.trim();
 
-    if (!currentUser || !message) return;
+    if (!messageText || !currentUserData) return;
 
-    const chatRef = push(ref(db, 'chat'));
-    set(chatRef, {
-        username: currentUser,
-        message: message,
-        timestamp: serverTimestamp()
-    });
-
-    chatInput.value = '';
-}
-
-function listenToChat() {
-    // Query the last 50 messages, ordered by timestamp
-    const chatQuery = query(ref(db, 'chat'), orderByChild('timestamp'), limitToLast(50));
-    const chatWindow = document.getElementById('chat-window');
-
-    onValue(chatQuery, (snapshot) => {
-        chatWindow.innerHTML = '';
-        snapshot.forEach(childSnapshot => {
-            const msg = childSnapshot.val();
-            const messageElement = document.createElement('div');
-            messageElement.classList.add('chat-message');
-            
-            const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '...';
-            
-            messageElement.innerHTML = `
-                <span class="chat-user">[${time}] ${msg.username}:</span> ${msg.message}
-            `;
-            chatWindow.appendChild(messageElement);
-        });
-        // Scroll to the bottom
-        chatWindow.scrollTop = chatWindow.scrollHeight;
+    db.ref('chat').push().set({
+        user: currentUserData.username || 'Anonymous',
+        message: messageText,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    }).then(() => {
+        chatInput.value = '';
+    }).catch(error => {
+        alert("Failed to send message: " + error.message);
     });
 }
 
-// --- LEADERBOARD ---
+// --- LEADERBOARD LOGIC ---
 
-function listenToLeaderboard() {
-    // Query top 10 users based on totalEarned
-    const leaderboardQuery = query(ref(db, 'users'), orderByChild('totalEarned'), limitToLast(10));
+function loadLeaderboard() {
     const leaderboardList = document.getElementById('leaderboard-list');
+    leaderboardList.innerHTML = '<li>Loading top earners...</li>';
 
-    onValue(leaderboardQuery, (snapshot) => {
+    // Query users ordered by ads_watched descending
+    db.ref('users').orderByChild('ads_watched').limitToLast(10).once('value', snapshot => {
         const users = [];
         snapshot.forEach(childSnapshot => {
             users.push(childSnapshot.val());
         });
 
-        // Reverse the array to show highest earners first
+        // Reverse the array to show highest first
         users.reverse();
-        leaderboardList.innerHTML = '';
 
+        leaderboardList.innerHTML = '';
         users.forEach((user, index) => {
-            const item = document.createElement('div');
-            item.classList.add('leaderboard-item');
-            item.innerHTML = `
-                <span class="rank">#${index + 1}</span>
-                <span class="name">${user.username}</span>
-                <span class="score">${user.totalEarned.toFixed(2)} PHP</span>
+            const li = document.createElement('li');
+            li.className = 'leaderboard-item';
+            li.innerHTML = `
+                <span>#${index + 1} ${user.username}</span>
+                <span>${user.ads_watched} Ads Watched</span>
             `;
-            leaderboardList.appendChild(item);
+            leaderboardList.appendChild(li);
         });
+    }).catch(error => {
+        leaderboardList.innerHTML = '<li>Error loading leaderboard.</li>';
+        console.error("Leaderboard error:", error);
     });
 }
 
-// --- ADMIN PANEL ---
+// --- ADMIN PANEL LOGIC ---
 
-function adminLogin() {
-    const password = document.getElementById('admin-password').value;
-    if (password === ADMIN_PASSWORD) {
-        document.getElementById('admin-login').classList.add('hidden');
-        document.getElementById('admin-panel').classList.remove('hidden');
-        listenToWithdrawalRequests();
-        alert("Admin access granted.");
+function authenticateAdmin() {
+    const passwordInput = document.getElementById('admin-password-input').value;
+    if (passwordInput === ADMIN_PASSWORD && isAdmin) {
+        document.getElementById('admin-login-form').classList.add('hidden');
+        document.getElementById('admin-content').classList.remove('hidden');
+        loadPendingWithdrawals();
     } else {
-        alert("Incorrect Admin Password.");
+        alert("Invalid Admin Password or you are not an authorized admin user.");
     }
 }
 
-function listenToWithdrawalRequests() {
-    const requestsRef = ref(db, 'withdrawRequests');
-    const pendingRequestsDiv = document.getElementById('pending-requests');
+function loadPendingWithdrawals() {
+    const list = document.getElementById('pending-withdrawals-list');
+    list.innerHTML = '<li>Loading pending requests...</li>';
 
-    onValue(requestsRef, (snapshot) => {
-        pendingRequestsDiv.innerHTML = '';
-        let foundPending = false;
+    db.ref('withdrawals').orderByChild('status').equalTo('Pending').on('value', snapshot => {
+        list.innerHTML = '';
+        if (!snapshot.exists()) {
+            list.innerHTML = '<li>No pending withdrawals.</li>';
+            return;
+        }
 
         snapshot.forEach(childSnapshot => {
-            const req = childSnapshot.val();
             const reqId = childSnapshot.key;
-
-            if (req.status === 'Pending') {
-                foundPending = true;
-                const item = document.createElement('div');
-                item.classList.add('request-item');
-                item.innerHTML = `
-                    <p><strong>User:</strong> ${req.username} (ID: ${req.userId})</p>
-                    <p><strong>Amount:</strong> ${req.amount.toFixed(2)} PHP</p>
-                    <p><strong>GCash:</strong> ${req.gcashNumber}</p>
-                    <button class="btn-success" onclick="processWithdrawal('${reqId}', '${req.userId}', ${req.amount}, 'Completed')">Mark Paid</button>
-                    <button class="btn-danger" onclick="processWithdrawal('${reqId}', '${req.userId}', ${req.amount}, 'Rejected')">Reject & Refund</button>
-                `;
-                pendingRequestsDiv.appendChild(item);
-            }
+            const req = childSnapshot.val();
+            const date = new Date(req.timestamp).toLocaleString();
+            
+            const li = document.createElement('li');
+            li.className = 'leaderboard-item';
+            li.style.flexDirection = 'column';
+            li.innerHTML = `
+                <strong>User: ${req.username} (ID: ${req.userId.substring(0, 5)}...)</strong>
+                <p>Amount: ₱${req.amount.toFixed(2)} | GCash: ${req.gcash_number}</p>
+                <small>Requested: ${date}</small>
+                <div style="margin-top: 10px;">
+                    <button style="background: #4CAF50; color: white; border: none; padding: 5px 10px; margin-right: 5px; cursor: pointer;" 
+                        onclick="updateWithdrawalStatus('${reqId}', 'Completed')">Complete</button>
+                    <button style="background: red; color: white; border: none; padding: 5px 10px; cursor: pointer;"
+                        onclick="updateWithdrawalStatus('${reqId}', 'Rejected')">Reject</button>
+                </div>
+            `;
+            list.appendChild(li);
         });
-
-        if (!foundPending) {
-            pendingRequestsDiv.innerHTML = '<p>No pending withdrawal requests.</p>';
-        }
     });
 }
 
-async function processWithdrawal(reqId, userId, amount, status) {
-    const requestRef = ref(db, 'withdrawRequests/' + reqId);
-    const userRef = ref(db, 'users/' + userId);
+function updateWithdrawalStatus(requestId, status) {
+    if (!isAdmin) {
+        alert("Access denied.");
+        return;
+    }
 
-    try {
-        if (status === 'Rejected') {
-            // Refund the user's balance
-            const userSnapshot = await get(userRef);
-            if (userSnapshot.exists()) {
-                const userData = userSnapshot.val();
-                const newBalance = (userData.balance || 0) + amount;
-                await update(userRef, { balance: parseFloat(newBalance.toFixed(2)) });
-                alert(`Request rejected. ${amount.toFixed(2)} PHP refunded to ${userData.username}.`);
-            }
-        }
-        
-        // Update the request status
-        await update(requestRef, {
+    if (confirm(`Are you sure you want to mark request ${requestId} as ${status}?`)) {
+        db.ref('withdrawals/' + requestId).update({
             status: status,
-            processedBy: 'Admin',
-            processedAt: serverTimestamp()
+            processed_by: currentUserId,
+            processed_timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            alert(`Request ${requestId} marked as ${status}.`);
+        }).catch(error => {
+            alert("Failed to update status: " + error.message);
         });
-
-        alert(`Request ${reqId} marked as ${status}.`);
-
-    } catch (error) {
-        console.error("Processing error:", error);
-        alert("Failed to process request due to a database error.");
     }
 }
-
-// Ensure global functions are available
-window.loginOrRegister = loginOrRegister;
-window.watchRewardedAd = watchRewardedAd;
-window.submitWithdrawal = submitWithdrawal;
-window.sendMessage = sendMessage;
-window.adminLogin = adminLogin;
-window.processWithdrawal = processWithdrawal;
-window.logoutUser = logoutUser;

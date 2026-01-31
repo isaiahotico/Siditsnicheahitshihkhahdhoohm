@@ -1,334 +1,262 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎖🤑PAPERHOUSE INC ADS🤑</title>
+    <title>🎖🤑PAPERHOUSE INC ADS🤑Gcash</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #ff4d4d; /* GCash Red/Pink */
-            --secondary-color: #333;
-            --background-color: #f0f2f5;
-            --card-color: #ffffff;
-            --success-color: #4CAF50;
-        }
+        /* Basic Reset and Styling */
         body {
             font-family: 'Poppins', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: var(--background-color);
-            color: var(--secondary-color);
+            background: linear-gradient(135deg, #000000 0%, #1a1a2e 100%);
+            color: #fff;
             overflow-x: hidden;
         }
-        header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
         .container {
-            max-width: 600px;
+            max-width: 400px;
             margin: 0 auto;
             padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            min-height: 100vh;
+            position: relative;
         }
-        /* Sliding Bar Navigation */
-        .tab-bar {
+
+        /* Header and Title */
+        h1 {
+            text-align: center;
+            color: #ffcc00;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            text-shadow: 0 0 5px #ff6600;
+        }
+
+        /* Navigation (Sliding Bar Concept) */
+        .nav-bar {
             display: flex;
             justify-content: space-around;
-            background-color: var(--card-color);
-            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+            background-color: #1f1f3a;
+            border-radius: 15px;
+            padding: 5px;
+            margin-bottom: 20px;
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 100;
         }
-        .tab {
+        .nav-item {
             flex-grow: 1;
             text-align: center;
-            padding: 15px 0;
+            padding: 10px 0;
             cursor: pointer;
-            font-weight: 700;
-            color: var(--secondary-color);
+            color: #aaa;
             transition: all 0.3s ease;
-            border-bottom: 3px solid transparent;
+            font-weight: bold;
         }
-        .tab.active {
-            color: var(--primary-color);
-            border-bottom: 3px solid var(--primary-color);
+        .nav-item.active {
+            background-color: #ffcc00;
+            color: #000;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #ffcc00;
         }
+
+        /* Content Sections */
         .content-section {
             display: none;
-            padding: 20px 0;
+            padding: 15px;
+            background-color: #1f1f3a;
+            border-radius: 15px;
+            margin-top: 15px;
         }
         .content-section.active {
             display: block;
         }
-        /* UI Components */
-        .card {
-            background-color: var(--card-color);
-            border-radius: 12px;
+
+        /* Dashboard/Balance */
+        .balance-card {
+            background: #2a2a44;
             padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-        }
-        .balance-display {
+            border-radius: 15px;
             text-align: center;
             margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
-        .balance-display h2 {
-            margin: 0;
-            font-size: 1.2em;
+        .balance-card h2 {
+            color: #ffcc00;
+            margin-top: 0;
+        }        .leaderboard-item:nth-child(1) { background: gold; color: black; }
+        .leaderboard-item:nth-child(2) { background: silver; color: black; }
+        .leaderboard-item:nth-child(3) { background: #cd7f32; color: black; }
 
-            color: #666;
+        /* Withdrawal Form */
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ffcc00;
         }
-        .balance-display p {
-            font-size: 3em;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin: 5px 0 0 0;
-        }
-        button {
+        .input-group input {
             width: 100%;
-            padding: 15px;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
             border: none;
-            border-radius: 8px;
-            font-size: 1.1em;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin-top: 10px;
+            background: #3a3a55;
+            color: #fff;
         }
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
+        .min-withdraw-info {
+            font-size: 0.9em;
+            color: #4CAF50;
+            margin-top: -10px;
+            margin-bottom: 15px;
         }
-        .btn-primary:hover {
-            background-color: #e63939;
-        }
-        input[type="text"], input[type="number"], input[type="password"] {
-            width: calc(100% - 22px);
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            box-sizing: border-box;
-        }
-        /* Chat Styling */
-        #chat-window {
-            height: 300px;
-            overflow-y: scroll;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 10px;
-            background-color: #f9f9f9;
-            margin-bottom: 10px;
-        }
-        .chat-message {
-            margin-bottom: 8px;
-            line-height: 1.4;
-        }
-        .chat-user {
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-right: 5px;
-        }
-        /* Leaderboard Styling */
-        .leaderboard-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .leaderboard-item:last-child {
-            border-bottom: none;
-        }
-        .rank {
-            font-weight: 700;
-            width: 30px;
+
+        /* Authentication Forms */
+        #auth-section {
             text-align: center;
         }
-        .name {
-            flex-grow: 1;
-        }
-        .score {
-            font-weight: 700;
-            color: var(--success-color);
-        }
-        /* Admin Panel */
-        #admin-panel {
-            border-top: 2px solid var(--primary-color);
-            margin-top: 20px;
-            padding-top: 15px;
-        }
-        .request-item {
-            background-color: #fff3e0;
-            padding: 10px;
-            border-radius: 6px;
+        #auth-section input {
             margin-bottom: 10px;
-            border-left: 5px solid orange;
         }
-        .request-item button {
-            width: auto;
-            padding: 5px 10px;
-            margin-left: 5px;
-            font-size: 0.9em;
+        .toggle-auth {
+            color: #ffcc00;
+            cursor: pointer;
+            margin-top: 10px;
+            display: block;
         }
-        .btn-success { background-color: var(--success-color); color: white; }
-        .btn-danger { background-color: #f44336; color: white; }
-        .hidden { display: none !important; }
+        .hidden { display: none; }
     </style>
-    <!-- Monetag SDK -->
-    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
 </head>
 <body>
 
-    <header>
-        <h1>🎖🤑PAPERHOUSE INC ADS🤑</h1>
-    </header>
-
     <div class="container">
-        
+        <h1>🎖🤑PAPERHOUSE INC ADS🤑</h1>
+
         <!-- Authentication Section (Initial View) -->
         <div id="auth-section">
-            <div class="card">
-                <h2>Welcome!</h2>
-                <input type="text" id="auth-username" placeholder="Enter Username">
-                <button class="btn-primary" onclick="loginOrRegister()">Start Earning</button>
-                <p style="text-align: center; margin-top: 15px; font-size: 0.9em;">
-                    By clicking, you agree to the terms and create an account.
-                </p>
+            <h2>Welcome!</h2>
+            <div id="login-form">
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button class="btn btn-primary" onclick="loginUser()">Login</button>
+                <span class="toggle-auth" onclick="toggleAuth(false)">Need an account? Register</span>
+                <span class="toggle-auth" onclick="loginAdmin()">Login as Admin</span>
+            </div>
+            <div id="register-form" class="hidden">
+                <input type="text" id="register-username" placeholder="Username" required>
+                <input type="email" id="register-email" placeholder="Email" required>
+                <input type="password" id="register-password" placeholder="Password" required>
+                <input type="tel" id="register-gcash" placeholder="GCash Number (09xxxxxxxxx)" required>
+                <button class="btn btn-primary" onclick="registerUser()">Register</button>
+                <span class="toggle-auth" onclick="toggleAuth(true)">Already have an account? Login</span>
             </div>
         </div>
 
-        <!-- Main App Section -->
+        <!-- Main App Content (Hidden until login) -->
         <div id="main-app" class="hidden">
             
-            <div class="tab-bar">
-                <div class="tab active" data-tab="earn">Earn</div>
-
-<div class="tab" data-tab="withdraw">Withdraw</div>
-                <div class="tab" data-tab="chat">Chat</div>
-                <div class="tab" data-tab="leaderboard">Leaderboard</div>
+            <!-- Navigation Bar -->
+            <div class="nav-bar">
+                <div class="nav-item active" data-target="dashboard">Ads</div>
+                <div class="nav-item" data-target="withdraw">Withdraw</div>
+                <div class="nav-item" data-target="chat">Chat</div>
+                <div class="nav-item" data-target="leaderboard">Top</div>
+                <div class="nav-item" data-target="admin-panel" id="admin-nav" style="display:none;">Admin</div>
             </div>
 
-            <!-- 1. Earn Section -->
-            <div id="earn" class="content-section active">
-                <div class="card balance-display">
-                    <h2>Current Balance (PHP)</h2>
-                    <p id="user-balance">0.00</p>
-                    <small>Total Earned: <span id="user-total-earned">0.00</span> PHP</small>
+            <!-- Dashboard/Ads Section -->
+            <div id="dashboard" class="content-section active">
+                <div class="balance-card">
+                    <h2>Your Balance</h2>
+                    <p>₱<span id="user-balance">0.00</span></p>
+                    <p class="reward-info">Reward per Ad: ₱0.01</p>
+                    <p class="reward-info">Ads Watched: <span id="ads-watched-count">0</span></p>
                 </div>
-
-                <div class="card">
-                    <h3>Watch Ad & Earn</h3>
-                    <p>Click the button below to watch a rewarded ad. You will earn <strong>0.01 PHP</strong> per successful view.</p>
-                    <button class="btn-primary" id="watch-ad-btn" onclick="watchRewardedAd()">WATCH AD (0.01 PHP)</button>
-                </div>
+                
+                <button class="btn btn-primary" id="watch-ad-btn" onclick="watchRewardedAd()">
+                    WATCH AD & EARN ₱0.01
+                </button>
+                <button class="btn btn-primary" onclick="logoutUser()">Logout</button>
             </div>
 
-            <!-- 2. Withdraw Section -->
+            <!-- Withdrawal Section -->
             <div id="withdraw" class="content-section">
-                <div class="card">
-                    <h3>Withdraw GCash</h3>
-                    <p>Minimum Withdrawal: <strong>0.02 PHP</strong></p>
-                    <p id="withdraw-status" style="color: var(--primary-color); font-weight: bold;"></p>
-
-                    <label for="gcash-number">GCash Number:</label>
-                    <input type="number" id="gcash-number" placeholder="e.g., 0917xxxxxxx">
-                    
-                    <label for="withdraw-amount">Amount to Withdraw (PHP):</label>
-                    <input type="number" id="withdraw-amount" placeholder="Minimum 0.02">
-                    
-                    <button class="btn-primary" onclick="submitWithdrawal()">Submit Withdrawal Request</button>
+                <h2>GCash Withdrawal</h2>
+                <div class="balance-card">
+                    <p>Current Balance: ₱<span id="withdraw-balance">0.00</span></p>
                 </div>
-
-                <div class="card">
-                    <h3>My Withdrawal History</h3>
-                    <div id="withdrawal-history">No history yet.</div>
+                <div class="min-withdraw-info">
+                    Minimum Withdrawal: ₱0.02
                 </div>
+                
+                <div class="input-group">
+                    <label for="withdraw-amount">Amount to Withdraw (₱)</label>
+                    <input type="number" id="withdraw-amount" min="0.02" step="0.01" placeholder="e.g., 0.05">
+                </div>
+                <div class="input-group">
+                    <label for="gcash-number">GCash Number</label>
+                    <input type="tel" id="gcash-number" placeholder="09xxxxxxxxx" readonly>
+                </div>
+                
+                <button class="btn btn-primary" id="submit-withdraw-btn" onclick="submitWithdrawal()">
+                    Submit Withdrawal Request
+                </button>
+                
+                <h3 style="margin-top: 20px;">Your Requests</h3>
+                <ul id="withdrawal-history" style="list-style: none; padding: 0;">
+                    <!-- Withdrawal history will be loaded here -->
+                </ul>
             </div>
 
-            <!-- 3. Chat Room Section -->
+            <!-- Chat Room Section -->
             <div id="chat" class="content-section">
-                <div class="card">
-                    <h3>Live Chat Room</h3>
-                    <div id="chat-window">
-                        <!-- Messages will be injected here -->
-                    </div>
+                <h2>Global Chat Room</h2>
+                <div id="chat-messages">
+                    <!-- Messages will be loaded here -->
+                </div>
+                <div style="display: flex;">
                     <input type="text" id="chat-input" placeholder="Type your message...">
-                    <button class="btn-primary" onclick="sendMessage()">Send</button>
+                    <button id="send-chat-btn" onclick="sendMessage()">Send</button>
                 </div>
             </div>
 
-            <!-- 4. Leaderboard Section -->
+            <!-- Leaderboard Section -->
             <div id="leaderboard" class="content-section">
-                <div class="card">
-                    <h3>Top Earners (Total Earned)</h3>
-                    <div id="leaderboard-list">
-                        <p>Loading leaderboard...</p>
-                    </div>
-                </div>
+                <h2>Top Earners (Ads Watched)</h2>
+                <ul id="leaderboard-list">
+                    <!-- Leaderboard items will be loaded here -->
+                </ul>
             </div>
 
-            <!-- 5. Admin Panel (Hidden by default) -->
-            <div id="admin-login" class="card">
-                <h3>Admin Login</h3>
-                <input type="password" id="admin-password" placeholder="Admin Password">
-                <button onclick="adminLogin()">Login as Admin</button>
-            </div>
-
-            <div id="admin-panel" class="card hidden">
-                <h3>Admin Dashboard</h3>
-                <p>Pending Withdrawal Requests:</p>
-                <div id="pending-requests">
-                    No pending requests.
+            <!-- Admin Panel (Hidden by default) -->
+            <div id="admin-panel" class="content-section" style="display:none;">
+                <h2>Admin Dashboard</h2>
+                <div id="admin-login-form">
+                    <input type="password" id="admin-password-input" placeholder="Admin Password">
+                    <button class="btn btn-primary" onclick="authenticateAdmin()">Unlock Admin Panel</button>
                 </div>
-                <button onclick="logoutUser()" class="btn-danger">Logout</button>
+
+                <div id="admin-content" class="hidden">
+                    <h3>Pending Withdrawals</h3>
+                    <ul id="pending-withdrawals-list" style="list-style: none; padding: 0;">
+                        <!-- Pending requests loaded here -->
+                    </ul>
+                </div>
             </div>
 
         </div>
-
     </div>
 
+    <!-- Monetag SDK Script -->
+    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
+
     <!-- Firebase SDKs -->
-    <script type="module">
-        // Import the functions you need fr
-
-om the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getDatabase, ref, onValue, set, push, serverTimestamp, update, query, limitToLast, orderByChild, get } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
-
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
-            authDomain: "freegcash-ads.firebaseapp.com",
-            databaseURL: "https://freegcash-ads-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "freegcash-ads",
-            storageBucket: "freegcash-ads.firebasestorage.app",
-            messagingSenderId: "608086825364",
-            appId: "1:608086825364:web:3a8e628d231b52c6171781",
-            measurementId: "G-Z64B87ELGP"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        // Expose Firebase functions to global scope for use in app.js
-        window.db = db;
-        window.ref = ref;
-        window.onValue = onValue;
-        window.set = set;
-        window.push = push;
-        window.serverTimestamp = serverTimestamp;
-        window.update = update;
-        window.query = query;
-        window.limitToLast = limitToLast;
-        window.orderByChild = orderByChild;
-        window.get = get;
-    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics-compat.js"></script>
+    
+    <!-- Custom Application Logic -->
     <script src="app.js"></script>
 </body>
 </html>

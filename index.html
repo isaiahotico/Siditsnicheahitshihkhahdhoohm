@@ -1,20 +1,16 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
-    <link rel="stylesheet" href="style.css"> <!-- For basic styling -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics-compat.js"></script>
-
-    <!-- Popunder Adsterra -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Adsterra Popunder Script (place early in head or body) -->
     <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
+    <!-- Adsterra Banner Ad Configuration -->
     <script>
-        // Adsterra Banner (will be dynamically added, but keeping the script here)
-        var atOptions = {
+        atOptions = {
             'key' : 'fe70943384c0314737bd62c05e3d520a',
             'format' : 'iframe',
             'height' : 300,
@@ -22,43 +18,53 @@
             'params' : {}
         };
     </script>
-    <script src="https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js"></script>
-    <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
-
 </head>
 <body>
-    <div class="app-container">
+    <div class="container">
         <h1>🎖🤑PAPERHOUSE INC ADS🤑🎖</h1>
 
+        <!-- User Authentication Section -->
         <div id="auth-section">
-            <h2>Login / Register (Telegram Username)</h2>
-            <input type="text" id="telegram-username" placeholder="Your Telegram Username">
+            <input type="text" id="telegram-username-input" placeholder="Enter Telegram Username">
             <button id="login-btn">Login / Register</button>
             <p id="auth-status"></p>
         </div>
 
-        <div id="main-app" style="display:none;">
-            <p>Welcome, <span id="display-username"></span>! Your Balance: ₱<span id="user-balance">0.00</span></p>
+        <!-- Main App Content (visible after login) -->
+        <div id="app-content" style="display: none;">
+            <p>Welcome, <span id="display-telegram-username"></span>! Your Balance: ₱<span id="user-balance">0.00</span></p>
 
             <div class="ad-section">
-                <h2>Click Ads & Earn!</h2>
-                <div id="ad-buttons-container">
-                    <!-- Ad buttons will be dynamically added here by app.js -->
+                <h2>Click Ads to Earn!</h2>
+                <div class="ad-buttons">
+                    <button class="ad-button" data-ad-id="ad1" data-smartlink="https://www.effectivegatecpm.com/mwbmp8yxc?key=9ce01dec19ec86d0fbabe111b4439981">Ad 1</button>
+                    <button class="ad-button" data-ad-id="ad2" data-smartlink="https://www.effectivegatecpm.com/iefwgzfy8w?key=ef8a98a84b67232d3808db269675011c">Ad 2</button>
+                    <button class="ad-button" data-ad-id="ad3" data-smartlink="https://www.effectivegatecpm.com/hebhpc3tcm?key=e18e0c3b11bce2e7a0d722f6ac554232">Ad 4</button>
+                    <button class="ad-button" data-ad-id="ad4" data-smartlink="https://www.effectivegatecpm.com/ai7csj41?key=7e287f34b34183342aa072ceeccb42cf">Ad 4</button>
+                    <!-- Add more buttons as needed -->
                 </div>
+                <p id="ad-message"></p>
+            </div>
+
+            <!-- Adsterra Banner Ad -->
+            <div class="adsterra-banner">
+                <h2>Sponsored Content</h2>
+
+                <script src="https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js"></script>
             </div>
 
             <div class="withdrawal-section">
                 <h2>Withdraw GCash</h2>
-                <p>Minimum Withdrawal: ₱0.02</p>
-                <input type="text" id="gcash-number" placeholder="GCash Number">
+                <input type="text" id="gcash-number-input" placeholder="Enter GCash Number">
+                <input type="number" id="withdrawal-amount-input" placeholder="Amount (min 0.02)" step="0.01">
                 <button id="request-withdrawal-btn">Request Withdrawal</button>
-                <p id="withdrawal-status"></p>
+                <p id="withdrawal-status-message"></p>
                 <h3>Your Withdrawal History:</h3>
-                <ul id="withdrawal-history"></ul>
+                <ul id="withdrawal-history-list"></ul>
             </div>
 
             <div class="chat-section">
-                <h2>Global Chat</h2>
+                <h2>Chat Room</h2>
                 <div id="chat-messages"></div>
                 <input type="text" id="chat-input" placeholder="Type your message...">
                 <button id="send-chat-btn">Send</button>
@@ -70,21 +76,55 @@
             </div>
         </div>
 
-        <div id="admin-dashboard" style="display:none;">
+        <!-- Admin Dashboard (hidden by default) -->
+        <div id="admin-dashboard" style="display: none;">
             <h2>Admin Dashboard</h2>
-            <input type="password" id="admin-password" placeholder="Admin Password">
-            <button id="admin-login-btn">Login as Admin</button>
-            <div id="admin-content" style="display:none;">
-                <h3>Pending Withdrawals</h3>
-                <ul id="pending-withdrawals"></ul>
+            <input type="password" id="admin-password-input" placeholder="Admin Password">
+            <button id="admin-login-btn">Login</button>
+            <p id="admin-login-status"></p>
+
+            <div id="admin-content" style="display: none;">
+                <h3>Withdrawal Requests</h3>
+                <ul id="admin-withdrawal-requests"></ul>
                 <h3>All Users</h3>
-                <ul id="all-users-list"></ul>
-                <h3>Chat Log</h3>
-                <div id="admin-chat-log"></div>
+                <ul id="admin-user-list"></ul>
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
+            authDomain: "freegcash-ads.firebaseapp.com",
+            databaseURL: "https://freegcash-ads-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "freegcash-ads",
+            storageBucket: "freegcash-ads.firebasestorage.app",
+            messagingSenderId: "608086825364",
+            appId: "1:608086825364:web:3a8e628d231b52c6171781",
+            measurementId: "G-Z64B87ELGP"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const db = getFirestore(app); // Firestore for user data, withdrawals, cooldowns
+        const rtdb = getDatabase(app); // Realtime Database for chat
+
+        // Pass Firebase instances to app.js
+        window.firebaseApp = app;
+        window.firebaseAuth = auth;
+        window.firebaseDb = db;
+        window.firebaseRtdb = rtdb;
+    </script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>

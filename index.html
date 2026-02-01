@@ -5,25 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
     <link rel="stylesheet" href="style.css"> <!-- For basic styling -->
-    <!-- Monetag Popunder -->
-    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
-    <script>
-        // In-App Interstitial - Adjust frequency, capping, etc., as per Monetag guidelines
-        show_10276123({
-            type: 'inApp',
-            inAppSettings: {
-                frequency: 2, // Show 2 ads
-                capping: 0.1, // within 0.1 hours (6 minutes)
-                interval: 30, // 30-second interval
-                timeout: 5, // 5-second delay before first
-                everyPage: false // Session persists across pages
-            }
-        });
-    </script>
-    <!-- Adsterra Popunder (from your provided code) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics-compat.js"></script>
+
+    <!-- Popunder Adsterra -->
     <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
     <script>
-        atOptions = {
+        // Adsterra Banner (will be dynamically added, but keeping the script here)
+        var atOptions = {
             'key' : 'fe70943384c0314737bd62c05e3d520a',
             'format' : 'iframe',
             'height' : 300,
@@ -33,69 +24,67 @@
     </script>
     <script src="https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js"></script>
     <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
+
 </head>
 <body>
-    <div class="container">
+    <div class="app-container">
         <h1>🎖🤑PAPERHOUSE INC ADS🤑🎖</h1>
 
-        <div class="balance-section">
-            <p>Your Balance: <span id="userBalance">0.00</span> PHP</p>
-            <div id="rewardNotification" class="notification"></div>
+        <div id="auth-section">
+            <h2>Login / Register (Telegram Username)</h2>
+            <input type="text" id="telegram-username" placeholder="Your Telegram Username">
+            <button id="login-btn">Login / Register</button>
+            <p id="auth-status"></p>
         </div>
 
-        <div class="ad-cards-container" id="adCardsContainer">
-            <!-- Ad buttons will be dynamically inserted here by app.js -->
-        </div>
+        <div id="main-app" style="display:none;">
+            <p>Welcome, <span id="display-username"></span>! Your Balance: ₱<span id="user-balance">0.00</span></p>
 
-        <div class="withdrawal-section">
-            <h2>Withdraw GCash</h2>
-            <p>Minimum Withdrawal: 0.02 PHP</p>
-            <input type="text" id="gcashNumber" placeholder="Enter GCash Number (e.g., 09123456789)">
-            <input type="text" id="telegramUsername" placeholder="Enter Telegram Username (e.g., @yourusername)">
-            <button id="withdrawButton">Request Withdrawal</button>
-            <p>Withdrawal Status: <span id="withdrawalStatus">N/A</span></p>
-        </div>
-
-        <div class="leaderboard-section">            <h2>Leaderboard</h2>
-            <ul id="leaderboardList">
-                <!-- Leaderboard items will be dynamically inserted here -->
-            </ul>
-        </div>
-
-        <div class="chat-section">
-            <h2>Chat Room</h2>
-            <div id="chatMessages">
-                <!-- Chat messages will be dynamically inserted here -->
+            <div class="ad-section">
+                <h2>Click Ads & Earn!</h2>
+                <div id="ad-buttons-container">
+                    <!-- Ad buttons will be dynamically added here by app.js -->
+                </div>
             </div>
-            <input type="text" id="chatInput" placeholder="Type your message...">
-            <button id="sendMessageButton">Send</button>
+
+            <div class="withdrawal-section">
+                <h2>Withdraw GCash</h2>
+                <p>Minimum Withdrawal: ₱0.02</p>
+                <input type="text" id="gcash-number" placeholder="GCash Number">
+                <button id="request-withdrawal-btn">Request Withdrawal</button>
+                <p id="withdrawal-status"></p>
+                <h3>Your Withdrawal History:</h3>
+                <ul id="withdrawal-history"></ul>
+            </div>
+
+            <div class="chat-section">
+                <h2>Global Chat</h2>
+                <div id="chat-messages"></div>
+                <input type="text" id="chat-input" placeholder="Type your message...">
+                <button id="send-chat-btn">Send</button>
+            </div>
+
+            <div class="leaderboard-section">
+                <h2>Leaderboard</h2>
+                <ol id="leaderboard-list"></ol>
+            </div>
         </div>
 
-        <div class="admin-link">
-            <a href="#" id="adminDashboardLink" style="display: none;">Admin Dashboard</a>
+        <div id="admin-dashboard" style="display:none;">
+            <h2>Admin Dashboard</h2>
+            <input type="password" id="admin-password" placeholder="Admin Password">
+            <button id="admin-login-btn">Login as Admin</button>
+            <div id="admin-content" style="display:none;">
+                <h3>Pending Withdrawals</h3>
+                <ul id="pending-withdrawals"></ul>
+                <h3>All Users</h3>
+                <ul id="all-users-list"></ul>
+                <h3>Chat Log</h3>
+                <div id="admin-chat-log"></div>
+            </div>
         </div>
     </div>
 
-    <!-- Admin Dashboard Modal (hidden by default) -->
-    <div id="adminModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2>Admin Login</h2>
-            <input type="password" id="adminPassword" placeholder="Enter Admin Password">
-            <button id="adminLoginButton">Login</button>
-            <div id="adminDashboardContent" style="display: none;">
-                <h3>Pending Withdrawal Requests</h3>
-                <ul id="withdrawalRequestsList">
-                    <!-- Withdrawal requests will be displayed here -->
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-analytics-compat.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

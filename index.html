@@ -1,116 +1,146 @@
+
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:12px;background:#f6f8fa;color:#111}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .card{background:white;border-radius:8px;padding:12px;margin:10px 0;box-shadow:0 1px 6px rgba(0,0,0,.06)}
-    .ads-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-    button{cursor:pointer;padding:8px 12px;border-radius:6px;border:1px solid #ddd;background:#1e88e5;color:white}
-    .small{padding:6px 8px;font-size:13px}
-    .muted{color:#666;font-size:13px}
-    .row{display:flex;gap:8px;align-items:center}
-    .chat{height:180px;overflow:auto;background:#fff;border-radius:6px;padding:8px;border:1px solid #eee}
-    .leaderboard{max-height:220px;overflow:auto}
-    .admin-panel{background:#fff;padding:10px;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
-    .hide{display:none}
-    input,textarea{padding:8px;border:1px solid #ddd;border-radius:6px;width:100%}
+    body { font-family: system-ui, -apple-system, Roboto, "Segoe UI", Arial; margin: 12px; background:#0b1020; color:#e6eef8; }
+    .container { max-width:900px; margin:0 auto; }
+    header { text-align:center; margin-bottom:18px; }
+    .card { background:#0f1a2b; border-radius:10px; padding:12px; margin-bottom:12px; box-shadow: 0 4px 18px rgba(0,0,0,0.6); }
+    .ads-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+    button.ad-btn { width:100%; padding:12px; font-weight:700; border-radius:8px; cursor:pointer; border:0; background: linear-gradient(90deg,#ffcc33,#ff8844); color:#0b1020 }
+    .sec-row { display:flex; gap:8px; flex-wrap:wrap; }
+    .small { font-size:0.9rem; color:#cbd7ee; }
+    input, select, textarea { width:100%; padding:10px; border-radius:8px; border:1px solid #1e2b44; background:#081225; color:#e6eef8; box-sizing:border-box;}
+    .muted { color:#92a6d6; font-size:0.9rem; }
+    .leader { display:flex; justify-content:space-between; padding:8px; border-bottom:1px dashed rgba(255,255,255,0.04); }
+    .admin { background:#071022; padding:10px; border-radius:8px; }
+    .inline { display:inline-flex; gap:8px; align-items:center; }
+    .toast { position:fixed; right:12px; bottom:12px; background:#091827; padding:10px 14px; border-radius:8px; color:#d0e9ff; box-shadow:0 6px 22px rgba(0,0,0,0.6); display:none; }
   </style>
 </head>
 <body>
-  <header>
-    <div>
-      <h2>🎖🤑PAPERHOUSE INC ADS🤑🎖</h2>
-      <div class="muted">Reward per ad click: <strong>0.0068 PHP</strong> — Minimum withdrawal: <strong>0.02 PHP</strong></div>
-    </div>
+  <div class="container">
+    <header>
+      <h1>🎖🤑PAPERHOUSE INC ADS🤑🎖</h1>
+      <div class="muted">FreeGcashads • Monetag: 3136495 • Reward per click: 0.0068 peso • Min withdraw: 0.02 peso</div>
+    </header>
 
-    <div>
-      <div id="userBlock" class="card">
-        <div><strong id="displayName">Guest</strong> <span class="muted" id="tgStatus"></span></div>
-        <div class="muted">Balance: <strong id="balance">0.0000</strong> PHP</div>
-        <div class="row" style="margin-top:8px">
-          <input id="tgFallback" placeholder="Telegram username (or use widget)" style="width:200px" />
-          <button id="saveTg" class="small">Set</button>
+    <div class="card">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <div style="flex:1">
+          <label class="small">Telegram username (will display immediately):</label>
+          <input id="telegramUsername" placeholder="@yourtelegram" />
         </div>
-        <div class="row" style="margin-top:8px">
-          <input id="gcashNumber" placeholder="GCash number (for withdrawals)" />
-        </div>
-        <div class="row" style="margin-top:8px">
-          <button id="withdrawBtn" class="small">Request Withdraw</button>
-          <button id="openAdmin" class="small">Admin Dashboard</button>
+        <div style="width:220px">
+          <label class="small">Your account</label>
+          <div class="inline" style="justify-content:space-between;">
+            <div>
+              <div id="userDisplay" class="muted">Not signed in</div>
+              <div id="balanceDisplay" class="muted">Balance: 0.0000 peso</div>
+            </div>
+            <div>
+
+              <button id="btnSignIn" style="padding:8px 10px;border-radius:8px;background:#2b6be6;color:white;border:0;cursor:pointer">Start</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </header>
 
-  <section class="card">
-    <div class="row" style="justify-content:space-between">
-      <h3 style="margin:0">Ads — Click & Earn</h3>      <div class="muted">Click on ad card to open link and receive reward (cooldown: 60s per ad)</div>
+    <div class="card">
+      <div class="muted">Click an ad to open and get reward (cooldown 60s per ad). Each click gives 0.0068 peso.</div>
+      <div class="ads-grid" id="adsGrid">
+        <!-- buttons injected by app.js -->
+      </div>
     </div>
 
-    <div class="ads-grid" id="adsContainer">
-      <!-- Ads inserted by JS -->
+    <div class="card">
+      <div style="display:flex;gap:12px;">
+        <div style="flex:1;">
+          <label class="small">Request withdrawal (GCash)</label>
+          <input id="gcashNumber" placeholder="09xxxxxxxxx (GCash number)" />
+          <input id="withdrawAmount" placeholder="Amount to withdraw (peso)" />
+          <textarea id="withdrawNote" placeholder="Note (optional)" rows="2"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button id="btnRequestWithdraw" style="padding:10px;border-radius:8px;background:#00b894;border:0;color:white;cursor:pointer">Request Withdraw</button>
+            <div class="muted" style="align-self:center">Min: 0.02 peso</div>
+          </div>
+        </div>
+
+        <div style="width:320px;">
+          <label class="small">Leaderboard</label>
+          <div id="leaderboard" class="card" style="background:#071224;max-height:220px;overflow:auto;padding:6px;"></div>
+        </div>
+      </div>
     </div>
 
-    <div style="margin-top:10px" class="muted">Auto-Popunder buttons</div>
-    <div class="row" style="margin-top:8px">
-      <button id="popBtn1">Show Popounder 1</button>
-      <button id="popBtn2">Show Popounder 2</button>
-    </div>
-  </section>
-
-  <section class="card">
-    <div class="row" style="justify-content:space-between">
-      <h3 style="margin:0">Chatroom</h3>
-      <div class="muted">Share tips — messages update in real-time</div>
-    </div>
-    <div class="chat" id="chatBox"></div>
-    <div class="row" style="margin-top:8px">
-      <input id="chatInput" placeholder="Enter message..." />
-      <button id="sendChat" class="small">Send</button>
-    </div>
-  </section>
-
-  <section class="card">
-    <h3 style="margin:0">Leaderboard (Top balances)</h3>
-    <div id="leaderboard" class="leaderboard"></div>
-  </section>
-
-  <!-- Admin modal -->
-  <div id="adminModal" class="card hide" style="position:fixed;right:20px;top:80px;width:360px;z-index:9999">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <strong>Admin Dashboard</strong>
-      <button id="closeAdmin" class="small">Close</button>
+    <div class="card">
+      <label class="small">Chat room</label>
+      <div style="display:flex;gap:8px;">
+        <input id="chatMsg" placeholder="Say hi (will be stored with your telegram username)" />
+        <button id="btnSendMsg" style="padding:10px;border-radius:8px;background:#6c5ce7;border:0;color:white;cursor:pointer">Send</button>
+      </div>
+      <div id="chatBox" style="margin-top:8px;max-height:220px;overflow:auto;background:#041122;padding:8px;border-radius:8px;"></div>
     </div>
 
-    <div style="margin-top:8px" class="muted">Password-protect (client-side): use <strong>Propetas12</strong></div>
-    <div style="margin-top:8px">
-      <input id="adminPassword" placeholder="Enter admin password" />
-      <button id="adminLoginBtn" class="small" style="margin-top:6px">Login</button>
+    <div class="card admin">
+      <label class="small">Admin Dashboard</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <input id="adminEmail" placeholder="admin email (recommended)" />
+        <input id="adminPassword" placeholder="Password (Propetas12)" type="password" />
+        <button id="btnAdminLogin" style="padding:10px;border-radius:8px;background:#ff7675;border:0;color:white;cursor:pointer">Admin Login</button>
+        <button id="btnAdminFallback" style="padding:10px;border-radius:8px;background:#fdcb6e;border:0;color:#0b1020;cursor:pointer">Quick Fallback (not secure)</button>
+      </div>
+
+      <div id="adminArea" style="display:none;">
+        <div class="muted">Pending withdrawals</div>
+        <div id="adminWithdrawList" style="max-height:240px;overflow:auto;margin-top:8px;"></div>
+      </div>
     </div>
 
-    <div id="adminPanelContent" class="hide" style="margin-top:12px">
-      <div class="muted">Pending Withdrawals</div>
-      <div id="pendingWithdrawals"></div>
-    </div>
   </div>
 
-  <!-- Optional Telegram login widget (uncomment and set data-telegram-login to your bot) -->
-  <!--
-  <script async src="https://telegram.org/js/telegram-widget.js?6"
-    data-telegram-login="YOUR_BOT_USERNAME" 
-    data-size="large"
-    data-userpic="true"
-    data-request-access="write"
-    data-on-auth="onTelegramAuth(user)"
-  ></script>
-  -->
+  <div id="toast" class="toast"></div>
 
-  <div id="toast" style="position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#333;color:white;padding:8px 12px;border-radius:6px;display:none"></div>
+  <!-- Inject provided ad snippets -->
+  <!-- Popounder script from the user (as given) -->
+  <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
+  <script>
+    var atOptions = {
+      'key' : 'fe70943384c0314737bd62c05e3d520a',
+      'format' : 'iframe',
+      'height' : 300,
+      'width' : 160,
+      'params' : {}
+    };
+  </script>
+  <script src="https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js"></script>
 
-  <script type="module" src="app.js"></script>
+  <!-- Monetag / libtl script (user provided) -->
+  <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
+  <script>
+  // Example in-app interstitial invocation (as provided)
+  if (typeof show_10276123 === 'function') {
+    try {
+      show_10276123({
+        type: 'inApp',
+        inAppSettings: {
+          frequency: 2,
+          capping: 0.1,
+          interval: 30,
+          timeout: 5,
+          everyPage: false
+        }
+      });
+    } catch (e) { console.warn('libtl init error', e); }
+  }
+  </script>
+
+  <!-- App script (module) -->
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

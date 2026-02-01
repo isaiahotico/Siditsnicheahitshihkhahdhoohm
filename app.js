@@ -1,412 +1,401 @@
 
-// Import Firebase services from the global window object
-const app = window.firebaseApp;
-const auth = window.firebaseAuth;
-const db = window.firebaseDb; // Firestore
-const rtdb = window.firebaseRtdb; // Realtime Database
+// app.js (ES module)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+import { getDatabase, ref, set, onValue, update, push, serverTimestamp, get, child, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-// Firestore Collections
-const usersRef = collection(db, "users");
-const withdrawalsRef = collection(db, "withdrawals");
-const adCooldownsRef = collection(db, "ads_cooldowns");
+// Your web app's Firebase configuration (from your message)
+const firebaseConfig = {
+  apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
+  authDomain: "freegcash-ads.firebaseapp.com",
+  databaseURL: "https://freegcash-ads-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "freegcash-ads",
+  storageBucket: "freegcash-ads.firebasestorage.app",
+  messagingSenderId: "608086825364",
+  appId: "1:608086825364:web:3a8e628d231b52c6171781",
+  measurementId: "G-Z64B87ELGP"
+};
 
-// Realtime Database Ref for Chat
-const chatRef = ref(rtdb, "chat");
+const app = initializeApp(firebaseConfig);
+try { getAnalytics(app); } catch(e) { /* ignore analytics error on local dev */ }
 
-// DOM Elements
-const authSection = document.getElementById('auth-section');
-const telegramUsernameInput = document.getElementById('telegram-username-input');
-const loginBtn = document.getElementById('login-btn');
-const authStatus = document.getElementById('auth-status');
-const appContent = document.getElementById('app-content');
-const displayTelegramUsername = document.getElementById('display-telegram-username');
-const userBalanceSpan = document.getElementById('user-balance');
-const adButtons = document.querySelectorAll('.ad-button');
-const adMessage = document.getElementById('ad-message');
-const gcashNumberInput = document.getElementById('gcash-number-input');
-const withdrawalAmountInput = document.getElementById('withdrawal-amount-input');
-const requestWithdrawalBtn = document.getElementById('request-withdrawal-btn');
-const withdrawalStatusMessage = document.getElementById('withdrawal-status-message');
-const withdrawalHistoryList = document.getElementById('withdrawal-history-list');
-const chatMessagesDiv = document.getElementById('chat-messages');
-const chatInput = document.getElementById('chat-input');
-const sendChatBtn = document.getElementById('send-chat-btn');
-const leaderboardList = document.getElementById('leaderboard-list');
+const auth = getAuth();
+const db = getDatabase();
 
-const adminDashboard = document.getElementById('admin-dashboard');
-const adminPasswordInput = document.getElementById('admin-password-input');
-const adminLoginBtn = document.getElementById('admin-login-btn');
-const adminLoginStatus = document.getElementById('admin-login-status');
-const adminContent = document.getElementById('admin-content');
-const adminWithdrawalRequests = document.getElementById('admin-withdrawal-requests');
-const adminUserList = document.getElementById('admin-user-list');
+const rewardPerClick = 0.0068;        // peso
+const withdrawMin = 0.02;            // peso
+const cooldownSeconds = 60;          // 1 minute cooldown
 
-const REWARD_AMOUNT = 0.0068;
-const MIN_WITHDRAWAL = 0.02;
-const AD_COOLDOWN_SECONDS = 60; // 1 minute
+// Ad definitions (use the links you gave)
+const ADS = [
+  { id: 'ad1', title: 'Ad #1 (EffectiveGate)', url: 'https://www.effectivegatecpm.com/mwbmp8yxc?key=9ce01dec19ec86d0fbabe111b4439981' },
+  { id: 'ad2', title: 'Ad #2 (EffectiveGate)', url: 'https://www.effectivegatecpm.com/iefwgzfy8w?key=ef8a98a84b67232d3808db269675011c' },
+  { id: 'ad3', title: 'Ad #3 (EffectiveGate)', url: 'https://www.effectivegatecpm.com/hebhpc3tcm?key=e18e0c3b11bce2e7a0d722f6ac554232' },
+  { id: 'ad4', title: 'Ad #4 (EffectiveGate)', url: 'https://www.effectivegatecpm.com/ai7csj41?key=7e287f34b34183342aa072ceeccb42cf' }
+];
+
+// Popunder scripts you gave (buttons will insert them when clicked)
+const POP_SCRIPTS = [
+  {id:'pop1', html:`<script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
+<script>
+  atOptions = {
+    'key' : 'fe70943384c0314737bd62c05e3d520a',
+    'format' : 'iframe',
+    'height' : 300,
+    'width' : 160,
+    'params' : {}
+  };
+</script>
+<script src="https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js"></script>`},
+  // second script for demo uses same as third inclusion you wrote (keep as second copy)
+  {id:'pop2', html:`<script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>` }
+];
+
+// UI elements
+const el = {
+  adsContainer: document.getElementById('adsContainer'),
+  balance: document.getElementById('balance'),
+  displayName: document.getElementById('displayName'),
+  tgFallback: document.getElementById('tgFallback'),
+  saveTg: document.getElementById('saveTg'),
+  gcashNumber: document.getElementById('gcashNumber'),
+  withdrawBtn: document.getElementById('withdrawBtn'),
+  chatBox: document.getElementById('chatBox'),
+  chatInput: document.getElementById('chatInput'),
+  sendChat: document.getElementById('sendChat'),
+  leaderboard: document.getElementById('leaderboard'),
+  popBtn1: document.getElementById('popBtn1'),
+  popBtn2: document.getElementById('popBtn2'),
+  toast: document.getElementById('toast'),
+  openAdmin: document.getElementById('openAdmin'),
+  adminModal: document.getElementById('adminModal'),
+  adminPassword: document.getElementById('adminPassword'),
+  adminLoginBtn: document.getElementById('adminLoginBtn'),
+  adminPanelContent: document.getElementById('adminPanelContent'),
+  pendingWithdrawals: document.getElementById('pendingWithdrawals'),
+  closeAdmin: document.getElementById('closeAdmin'),
+  tgStatus: document.getElementById('tgStatus')
+};
 
 let currentUser = null;
-let currentTelegramUsername = null;
+let userData = null;
+let isAdminClient = false; // client-side admin flag for dashboard visibility (protected by password "Propetas12")
 
-// --- Authentication and User Management ---
+// Helpers
+function showToast(text, t=3000) {
+  el.toast.innerText = text; el.toast.style.display='block';
+  setTimeout(()=> el.toast.style.display='none', t);
+}
+function formatNumber(n) { return Number(n || 0).toFixed(4); }
 
-// Listen for authentication state changes
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        currentUser = user;
-        // Check if user data exists in Firestore, if not, create it
-        const userDocRef = doc(usersRef, user.uid);
-        const userDocSnap = await getDoc(userDocRef);
+// Build ads UI
+function renderAds() {
+  el.adsContainer.innerHTML = '';
+  ADS.forEach(ad => {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div><strong>${ad.title}</strong></div>
+          <div class="muted">Reward: ${rewardPerClick} PHP — Cooldown: ${cooldownSeconds}s</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="small" data-ad="${ad.id}">Open & Earn</button>
+          <a class="muted small" href="${ad.url}" target="_blank" rel="noreferrer noopener">Open link (no reward)</a>
+        </div>
+      </div>
+    `;
+    el.adsContainer.appendChild(div);
+    div.querySelector('button').addEventListener('click', () => handleAdClick(ad));
+  });
+}
 
-        if (!userDocSnap.exists()) {
-            // New user, prompt for Telegram username
-            authSection.style.display = 'block';
-            appContent.style.display = 'none';
-            authStatus.textContent = 'Please enter your Telegram username to continue.';
-            loginBtn.textContent = 'Save Username';
-        } else {
-            // Existing user
-            const userData = userDocSnap.data();
-            currentTelegramUsername = userData.telegramUsername;
-            displayTelegramUsername.textContent = currentTelegramUsername;
-            userBalanceSpan.textContent = userData.balance.toFixed(4); // Display balance
-            authSection.style.display = 'none';
-            appContent.style.display = 'block';
-            loadWithdrawalHistory(user.uid);
-            setupRealtimeChat();
-            loadLeaderboard();
-        }
-    } else {
-        // No user logged in, show login section
-        currentUser = null;
-        currentTelegramUsername = null;
-        authSection.style.display = 'block';
-        appContent.style.display = 'none';
-        authStatus.textContent = 'Login or Register with your Telegram Username.';
-        loginBtn.textContent = 'Login / Register';
-        displayTelegramUsername.textContent = '';
-        userBalanceSpan.textContent = '0.00';
+// Click handling and reward logic
+async function handleAdClick(ad) {
+  if (!currentUser) return showToast('Auth not ready');
+  const uid = currentUser.uid;
+  const clickRef = ref(db, `clicks/${uid}/${ad.id}`);
+  const snapshot = await get(clickRef);
+  const now = Date.now();
+  let allow = true;
+  if (snapshot.exists()) {
+    const last = snapshot.val().last || 0;
+    const delta = (now - last) / 1000;
+    if (delta < cooldownSeconds) {
+      allow = false;
+      showToast(`Cooldown active. Wait ${Math.ceil(cooldownSeconds - delta)}s`);
     }
-});
+  }
+  if (!allow) return;
+  // Open ad in new window/popunder
+  window.open(ad.url, '_blank', 'noopener');
 
-loginBtn.addEventListener('click', async () => {
-    const telegramUsername = telegramUsernameInput.value.trim();
-    if (!telegramUsername) {
-        authStatus.textContent = 'Please enter a Telegram username.';
-        return;
-    }
+  // Record click and give reward atomically (client-side approach)
+  const userRef = ref(db, `users/${uid}`);
+  const clicksRef = ref(db, `clicks/${uid}/${ad.id}`);
+  // read current balance
+  const userSnap = await get(userRef);
+  const currentBalance = userSnap.exists() ? Number(userSnap.val().balance || 0) : 0;
+  const newBalance = +(currentBalance + rewardPerClick).toFixed(8);
 
-    // If no user is authenticated, sign in anonymously
-    if (!currentUser) {
-        try {
-            const userCredential = await signInAnonymously(auth);
-            currentUser = userCredential.user;
-            // Now that we have a user, save their Telegram username
-            await setDoc(doc(usersRef, currentUser.uid), {
-                telegramUsername: telegramUsername,
-                balance: 0,
-                totalEarned: 0,
-                createdAt: serverTimestamp()
-            });
-            currentTelegramUsername = telegramUsername;
-            displayTelegramUsername.textContent = currentTelegramUsername;
-            userBalanceSpan.textContent = '0.00';
-            authSection.style.display = 'none';
-            appContent.style.display = 'block';
-            authStatus.textContent = '';
-            loadWithdrawalHistory(currentUser.uid);
-            setupRealtimeChat();
-            loadLeaderboard();
-        } catch (error) {
-            console.error("Error during anonymous sign-in or user data creation:", error);
-            authStatus.textContent = `Error: ${error.message}`;
-        }
-    } else {
-        // User is already anonymously logged in, just update their username if it's a new user flow
-        const userDocRef = doc(usersRef, currentUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (!userDocSnap.exists() || !userDocSnap.data().telegramUsername) {
-            await updateDoc(userDocRef, {
-                telegramUsername: telegramUsername
-            });
-            currentTelegramUsername = telegramUsername;
-            displayTelegramUsername.textContent = currentTelegramUsername;
-            authSection.style.display = 'none';
-            appContent.style.display = 'block';
-            authStatus.textContent = '';
-            loadWithdrawalHistory(currentUser.uid);
-            setupRealtimeChat();
-            loadLeaderboard();
-        }
-    }
-});
+  // update user balance and click timestamp
+  await update(userRef, {
+    balance: newBalance,
+    username: (userData && userData.username) ? userData.username : null,
+    updatedAt: serverTimestamp()
+  });
+  await set(clicksRef, { last: now });
 
-// --- Ad Click and Reward System ---
+  // push history
+  await push(ref(db, `history/${uid}`), {
+    adId: ad.id,
+    adTitle: ad.title,
+    reward: rewardPerClick,
+    ts: serverTimestamp()
+  });
 
-adButtons.forEach(button => {
-    button.addEventListener('click', async () => {
-        if (!currentUser || !currentTelegramUsername) {
-            adMessage.textContent = 'Please log in with your Telegram username first.';
-            return;
-        }
+  showToast(`+${rewardPerClick} PHP credited`);
+}
 
-        const adId = button.dataset.adId;
-        const smartlink = button.dataset.smartlink;
-        const userAdCooldownDocRef = doc(adCooldownsRef, `${currentUser.uid}_${adId}`);
+// Popunder injection handlers
+function injectPopScript(html) {
+  // create a sandboxed iframe to avoid messing with parent; write script html inside
+  const iframe = document.createElement('iframe');
+  iframe.style.width = '1px'; iframe.style.height='1px'; iframe.style.border='0'; iframe.style.position='fixed';
+  iframe.style.left='-9999px'; iframe.style.top='-9999px';
+  document.body.appendChild(iframe);
+  try {
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    showToast('Popunder script injected');
+  } catch (e) {
+    console.error('inject error', e);
+    showToast('Could not inject pop script');
+  }
+}
 
-        try {
-            const cooldownDocSnap = await getDoc(userAdCooldownDocRef);
-            const now = Date.now();
+// Chatroom
+async function sendChat() {
+  if (!currentUser) return;
+  const text = el.chatInput.value.trim();
+  if (!text) return;
+  const chatRef = ref(db, 'chat');
+  await push(chatRef, {
+    uid: currentUser.uid,
+    username: userData && userData.username ? userData.username : 'Guest',
+    text,
+    ts: serverTimestamp()
+  });
+  el.chatInput.value = '';
+}
 
-            if (cooldownDocSnap.exists()) {
-                const lastClickTime = cooldownDocSnap.data().timestamp.toDate().getTime();
-                const timeElapsed = now - lastClickTime;
-                const timeLeft = AD_COOLDOWN_SECONDS * 1000 - timeElapsed;
+// Listen to chat
+function listenChat() {
+  const chatRef = ref(db, 'chat');
+  onValue(chatRef, (snap) => {
+    const v = snap.val() || {};
+    const items = Object.values(v).sort((a,b)=> (a.ts||0)-(b.ts||0));
+    el.chatBox.innerHTML = items.map(it => `<div style="padding:4px 6px;border-bottom:1px solid #f1f1f1"><strong>${escapeHtml(it.username)}</strong>: ${escapeHtml(it.text)}</div>`).join('');
+    el.chatBox.scrollTop = el.chatBox.scrollHeight;
+  });
+}
 
-                if (timeLeft > 0) {
-                    const minutesLeft = Math.ceil(timeLeft / (1000 * 60));
-                    adMessage.textContent = `Please wait ${minutesLeft} minute(s) before clicking this ad again.`;
-                    return;
-                }
-            }
+// Leaderboard
+function listenLeaderboard() {
+  const usersRef = ref(db, 'users');
+  onValue(usersRef, (snap) => {
+    const v = snap.val() || {};
+    const arr = Object.keys(v).map(k => ({ uid: k, username: v[k].username || 'Guest', balance: Number(v[k].balance || 0) }));
+    arr.sort((a,b)=> b.balance - a.balance);
+    const top = arr.slice(0,20);
+    el.leaderboard.innerHTML = top.map((u,i)=> `<div style="padding:6px;border-bottom:1px solid #f3f3f3"><strong>#${i+1}</strong> ${escapeHtml(u.username)} — ${u.balance.toFixed(4)} PHP</div>`).join('');
+  });
+}
 
-            // Open the smartlink in a new tab
-            window.open(smartlink, '_blank');
+// Withdraw flow
+async function requestWithdraw() {
+  if (!currentUser) return showToast('Auth not ready');
+  const uid = currentUser.uid;
+  const userRef = ref(db, `users/${uid}`);
+  const userSnap = await get(userRef);
+  const bal = userSnap.exists() ? Number(userSnap.val().balance || 0) : 0;
+  const username = userSnap.exists() ? (userSnap.val().username || '') : '';
+  const gcash = el.gcashNumber.value.trim();
+  if (!gcash) return showToast('Enter GCash number');
+  if (bal < withdrawMin) return showToast(`Minimum withdraw is ${withdrawMin} PHP`);
+  // create withdrawal request
+  const wRef = ref(db, 'withdrawals');
+  const req = {
+    userId: uid,
+    username,
+    gcashNumber: gcash,
+    amount: bal,            // for simplicity we request whole balance (could be partial)
+    status: 'pending',
+    ts: serverTimestamp()
+  };
+  await push(wRef, req);
+  // Optionally zero user's balance locally (or leave until admin approves); here we keep balance and let admin deduct on approve
+  showToast('Withdrawal requested. Admin will review.');
+}
 
-            // Reward the user and update cooldown
-            await updateDoc(doc(usersRef, currentUser.uid), {
-                balance: parseFloat((parseFloat(userBalanceSpan.textContent) + REWARD_AMOUNT).toFixed(4)),
-                totalEarned: parseFloat((parseFloat(userBalanceSpan.textContent) + REWARD_AMOUNT).toFixed(4)) // Simplified for now, should be separate
-            });
-            userBalanceSpan.textContent = (parseFloat(userBalanceSpan.textContent) + REWARD_AMOUNT).toFixed(4);
+// Admin area: client-level password to show UI (not DB-level auth)
+function openAdminModal() {
+  el.adminModal.classList.remove('hide');
+}
+function closeAdminModal() {
+  el.adminModal.classList.add('hide');
+}
 
-            await setDoc(userAdCooldownDocRef, {
-                timestamp: serverTimestamp()
-            });
+// Admin login (client-side) checks password "Propetas12"
+function adminClientLogin() {
+  const p = el.adminPassword.value;
+  if (p === 'Propetas12') {
+    isAdminClient = true;
+    el.adminPanelContent.classList.remove('hide');
+    el.adminPassword.value = '';
+    showToast('Admin client unlocked');
+    loadPendingWithdrawals(); // populate
+  } else {
+    showToast('Wrong admin password');
+  }
+}
 
-            adMessage.textContent = `You earned ₱${REWARD_AMOUNT.toFixed(4)}! Cooldown for this ad is 1 minute.`;
-            loadLeaderboard(); // Update leaderboard after earning
-        } catch (error) {
-            console.error("Error processing ad click:", error);
-            adMessage.textContent = 'An error occurred while processing your click.';
-        }
+// Load pending withdrawals (admin view)
+function loadPendingWithdrawals() {
+  const wRef = ref(db, 'withdrawals');
+  onValue(wRef, (snap) => {
+    const v = snap.val() || {};
+    const items = Object.entries(v).filter(([k, val]) => val.status === 'pending');
+    el.pendingWithdrawals.innerHTML = items.map(([id, val])=> {
+      return `<div style="padding:8px;border-bottom:1px solid #eee">
+        <div><strong>${escapeHtml(val.username || 'Guest')}</strong> — ${val.amount} PHP</div>
+        <div class="muted">GCash: ${escapeHtml(val.gcashNumber || '')}</div>
+        <div style="margin-top:6px"><button data-id="${id}" class="approveBtn small">Approve</button> <button data-id="${id}" class="rejectBtn small">Reject</button></div>
+      </div>`;
+    }).join('');
+    // attach events
+    Array.from(el.pendingWithdrawals.querySelectorAll('.approveBtn')).forEach(btn => {
+      btn.onclick = () => adminApprove(btn.dataset.id);
     });
-});
-
-// --- GCash Withdrawal ---
-
-requestWithdrawalBtn.addEventListener('click', async () => {
-    if (!currentUser || !currentTelegramUsername) {
-        withdrawalStatusMessage.textContent = 'Please log in first.';
-        return;
-    }
-
-    const gcashNumber = gcashNumberInput.value.trim();
-    const amount = parseFloat(withdrawalAmountInput.value);
-
-    if (!gcashNumber || !amount || amount < MIN_WITHDRAWAL) {
-        withdrawalStatusMessage.textContent = `Please enter a valid GCash number and an amount of at least ₱${MIN_WITHDRAWAL.toFixed(2)}.`;
-        return;
-    }
-
-    const userDocRef = doc(usersRef, currentUser.uid);
-    const userDocSnap = await getDoc(userDocRef);
-    const userBalance = userDocSnap.data().balance;
-
-    if (userBalance < amount) {
-        withdrawalStatusMessage.textContent = 'Insufficient balance.';
-        return;
-    }
-
-    try {
-        // Deduct from user balance
-        await updateDoc(userDocRef, {
-            balance: parseFloat((userBalance - amount).toFixed(4))
-        });
-        userBalanceSpan.textContent = (userBalance - amount).toFixed(4);
-
-        // Add withdrawal request
-        await addDoc(withdrawalsRef, {
-            userId: currentUser.uid,
-            telegramUsername: currentTelegramUsername,
-            gcashNumber: gcashNumber,
-            amount: amount,
-            status: 'Pending',
-            requestedAt: serverTimestamp()
-        });
-
-        withdrawalStatusMessage.textContent = 'Withdrawal request submitted successfully! Status: Pending';
-        gcashNumberInput.value = '';
-        withdrawalAmountInput.value = '';
-        loadWithdrawalHistory(currentUser.uid); // Refresh history
-    } catch (error) {
-        console.error("Error requesting withdrawal:", error);
-        withdrawalStatusMessage.textContent = `Error: ${error.message}`;
-    }
-});
-
-async function loadWithdrawalHistory(userId) {
-    const q = query(withdrawalsRef, where("userId", "==", userId), orderBy("requestedAt", "desc"), limit(10));
-    onSnapshot(q, (snapshot) => {
-        withdrawalHistoryList.innerHTML = '';
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            const li = document.createElement('li');
-            li.textContent = `Amount: ₱${data.amount.toFixed(2)}, GCash: ${data.gcashNumber}, Status: ${data.status} (${new Date(data.requestedAt.toDate()).toLocaleString()})`;
-            withdrawalHistoryList.appendChild(li);
-        });
+    Array.from(el.pendingWithdrawals.querySelectorAll('.rejectBtn')).forEach(btn => {
+      btn.onclick = () => adminReject(btn.dataset.id);
     });
+  });
 }
 
-// --- Chat Room ---
-
-function setupRealtimeChat() {
-    onValue(chatRef, (snapshot) => {
-        chatMessagesDiv.innerHTML = '';
-        snapshot.forEach((childSnapshot) => {
-            const message = childSnapshot.val();
-            const p = document.createElement('p');
-            p.textContent = `[${new Date(message.timestamp).toLocaleTimeString()}] ${message.username}: ${message.text}`;
-            chatMessagesDiv.appendChild(p);
-        });
-        chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight; // Auto-scroll to bottom
-    });
+// Admin approval: only allowed by server rules if the signing uid is an admin in DB.
+// This function attempts to set status='approved' and deducts balance.
+async function adminApprove(withdrawalId) {
+  if (!currentUser) return showToast('Auth required');
+  if (!isAdminClient) return showToast('Admin client not unlocked');
+  const wRef = ref(db, `withdrawals/${withdrawalId}`);
+  const snap = await get(wRef);
+  if (!snap.exists()) return showToast('Not found');
+  const w = snap.val();
+  if (w.status !== 'pending') return showToast('Already processed');
+  // Deduct balance of user
+  const userRef = ref(db, `users/${w.userId}`);
+  const userSnap = await get(userRef);
+  const bal = userSnap.exists() ? Number(userSnap.val().balance || 0) : 0;
+  const newBal = Math.max(0, +(bal - w.amount).toFixed(8));
+  // update withdrawal status and user balance
+  try {
+    await update(ref(db, `withdrawals/${withdrawalId}`), { status: 'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+    await update(userRef, { balance: newBal, updatedAt: serverTimestamp() });
+    showToast('Withdrawal approved (marked). Deducted balance.');
+  } catch (e) {
+    console.error('approve failed', e);
+    showToast('Approve failed: check DB rules / admin UID');
+  }
 }
 
-sendChatBtn.addEventListener('click', () => {
-    const messageText = chatInput.value.trim();
-    if (messageText && currentUser && currentTelegramUsername) {
-        push(chatRef, {
-            username: currentTelegramUsername,
-            text: messageText,
-            timestamp: Date.now()
-        });
-        chatInput.value = '';
-    } else if (!currentTelegramUsername) {
-        alert("Please set your Telegram username to chat.");
-    }
+// Reject
+async function adminReject(withdrawalId) {
+  if (!currentUser) return showToast('Auth required');
+  if (!isAdminClient) return showToast('Admin client not unlocked');
+  try {
+    await update(ref(db, `withdrawals/${withdrawalId}`), { status: 'rejected', reviewedBy: currentUser.uid, reviewedAt: serverTimestamp() });
+    showToast('Request rejected.');
+  } catch (e) {
+    console.error(e);
+    showToast('Reject failed');
+  }
+}
+
+// Utility escape
+function escapeHtml(s='') {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Save username fallback
+async function saveTgFallback() {
+  if (!currentUser) return;
+  const username = el.tgFallback.value.trim();
+  if (!username) return showToast('Enter Telegram username or use widget');
+  await update(ref(db, `users/${currentUser.uid}`), { username, updatedAt: serverTimestamp() });
+  showToast('Username saved');
+}
+
+// Listen to user changes
+function listenUser(uid) {
+  const userRef = ref(db, `users/${uid}`);
+  onValue(userRef, (snap) => {
+    const v = snap.val() || {};
+    userData = v;
+    el.displayName.innerText = v.username || `Guest-${uid.slice(0,6)}`;
+    el.tgFallback.value = v.username || '';
+    el.balance.innerText = formatNumber(Number(v.balance || 0));
+    el.tgStatus.innerText = v.username ? '(Telegram ready)' : '(no Telegram set)';
+  });
+}
+
+// Add listeners
+el.saveTg.addEventListener('click', saveTgFallback);
+el.sendChat.addEventListener('click', sendChat);
+el.chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });
+el.withdrawBtn.addEventListener('click', requestWithdraw);
+el.popBtn1.addEventListener('click', ()=> injectPopScript(POP_SCRIPTS[0].html));
+el.popBtn2.addEventListener('click', ()=> injectPopScript(POP_SCRIPTS[1].html));
+el.openAdmin.addEventListener('click', openAdminModal);
+el.closeAdmin.addEventListener('click', closeAdminModal);
+el.adminLoginBtn.addEventListener('click', adminClientLogin);
+
+// Auth and initialisation
+signInAnonymously(auth)
+  .catch((err) => {
+    console.error('Auth error', err);
+    showToast('Auth error');
+  });
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUser = user;
+    // ensure user node exists
+    const uRef = ref(db, `users/${user.uid}`);
+    set(uRef, {
+      username: null,
+      balance: 0,
+      createdAt: serverTimestamp()
+    }).catch(()=>{}); // don't overwrite; used as upsert on first time may fail but okay
+    listenUser(user.uid);
+    renderAds();
+    listenChat();
+    listenLeaderboard();
+  } else {
+    currentUser = null;
+  }
 });
 
-chatInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        sendChatBtn.click();
-    }
-});
+// Basic realtime notifications for withdrawals and leaderboard are already set via onValue in listeners above
 
-// --- Leaderboard ---
+// Optional: Telegram widget callback (if you enable Telegram login widget)
+// window.onTelegramAuth = function(user) {
+//   // user: {id, first_name, last_name, username, photo_url, auth_date, hash}
+//   if (!currentUser) return showToast('Auth required');
+//   update(ref(db, `users/${currentUser.uid}`), { username: user.username || `${user.first_name || ''} ${user.last_name || ''}`, telegramUser: user }).then(()=> showToast('Telegram linked'));
+//};
 
-function loadLeaderboard() {
-    const q = query(usersRef, orderBy("totalEarned", "desc"), limit(10));
-    onSnapshot(q, (snapshot) => {
-        leaderboardList.innerHTML = '';
-        snapshot.forEach((doc) => {
-            const userData = doc.data();
-            const li = document.createElement('li');
-            li.textContent = `${userData.telegramUsername}: ₱${userData.totalEarned.toFixed(4)}`;
-            leaderboardList.appendChild(li);
-        });
-    });
-}
-
-// --- Admin Dashboard ---
-
-adminLoginBtn.addEventListener('click', () => {
-    const password = adminPasswordInput.value;
-    if (password === "Propetas12") {
-        adminLoginStatus.textContent = 'Admin logged in!';
-        adminContent.style.display = 'block';
-        loadAdminWithdrawalRequests();
-        loadAdminUsers();
-    } else {
-        adminLoginStatus.textContent = 'Incorrect password.';
-        adminContent.style.display = 'none';
-    }
-});
-
-function loadAdminWithdrawalRequests() {
-    const q = query(withdrawalsRef, orderBy("requestedAt", "desc"));
-    onSnapshot(q, (snapshot) => {
-        adminWithdrawalRequests.innerHTML = '';
-        snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <span>User: ${data.telegramUsername} (ID: ${data.userId.substring(0, 5)}...), Amount: ₱${data.amount.toFixed(2)}, GCash: ${data.gcashNumber}, Status: <strong>${data.status}</strong></span>
-                <div class="admin-action-buttons">
-                    ${data.status === 'Pending' ? `
-                        <button onclick="approveWithdrawal('${docSnap.id}', '${data.userId}', ${data.amount})">Approve</button>
-                        <button onclick="rejectWithdrawal('${docSnap.id}')">Reject</button>
-                    ` : ''}
-                </div>
-            `;
-            adminWithdrawalRequests.appendChild(li);
-        });
-    });
-}
-
-async function approveWithdrawal(withdrawalId, userId, amount) {
-    try {
-        await updateDoc(doc(withdrawalsRef, withdrawalId), {
-            status: 'Approved',
-            processedAt: serverTimestamp()
-        });
-        alert(`Withdrawal ${withdrawalId} approved.`);
-        // No need to add back to user balance, it was already deducted
-    } catch (error) {
-        console.error("Error approving withdrawal:", error);
-        alert("Error approving withdrawal.");
-    }
-}
-
-async function rejectWithdrawal(withdrawalId) {
-    try {
-        // For rejection, you might want to refund the amount to the user
-        // This requires getting the amount from the withdrawal request
-        const withdrawalDoc = await getDoc(doc(withdrawalsRef, withdrawalId));
-        const withdrawalData = withdrawalDoc.data();
-        const userId = withdrawalData.userId;
-        const amount = withdrawalData.amount;
-
-        await updateDoc(doc(withdrawalsRef, withdrawalId), {
-            status: 'Rejected',
-            processedAt: serverTimestamp()
-        });
-
-        // Refund the user's balance
-        const userDocRef = doc(usersRef, userId);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-            const currentBalance = userDocSnap.data().balance;
-            await updateDoc(userDocRef, {
-                balance: parseFloat((currentBalance + amount).toFixed(4))
-            });
-        }
-
-        alert(`Withdrawal ${withdrawalId} rejected and amount refunded to user.`);
-    } catch (error) {
-        console.error("Error rejecting withdrawal:", error);
-        alert("Error rejecting withdrawal.");
-    }
-}
-
-function loadAdminUsers() {
-    onSnapshot(usersRef, (snapshot) => {
-        adminUserList.innerHTML = '';
-        snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const li = document.createElement('li');
-            li.textContent = `User: ${data.telegramUsername}, Balance: ₱${data.balance.toFixed(4)}, Total Earned: ₱${data.totalEarned.toFixed(4)}`;
-            adminUserList.appendChild(li);
-        });
-    });
-}
-
-// Expose admin functions globally for onclick in HTML
-window.approveWithdrawal = approveWithdrawal;
-window.rejectWithdrawal = rejectWithdrawal;
-
-// Initial anonymous login attempt (if no user data is found, it will prompt for username)
-signInAnonymously(auth).catch(error => {
-    console.error("Initial anonymous sign-in failed:", error);
-    authStatus.textContent = `Error during initial login: ${error.message}`;
-});

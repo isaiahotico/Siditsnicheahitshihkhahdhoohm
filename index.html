@@ -3,80 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FreeGcashads - Earn Rewards</title>
-    <link rel="stylesheet" href="style.css"> <!-- We'll create a simple CSS file -->
-
-    <!-- Adsterra Popunder Script (Place these early in the head or body) -->
+    <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
+    <link rel="stylesheet" href="style.css"> <!-- For basic styling -->
+    <!-- Monetag Popunder -->
+    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
+    <script>
+        // In-App Interstitial - Adjust frequency, capping, etc., as per Monetag guidelines
+        show_10276123({
+            type: 'inApp',
+            inAppSettings: {
+                frequency: 2, // Show 2 ads
+                capping: 0.1, // within 0.1 hours (6 minutes)
+                interval: 30, // 30-second interval
+                timeout: 5, // 5-second delay before first
+                everyPage: false // Session persists across pages
+            }
+        });
+    </script>
+    <!-- Adsterra Popunder (from your provided code) -->
     <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
     <script>
-      atOptions = {
-        'key' : 'fe70943384c0314737bd62c05e3d520a',
-        'format' : 'iframe',
-        'height' : 300,
-        'width' : 160,
-        'params' : {}
-      };
+        atOptions = {
+            'key' : 'fe70943384c0314737bd62c05e3d520a',
+            'format' : 'iframe',
+            'height' : 300,
+            'width' : 160,
+            'params' : {}
+        };
     </script>
     <script src="https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js"></script>
     <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
-    <!-- End Adsterra Popunder -->
-
-    <!-- Firebase SDKs -->
-    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js"></script>
-    <!-- If you plan to use Firestore -->
-    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
-
 </head>
 <body>
-    <header>
-        <h1>FreeGcashads</h1>
-        <p>Click, Earn, Repeat!</p>
-    </header>
+    <div class="container">
+        <h1>🎖🤑PAPERHOUSE INC ADS🤑🎖</h1>
 
-    <main>
-        <section id="adsterra-banner-top" class="ad-banner">
-            <!-- Adsterra Smart Link Banner (Top) -->
-            <a href="https://www.effectivegatecpm.com/mwbmp8yxc?key=9ce01dec19ec86d0fbabe111b4439981" target="_blank" rel="noopener noreferrer">
-                <img src="https://via.placeholder.com/728x90?text=Adsterra+Banner+Ad+1" alt="Adsterra Ad 1" style="max-width: 100%; height: auto;">
-            </a>
-        </section>
+        <div class="balance-section">
+            <p>Your Balance: <span id="userBalance">0.00</span> PHP</p>
+            <div id="rewardNotification" class="notification"></div>
+        </div>
 
-        <section id="buttons-section">
-            <h2>Click & Earn Links</h2>
-            <div id="button-container" class="grid-container">
-                <!-- Buttons will be dynamically loaded here by app.js -->
+        <div class="ad-cards-container" id="adCardsContainer">
+            <!-- Ad buttons will be dynamically inserted here by app.js -->
+        </div>
+
+        <div class="withdrawal-section">
+            <h2>Withdraw GCash</h2>
+            <p>Minimum Withdrawal: 0.02 PHP</p>
+            <input type="text" id="gcashNumber" placeholder="Enter GCash Number (e.g., 09123456789)">
+            <input type="text" id="telegramUsername" placeholder="Enter Telegram Username (e.g., @yourusername)">
+            <button id="withdrawButton">Request Withdrawal</button>
+            <p>Withdrawal Status: <span id="withdrawalStatus">N/A</span></p>
+        </div>
+
+        <div class="leaderboard-section">            <h2>Leaderboard</h2>
+            <ul id="leaderboardList">
+                <!-- Leaderboard items will be dynamically inserted here -->
+            </ul>
+        </div>
+
+        <div class="chat-section">
+            <h2>Chat Room</h2>
+            <div id="chatMessages">
+                <!-- Chat messages will be dynamically inserted here -->
             </div>
-        </section>
+            <input type="text" id="chatInput" placeholder="Type your message...">
+            <button id="sendMessageButton">Send</button>
+        </div>
 
-        <section id="adsterra-banner-middle" class="ad-banner">
-            <!-- Adsterra Smart Link Banner (Middle) -->
-            <a href="https://www.effectivegatecpm.com/iefwgzfy8w?key=ef8a98a84b67232d3808db269675011c" target="_blank" rel="noopener noreferrer">
-                <img src="https://via.placeholder.com/300x250?text=Adsterra+Banner+Ad+2" alt="Adsterra Ad 2" style="max-width: 100%; height: auto;">
-            </a>
-        </section>
+        <div class="admin-link">
+            <a href="#" id="adminDashboardLink" style="display: none;">Admin Dashboard</a>
+        </div>
+    </div>
 
-        <section id="cards-section">
-            <h2>Special Offers (Cooldown: 1 min)</h2>
-            <div id="card-container" class="grid-container">
-                <!-- Cards will be dynamically loaded here by app.js -->
+    <!-- Admin Dashboard Modal (hidden by default) -->
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Admin Login</h2>
+            <input type="password" id="adminPassword" placeholder="Enter Admin Password">
+            <button id="adminLoginButton">Login</button>
+            <div id="adminDashboardContent" style="display: none;">
+                <h3>Pending Withdrawal Requests</h3>
+                <ul id="withdrawalRequestsList">
+                    <!-- Withdrawal requests will be displayed here -->
+                </ul>
             </div>
-        </section>
+        </div>
+    </div>
 
-        <section id="adsterra-banner-bottom" class="ad-banner">
-            <!-- Adsterra Smart Link Banner (Bottom) -->
-            <a href="https://www.effectivegatecpm.com/hebhpc3tcm?key=e18e0c3b11bce2e7a0d722f6ac554232" target="_blank" rel="noopener noreferrer">
-                <img src="https://via.placeholder.com/728x90?text=Adsterra+Banner+Ad+3" alt="Adsterra Ad 3" style="max-width: 100%; height: auto;">
-            </a>
-        </section>
-
-    </main>
-
-    <footer>
-        <p>&copy; 2023 FreeGcashads. All rights reserved.</p>
-    </footer>
-
-    <!-- Your main application logic -->
-    <script type="module" src="app.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-analytics-compat.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

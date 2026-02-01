@@ -3,146 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PAPERHOUSE Runner</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-            flex-direction: column;
-        }
-        #gameContainer {
-            position: relative;
-            width: 300px;
-            height: 500px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
-            overflow: hidden;
-            background-color: #fff;
-        }
-        canvas {
-            display: block;
-            background-color: #87ceeb; /* Sky blue */
-        }
-        .ui-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            z-index: 10;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .hidden { display: none !important; }
-        .score-display {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
-            z-index: 5;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 5px 10px;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px 20px;
-            margin-top: 15px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        #startButton {
-            background-color: #4CAF50;
-            color: white;
-        }
-        #startButton:hover { background-color: #45a049; }
+    <title>FreeGcashads - Earn Rewards</title>
+    <link rel="stylesheet" href="style.css"> <!-- We'll create a simple CSS file -->
 
-        #retryButton {
-            background-color: #ff9800;
-            color: white;
-        }
-        #retryButton:hover { background-color: #e68900; }
+    <!-- Adsterra Popunder Script (Place these early in the head or body) -->
+    <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
+    <script>
+      atOptions = {
+        'key' : 'fe70943384c0314737bd62c05e3d520a',
+        'format' : 'iframe',
+        'height' : 300,
+        'width' : 160,
+        'params' : {}
+      };
+    </script>
+    <script src="https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js"></script>
+    <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
+    <!-- End Adsterra Popunder -->
 
-        #withdrawalButton {
-            background-color: #2196F3;
-            color: white;
-        }
-        #withdrawalButton:hover { background-color: #1e88e5; }
-
-        input {
-            padding: 10px;
-            margin: 8px 0;
-            width: 80%;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-        h1 { margin-bottom: 5px; }
-        p { margin: 5px 0; }
-    </style>
     <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js"></script>
+    <!-- If you plan to use Firestore -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+
 </head>
 <body>
+    <header>
+        <h1>FreeGcashads</h1>
+        <p>Click, Earn, Repeat!</p>
+    </header>
 
-    <div id="gameContainer">
-        <div class="score-display">
-            Barriers: <span id="currentBarriers">0</span> | 
-            Balance: ₱<span id="pesoBalance">0.00</span>
-        </div>
+    <main>
+        <section id="adsterra-banner-top" class="ad-banner">
+            <!-- Adsterra Smart Link Banner (Top) -->
+            <a href="https://www.effectivegatecpm.com/mwbmp8yxc?key=9ce01dec19ec86d0fbabe111b4439981" target="_blank" rel="noopener noreferrer">
+                <img src="https://via.placeholder.com/728x90?text=Adsterra+Banner+Ad+1" alt="Adsterra Ad 1" style="max-width: 100%; height: auto;">
+            </a>
+        </section>
 
-        <canvas id="gameCanvas" width="300" height="500"></canvas>
+        <section id="buttons-section">
+            <h2>Click & Earn Links</h2>
+            <div id="button-container" class="grid-container">
+                <!-- Buttons will be dynamically loaded here by app.js -->
+            </div>
+        </section>
 
-        <!-- 1. Start Screen -->
-        <div id="startScreen" class="ui-overlay">
-            <h1>PAPERHOUSE Runner</h1>
-            <p>Dodge the obstacles to earn $GOLD and Pesos!</p>
-            <p>1000 Barriers = ₱1.00</p>
-            <button id="startButton">Start Game</button>
-            <button id="withdrawalButton">Withdraw (₱<span id="withdrawBalanceDisplay">0.00</span>)</button>
-        </div>
+        <section id="adsterra-banner-middle" class="ad-banner">
+            <!-- Adsterra Smart Link Banner (Middle) -->
+            <a href="https://www.effectivegatecpm.com/iefwgzfy8w?key=ef8a98a84b67232d3808db269675011c" target="_blank" rel="noopener noreferrer">
+                <img src="https://via.placeholder.com/300x250?text=Adsterra+Banner+Ad+2" alt="Adsterra Ad 2" style="max-width: 100%; height: auto;">
+            </a>
+        </section>
 
-        <!-- 2. Game Over Screen -->
-        <div id="gameOverScreen" class="ui-overlay hidden">
-            <h1>Game Over!</h1>
-            <p>Barriers Dodged: <span id="finalBarriers">0</span></p>
-            <p>Peso Earned: ₱<span id="pesoEarned">0.00</span></p>
-            <button id="retryButton">Play Again</button>
-        </div>
+        <section id="cards-section">
+            <h2>Special Offers (Cooldown: 1 min)</h2>
+            <div id="card-container" class="grid-container">
+                <!-- Cards will be dynamically loaded here by app.js -->
+            </div>
+        </section>
 
-        <!-- 3. Withdrawal Modal -->
-        <div id="withdrawalModal" class="ui-overlay hidden">
-            <h1>Withdraw Funds</h1>
-            <p>Available Balance: ₱<span id="modalBalance">0.00</span></p>
-            <p>Minimum Withdrawal: ₱50.00</p>
-            
-            <input type="number" id="withdrawAmount" placeholder="Enter Amount (e.g., 50.00)">
-            <input type="text" id="gcashNumber" placeholder="GCash Number (e.g., 09xxxxxxxxx)">
-            
-            <button id="submitWithdrawal">Submit Request</button>
-            <button id="closeModal">Cancel</button>
-            <p id="withdrawalMessage" style="color: yellow; margin-top: 10px;"></p>
-        </div>
-    </div>
+        <section id="adsterra-banner-bottom" class="ad-banner">
+            <!-- Adsterra Smart Link Banner (Bottom) -->
+            <a href="https://www.effectivegatecpm.com/hebhpc3tcm?key=e18e0c3b11bce2e7a0d722f6ac554232" target="_blank" rel="noopener noreferrer">
+                <img src="https://via.placeholder.com/728x90?text=Adsterra+Banner+Ad+3" alt="Adsterra Ad 3" style="max-width: 100%; height: auto;">
+            </a>
+        </section>
 
-    <script src="app.js"></script>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 FreeGcashads. All rights reserved.</p>
+    </footer>
+
+    <!-- Your main application logic -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>

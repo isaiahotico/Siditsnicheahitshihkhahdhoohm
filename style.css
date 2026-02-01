@@ -1,6 +1,6 @@
 body {
     font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    background-color: #f0f2f5;
     color: #333;
     margin: 0;
     padding: 20px;
@@ -10,14 +10,14 @@ body {
     min-height: 100vh;
 }
 
-.app-container {
+.container {
     background-color: #fff;
     padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-    max-width: 800px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    max-width: 900px;
     width: 100%;
-    margin-bottom: 20px;
+    box-sizing: border-box;
 }
 
 h1, h2 {
@@ -26,36 +26,20 @@ h1, h2 {
     margin-bottom: 20px;
 }
 
-div {
-    margin-bottom: 20px;
-    padding: 15px;
-    border: 1px solid #eee;
-    border-radius: 5px;
-    background-color: #fdfdfd;
-}
-
-input[type="text"],
-input[type="password"] {
-    width: calc(100% - 22px);
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
 button {
-    background-color: #28a745;
+    background-color: #007bff;
     color: white;
-    padding: 10px 15px;
     border: none;
-    border-radius: 4px;
+    padding: 10px 15px;
+    border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
-    margin-right: 10px;
+    transition: background-color 0.3s ease;
+    margin: 5px;
 }
 
-button:hover {
-    background-color: #218838;
+button:hover:not(:disabled) {
+    background-color: #0056b3;
 }
 
 button:disabled {
@@ -63,54 +47,75 @@ button:disabled {
     cursor: not-allowed;
 }
 
+input[type="text"], input[type="number"], input[type="password"] {
+    width: calc(100% - 22px);
+    padding: 10px;
+    margin: 5px 0 15px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+.ad-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
 .ad-button {
-    background-color: #007bff;
-    margin: 5px;
-    display: inline-block;
+    min-width: 120px;
+    margin: 10px;
 }
 
-.ad-button:hover {
-    background-color: #0056b3;
+.adsterra-banner {
+    text-align: center;
+    margin: 30px 0;
+    border: 1px dashed #007bff;
+    padding: 10px;
+    border-radius: 8px;
 }
 
-#chat-messages, #admin-chat-log {
+.chat-section, .leaderboard-section, .withdrawal-section, .ad-section, #auth-section, #admin-dashboard {
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+#chat-messages {
     height: 200px;
     overflow-y: scroll;
     border: 1px solid #ddd;
     padding: 10px;
     margin-bottom: 10px;
-    background-color: #f9f9f9;
+    background-color: #fff;
+    border-radius: 5px;
 }
 
-.chat-message {
-    margin-bottom: 5px;
+#chat-messages p {
+    margin: 5px 0;
 }
 
-.chat-message strong {
-    color: #007bff;
-}
-
-#leaderboard-list, #withdrawal-history, #pending-withdrawals, #all-users-list {
-    list-style: none;
+#leaderboard-list, #withdrawal-history-list, #admin-withdrawal-requests, #admin-user-list {
+    list-style-type: none;
     padding: 0;
 }
 
-#leaderboard-list li, #withdrawal-history li, #pending-withdrawals li, #all-users-list li {
-    padding: 8px 0;
-    border-bottom: 1px dotted #eee;
-}
-
-#leaderboard-list li:last-child, #withdrawal-history li:last-child, #pending-withdrawals li:last-child, #all-users-list li:last-child {
-    border-bottom: none;
-}
-
-.withdrawal-item {
+#leaderboard-list li, #withdrawal-history-list li, #admin-withdrawal-requests li, #admin-user-list li {
+    background-color: #fff;
+    border: 1px solid #eee;
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 5px;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.withdrawal-item button {
+.admin-action-buttons button {
+    margin-left: 10px;
     padding: 5px 10px;
     font-size: 14px;
 }

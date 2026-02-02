@@ -1,155 +1,185 @@
+
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>FreeGcashads</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
+
   <style>
-    /* Very small inline CSS for readability (you can separate to style.css) */
-    body { font-family: Arial, sans-serif; margin:0; background:#f4f4f4; color:#222; }
-    header{background:#1e88e5;color:#fff;padding:12px 20px}
-    main{max-width:1100px;margin:18px auto;padding:18px;background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-    .card{background:#fff;border:1px solid #e6e6e6;padding:12px;border-radius:8px}
-    button{background:#1e88e5;color:#fff;border:0;padding:10px;border-radius:6px;cursor:pointer}
-    button:disabled{background:#cfcfcf;cursor:not-allowed}
-    .muted{color:#666;font-size:13px}
-    .row{display:flex;gap:10px;align-items:center}
-    input[type=text]{padding:8px;border:1px solid #ddd;border-radius:6px;width:100%}
-    #chatMessages{height:240px;overflow:auto;border:1px solid #eee;padding:8px;border-radius:6px;background:#fafafa}
-    .online {color:green;font-weight:600}
-    .admin-badge {background:gold;color:#000;padding:2px 6px;border-radius:4px;font-size:12px;margin-left:8px}
-    .withdraw-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #eee}
+    :root{--bg:#071028;--card:#0b1220;--accent:#ffcc00;--muted:#9aa4b2}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial;background:linear-gradient(180deg,#071028 0%,#081328 100%);color:#e6eef8}
+    .wrap{max-width:980px;margin:20px auto;padding:20px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{font-weight:800;font-size:20px;display:flex;align-items:center;gap:10px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); padding:16px;border-radius:12px; margin-top:14px}
+    .controls{display:flex;gap:10px;flex-wrap:wrap}
+    button{background:var(--accent);border:none;color:#021018;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+    .muted{color:var(--muted);font-size:13px}
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:12px;margin-top:12px}
+    #chatBox{height:360px;overflow:auto;padding:10px;background:rgba(255,255,255,0.01);border-radius:8px;border:1px solid rgba(255,255,255,0.02)}
+    .msg{padding:6px 8px;border-radius:6px;margin-bottom:8px}
+    .msg.me{background:rgba(34,197,94,0.12)}
+    .msg.other{background:rgba(255,255,255,0.02)}
+    .leader{display:flex;justify-content:space-between;padding:8px 6px;border-bottom:1px dashed rgba(255,255,255,0.02)}
+    input, textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit}
+    .admin-panel{display:none;margin-top:12px}
+    .banner-wrap{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .banner-card{width:180px;height:100px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));display:flex;align-items:center;justify-content:center;flex-direction:column;padding:8px;border:1px solid rgba(255,255,255,0.02)}
+    .small{font-size:13px}
+    .tg-widget-placeholder{margin-top:10px}
   </style>
 
-  <!-- Popunder / Adsterra / Interstitial scripts (as provided) -->
-  <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
+  <!-- Monetag (existing) -->
+  <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
 
-  <!-- In-App Interstitial SDK you provided -->
-  <script src="//libtl.com/sdk.js" data-zone="10276123" data-sdk="show_10276123"></script>
-
-  <!-- Firebase SDKs (modular) -->
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js"></script>
+  <!-- Popounder snippets will be injected programmatically but include a static copy here if needed -->
 </head>
 <body>
-  <header>
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <strong>FreeGcashads</strong>        <div class="muted" style="font-size:13px">Earn 0.0077 PHP per ad click • Minimum withdraw 0.02 PHP</div>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+
+        <span style="font-size:22px">🎖🤑</span>
+        <div>
+          <div>PAPERHOUSE INC ADS</div>
+          <div class="muted" style="font-weight:600;font-size:12px">Monetag 3136495 — AdsGram & Adsterra integrated</div>
+        </div>
       </div>
-      <div id="userPanel" style="text-align:right">
-        <div id="userDisplay" class="muted">Not signed in</div>
-        <div style="margin-top:8px">
-          <button id="btnSignIn">Sign In (Anon)</button>
-          <button id="btnAdminLogin">Admin Login</button>
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="muted small">Balance: <span id="balance">0.00</span> PHP</div>
+        <button id="watchMonetagBtn">Monetag Ad (0.0065)</button>
+        <button id="watchAdsGramBtn">AdsGram Ad (0.0065)</button>
+        <button id="withdrawBtn">Withdraw</button>
+        <button id="adminBtn" title="Admin panel (password protected)">Admin</button>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="controls">
+        <div style="flex:1">
+          <div class="muted small">Profile</div>
+          <input id="username" placeholder="Enter nickname (saved locally)" />
+        </div>
+
+        <div style="width:220px">
+          <div class="muted small">GCash # (for withdrawals)</div>
+          <input id="gcashNumber" placeholder="09XXXXXXXXX or email" />
+        </div>
+
+        <div style="min-width:160px">
+          <div class="muted small">Telegram login</div>
+          <div class="tg-widget-placeholder">
+            <!-- Replace data-telegram-login value with your bot's username (example: MyBot) -->
+            <script async src="https://telegram.org/js/telegram-widget.js?15"
+              data-telegram-login="YourBotUsername"
+              data-size="large"
+              data-userpic="false"
+              data-auth-url=""
+              data-request-access="write"></script>
+            <div class="muted small">If you use Telegram Login widget, your Telegram username will be shown live (must configure bot).</div>
+          </div>
         </div>
       </div>
     </div>
-  </header>
 
-  <main>
-    <section style="margin-bottom:14px">
-      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
-        <div style="flex:1;min-width:220px">
-          <label class="muted">Telegram username</label>
-          <div class="row" style="margin-top:6px">
-            <input id="telegramInput" placeholder="@yourtelegram" />
-            <button id="saveTelegramBtn">Save</button>
+    <div class="grid">
+      <div class="left">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <strong>Chat Room</strong>
+              <div class="muted small">Real-time chat for users</div>
+            </div>
+            <div class="muted small">Be kind — public chat</div>
           </div>
-          <div id="telegramDisplay" class="muted" style="margin-top:6px"></div>
-        </div>
 
-        <div style="min-width:220px">
-          <label class="muted">Balance (PHP)</label>
-          <div style="font-size:22px;font-weight:700" id="balanceDisplay">0.0000</div>
-          <div class="muted">Minimum withdraw: 0.02 PHP</div>
-          <div style="margin-top:8px">
-            <input id="withdrawAmount" type="text" placeholder="Amount e.g. 0.02" />
-            <button id="requestWithdrawBtn">Request Withdraw</button>
+          <div id="chatBox" style="margin-top:10px"></div>
+
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <input id="chatInput" placeholder="Write a message..." />
+            <button id="sendMsg">Send</button>
           </div>
         </div>
 
-        <div style="min-width:260px">
-          <label class="muted">Your stats</label>
-          <div id="stats" style="margin-top:6px" class="muted">Total watched: 0 • Daily: 0</div>
-        </div>
-      </div>
-    </section>
+        <div class="card" style="margin-top:12px">
+          <strong>Ads & Banners</strong>
+          <div class="muted small">Click each card/button to open ad (reward 0.0065 PHP). Global ad cooldown: 5 minutes per user. Banner rotate every 1 minute.</div>
 
-    <section style="margin-bottom:18px">
-      <h3 style="margin:0 0 12px 0">Ads & Offers (Click to open ad and earn)</h3>
-      <div id="adsContainer" class="grid"></div>
-    </section>
+          <div style="margin-top:10px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <div class="banner-card" id="bannerCard">
+                <div id="bannerTitle">Adsterra Banner</div>
+                <button id="bannerOpenBtn">Open</button>
+                <div class="muted small" id="bannerCooldownInfo"></div>
+              </div>
 
-    <section style="margin-bottom:18px">
-      <h3 style="margin:0 0 12px 0">In-App Interstitial (auto show)</h3>
-      <div class="muted">In-app interstitial will show automatically on open. Separate cooldown every 5 minutes.</div>
-    </section>
+              <!-- Links buttons (Adsterra smart links) -->
+              <div style="display:flex;flex-direction:column;gap:6px;margin-left:6px">
+                <button class="linkBtn" data-link="https://www.effectivegatecpm.com/mwbmp8yxc?key=9ce01dec19ec86d0fbabe111b4439981">Adsterra Link 1</button>
+                <button class="linkBtn" data-link="https://www.effectivegatecpm.com/iefwgzfy8w?key=ef8a98a84b67232d3808db269675011c">Adsterra Link 2</button>
+                <button class="linkBtn" data-link="https://www.effectivegatecpm.com/hebhpc3tcm?key=e18e0c3b11bce2e7a0d722f6ac554232">Adsterra Link 3</button>
 
-    <section style="margin-bottom:18px">
-      <h3 style="margin:0 0 12px 0">Chat</h3>
-      <div id="chatMessages"></div>      <div style="display:flex;gap:8px;margin-top:8px">
-        <input id="chatInput" placeholder="Say something..." />
-        <button id="sendChatBtn">Send</button>
-      </div>
-    </section>
+<button class="linkBtn" data-link="https://www.effectivegatecpm.com/ai7csj41?key=7e287f34b34183342aa072ceeccb42cf">Adsterra Link 4</button>
+              </div>
+            </div>
 
-    <section style="margin-bottom:18px">
-      <h3 style="margin:0 0 12px 0">Online Users</h3>
-      <div id="onlineUsers" class="grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))"></div>
-    </section>
-
-    <section>
-      <h3 style="margin:0 0 12px 0">Admin Dashboard</h3>
-      <div id="adminPanel" style="display:none">
-        <div style="margin-bottom:8px">
-          <strong>Admin: <span id="adminName"></span></strong>
-        </div>
-        <div style="display:flex;gap:12px">
-          <div style="flex:1">
-            <div class="muted">Pending withdrawals</div>
-            <div id="withdrawList" style="border:1px solid #eee;padding:8px;border-radius:6px;background:#fff"></div>
-          </div>
-          <div style="width:320px">
-            <div class="muted">Admin actions</div>
-            <div style="margin-top:8px">
-              <button id="refreshAdminBtn">Refresh</button>
+            <div style="margin-top:10px" class="muted small">
+              Popounder auto-show every 30 minutes (script included). You can disable in code.
             </div>
           </div>
         </div>
-      </div>
-    </section>
 
-  </main>
+        <div class="card" style="margin-top:12px">
+          <strong>Activity / Logs</strong>
+          <div id="activityLog" class="muted small" style="margin-top:10px;max-height:120px;overflow:auto"></div>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div><strong>Leaderboard</strong><div class="muted small">Top balances</div></div>
+            <div class="muted small">Min withdraw: 0.02 PHP</div>
+          </div>
+
+          <div id="leaderboard" style="margin-top:12px"></div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <strong>Admin Panel (password required)</strong>
+          <div class="muted small">Open admin panel with the button above</div>
+
+          <div class="admin-panel" id="adminPanel">
+            <div style="margin-top:8px">
+              <div class="muted small">Broadcast message to chat</div>
+              <input id="adminBroadcast" placeholder="Message to all" />
+              <button id="adminBroadcastBtn" style="margin-top:6px">Broadcast</button>
+            </div>
+
+            <div style="margin-top:10px">
+              <div class="muted small">Adjust user balance (credit/debit)</div>
+              <input id="adminUserId" placeholder="User ID (uid) or nickname" />
+              <input id="adminAmount" placeholder="+0.0065 or -0.0065" />
+              <button id="adminAdjustBtn" style="margin-top:6px">Apply</button>
+            </div>
+
+            <div style="margin-top:10px">
+              <div class="muted small">Quick stats</div>
+              <div id="adminStats" class="muted small"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="margin-top:12px;text-align:center" class="muted small">
+      Fast UI concept — reward per ad: 0.0065 PHP. Withdraw minimum: 0.02 PHP. Client‑side admin prompt used only for prototyping.
+    </div>
+  </div>
 
   <script type="module" src="app.js"></script>
-
-  <script>
-    /* In-app interstitial initial call provided by you.
-       We'll call it on app open (page load). The SDK expects show_10276123 available. */
-    try {
-      // configure as requested: autoplay frequency=2, capping=0.1, interval=30, timeout=5 (that's your provided config)
-      window.setTimeout(() => {
-        if (typeof show_10276123 === 'function') {
-          show_10276123({
-            type: 'inApp',
-            inAppSettings: {
-              frequency: 2,
-              capping: 0.1,
-              interval: 30,
-              timeout: 5,
-              everyPage: false
-            }
-          });
-        }
-      }, 1500);
-    } catch (e) {
-      console.warn('Interstitial SDK not available or failed', e);
-    }
-  </script>
 </body>
 </html>

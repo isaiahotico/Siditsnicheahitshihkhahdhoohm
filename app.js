@@ -1,20 +1,14 @@
 
-// app.js (module)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+// app.js (type=module)
+// Firebase v9 modular + Firestore usage
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 import {
-  getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword,
-  updateProfile, signOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore, doc, getDoc, setDoc, updateDoc, runTransaction,
-  collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, limit
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+  getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, updateDoc,
+  serverTimestamp, increment, query, orderBy, limit, where, getDocs
+} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
-/*
-  Firebase configuration (you provided)
-  Make sure this matches your Firebase project.
-*/
+// --- Firebase config (use provided) ---
 const firebaseConfig = {
   apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
   authDomain: "freegcash-ads.firebaseapp.com",
@@ -27,544 +21,478 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* App constants */
-const REWARD_PER_CLICK = 0.0077; // PHP
-const AD_COOLDOWN_MS = 2 * 60 * 1000; // 2 minutes per ad
-const INTERSTITIAL_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes for auto interstitial
-const MIN_WITHDRAW = 0.02; // PHP
+// Constants
+const REWARD_PER_AD = 0.0065; // reward per showed ad (PHP)
+const MIN_WITHDRAW = 0.02;
+const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes per user per ad source
+const BANNER_ROTATE_MS = 60 * 1000; // 1 minute rotate for banners
+const POPOUNDER_MS = 30 * 60 * 1000; // auto show popounder every 30 minutes
+const ADMIN_PASSWORD = "Propetas12";
 
-/* Ads list (combine all links you provided) */
-const ADS = [
-  // otieu links
-  { id: "ot1", name: "Offer 10549975", url: "https://otieu.com/4/10549975" },
-  { id: "ot2", name: "Offer 10504686", url: "https://otieu.com/4/10504686" },
-  { id: "ot3", name: "Offer 10049560", url: "https://otieu.com/4/10049560" },
-  { id: "ot4", name: "Offer 10047849", url: "https://otieu.com/4/10047849" },
-  { id: "ot5", name: "Offer 10549926", url: "https://otieu.com/4/10549926" },
-  { id: "ot6", name: "Offer 10549929", url: "https://otieu.com/4/10549929" },
-  { id: "ot7", name: "Offer 10549950", url: "https://otieu.com/4/10549950" },
-  { id: "ot8", name: "Offer 10549951", url: "https://otieu.com/4/10549951" },
+// UI elements
+const watchMonetagBtn = document.getElementById('watchMonetagBtn');
+const watchAdsGramBtn = document.getElementById('watchAdsGramBtn');
+const balanceEl = document.getElementById('balance');
+const usernameInput = document.getElementById('username');
+const gcashInput = document.getElementById('gcashNumber');
+const chatBox = document.getElementById('chatBox');
+const chatInput = document.getElementById('chatInput');
+const sendMsg = document.getElementById('sendMsg');
+const leaderboardEl = document.getElementById('leaderboard');
+const activityLog = document.getElementById('activityLog');
+const withdrawBtn = document.getElementById('withdrawBtn');
+const adminBtn = document.getElementById('adminBtn');
+const adminPanel = document.getElementById('adminPanel');
+const adminBroadcast = document.getElementById('adminBroadcast');
+const adminBroadcastBtn = document.getElementById('adminBroadcastBtn');
+const adminUserId = document.getElementById('adminUserId');
+const adminAmount = document.getElementById('adminAmount');
+const adminAdjustBtn = document.getElementById('adminAdjustBtn');
+const adminStats = document.getElementById('adminStats');
 
-  // Adsterra smart links
-  { id: "as1", name: "SmartLink A", url: "https://www.effectivegatecpm.com/mwbmp8yxc?key=9ce01dec19ec86d0fbabe111b4439981" },
-  { id: "as2", name: "SmartLink B", url: "https://www.effectivegatecpm.com/iefwgzfy8w?key=ef8a98a84b67232d3808db269675011c" },
-  { id: "as3", name: "SmartLink C", url: "https://www.effectivegatecpm.com/hebhpc3tcm?key=e18e0c3b11bce2e7a0d722f6ac554232" },
-  { id: "as4", name: "SmartLink D", url: "https://www.effectivegatecpm.com/ai7csj41?key=7e287f34b34183342aa072ceeccb42cf" }
+const bannerCard = document.getElementById('bannerCard');
+const bannerTitle = document.getElementById('bannerTitle');
+const bannerOpenBtn = document.getElementById('bannerOpenBtn');
+const bannerCooldownInfo = document.getElementById('bannerCooldownInfo');
+const linkButtons = document.querySelectorAll('.linkBtn');
+
+let currentUser = null;
+let telegramUser = null; // will hold Telegram login info if provided
+let bannerIndex = 0;
+let bannerLinks = [
+  "https://www.effectivegatecpm.com/mwbmp8yxc?key=9ce01dec19ec86d0fbabe111b4439981",
+  "https://www.effectivegatecpm.com/iefwgzfy8w?key=ef8a98a84b67232d3808db269675011c",
+  "https://www.effectivegatecpm.com/hebhpc3tcm?key=e18e0c3b11bce2e7a0d722f6ac554232",
+  "https://www.effectivegatecpm.com/ai7csj41?key=7e287f34b34183342aa072ceeccb42cf"
 ];
 
-/* DOM refs */
-const btnSignIn = document.getElementById('btnSignIn');
-const btnAdminLogin = document.getElementById('btnAdminLogin');
-const userDisplay = document.getElementById('userDisplay');
-const telegramInput = document.getElementById('telegramInput');
-const saveTelegramBtn = document.getElementById('saveTelegramBtn');
-const telegramDisplay = document.getElementById('telegramDisplay');
-const balanceDisplay = document.getElementById('balanceDisplay');
-const statsDisplay = document.getElementById('stats');
-const adsContainer = document.getElementById('adsContainer');
-const requestWithdrawBtn = document.getElementById('requestWithdrawBtn');
-const withdrawAmountInput = document.getElementById('withdrawAmount');
-const chatMessagesEl = document.getElementById('chatMessages');
-const chatInput = document.getElementById('chatInput');
-const sendChatBtn = document.getElementById('sendChatBtn');
-const onlineUsersEl = document.getElementById('onlineUsers');
-const adminPanel = document.getElementById('adminPanel');
-const adminNameEl = document.getElementById('adminName');
-const withdrawListEl = document.getElementById('withdrawList');
-const refreshAdminBtn = document.getElementById('refreshAdminBtn');
-
-/* helper */
-function formatNumber(n) {
-  return parseFloat(n || 0).toFixed(4);
+// Utilities
+function logActivity(text) {
+  const p = document.createElement('div');
+  p.textContent = `${new Date().toLocaleTimeString()} — ${text}`;
+  activityLog.prepend(p);
 }
 
-/* Render ads */
-function renderAds(uid) {
-  adsContainer.innerHTML = '';
-  ADS.forEach(ad => {
-    const el = document.createElement('div');
-    el.className = 'card';
-    el.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-weight:600">${ad.name}</div>
-          <div class="muted" style="font-size:13px">${ad.url}</div>
-        </div>
-        <div style="min-width:120px;text-align:right">
-          <button id="btn_ad_${ad.id}">Open & Earn</button>
-          <div id="cool_${ad.id}" class="muted" style="margin-top:6px;font-size:13px">Ready</div>
-        </div>
-      </div>
-    `;
-    adsContainer.appendChild(el);
+function formatMoney(v) { return Number(v || 0).toFixed(4); } // show 4 decimals for small amounts
 
-    const btn = document.getElementById(`btn_ad_${ad.id}`);
-    const cooldownEl = document.getElementById(`cool_${ad.id}`);
-    btn.addEventListener('click', () => {
-      claimAdAdflow(ad);
-    });
+function now() { return Date.now(); }
 
-    // We'll update cooldown UI when user data loaded via listener
-  });
-}
-
-/* Claim flow: opens ad URL and updates Firestore with reward and cooldown.
-   Use transaction to avoid race conditions.
-*/
-async function claimAdAdflow(ad) {
-  const user = auth.currentUser;
-  if (!user) return alert('Please sign in.');
-
-  const userDocRef = doc(db, 'users', user.uid);
-
-  try {
-    await runTransaction(db, async (tx) => {
-      const userSnap = await tx.get(userDocRef);
-      if (!userSnap.exists()) {
-        throw new Error('User record not found.');
-      }
-      const userData = userSnap.data();
-      const cooldowns = userData.cooldowns || {};
-      const last = cooldowns[ad.id] ? cooldowns[ad.id].toMillis ? cooldowns[ad.id].toMillis() : cooldowns[ad.id] : 0;
-      const now = Date.now();
-
-      if (now - last < AD_COOLDOWN_MS) {
-        const remain = Math.ceil((AD_COOLDOWN_MS - (now - last)) / 1000);
-        throw new Error(`Cooldown active: wait ${remain}s`);
-      }
-
-      // All good, update:
-      const newBalance = (Number(userData.balance || 0) + Number(REWARD_PER_CLICK));
-      const newTotalWatched = (userData.totalWatched || 0) + 1;
-
-      // Daily logic
-      const today = new Date().toISOString().slice(0,10);
-      let daily = userData.dailyWatched || 0;
-      let dailyDate = userData.dailyWatchedDate || today;
-      if (dailyDate !== today) {
-        daily = 1;
-        dailyDate = today;
-      } else {
-        daily = (daily || 0) + 1;
-      }
-
-      tx.update(userDocRef, {
-        balance: newBalance,
-        totalWatched: newTotalWatched,
-        dailyWatched: daily,
-        dailyWatchedDate: dailyDate,
-        [`cooldowns.${ad.id}`]: serverTimestamp()
-      });
-    });
-
-    // open the ad after DB transaction (to count only successful updates)
-    window.open(ad.url, '_blank');
-
-  } catch (err) {
-    alert('Could not claim ad: ' + err.message);
-  }
-}
-
-/* SIGN IN (anonymous) */
-btnSignIn.addEventListener('click', async () => {
-  try {
-    await signInAnonymously(auth);
-  } catch (err) {
-    alert('Sign in failed: ' + err.message);
-  }
+// Anonymous sign-in
+signInAnonymously(auth).catch(e => {
+  console.error('Auth error', e);
+  alert('Auth failed: ' + e.message);
 });
 
-/* Admin login prompt - use email/password sign-in (you must create admin account in Firebase console) */
-btnAdminLogin.addEventListener('click', async () => {
-  const email = prompt('Admin email:');
-  const pass = prompt('Admin password:');
-  if (!email || !pass) return;
-  try {
-    await signInWithEmailAndPassword(auth, email, pass);
-  } catch (err) {
-    alert('Admin sign-in failed: ' + err.message);
-  }
-});
-
-/* Save Telegram username */
-saveTelegramBtn.addEventListener('click', async () => {
-  const user = auth.currentUser;
-  if (!user) return alert('Sign in first.');
-  const name = telegramInput.value.trim();
-  if (!name) return alert('Enter your Telegram username.');
-  try {
-    const userRef = doc(db, 'users', user.uid);
-    await updateDoc(userRef, { telegramUsername: name });
-    telegramInput.value = '';
-  } catch (err) {
-    alert('Failed to save: ' + err.message);
-  }
-});
-
-/* Withdraw request */
-requestWithdrawBtn.addEventListener('click', async () => {
-  const user = auth.currentUser;
-  if (!user) return alert('Sign in first.');
-  const amountStr = (withdrawAmountInput.value || '').trim();
-  const amount = Number(amountStr);
-  if (isNaN(amount) || amount <= 0) return alert('Enter a valid amount.');
-  if (amount < MIN_WITHDRAW) return alert(`Minimum withdraw is ${MIN_WITHDRAW} PHP`);
-  // create withdraw doc with status pending
-  try {
-    const userRef = doc(db, 'users', user.uid);
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) throw new Error('User not found');
-    const userData = userSnap.data();
-    if ((userData.balance || 0) < amount) throw new Error('Insufficient balance');
-
-    // Create withdrawal doc
-    await addDoc(collection(db, 'withdrawals'), {
-      userId: user.uid,
-      amount: amount,
-      status: 'pending',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      telegramUsername: userData.telegramUsername || null
-    });
-    alert('Withdrawal requested. Status: pending.');
-    withdrawAmountInput.value = '';
-  } catch (err) {
-    alert('Withdraw request failed: ' + err.message);
-  }
-});
-
-/* Chat */
-sendChatBtn.addEventListener('click', async () => {
-  const user = auth.currentUser;
-  if (!user) return alert('Sign in first.');
-  const userRef = doc(db, 'users', user.uid);
-  const userSnap = await getDoc(userRef);
-  const name = (userSnap.exists() && userSnap.data().displayName) || (userSnap.exists() && userSnap.data().telegramUsername) || 'Anon';
-
-  const text = (chatInput.value || '').trim();
-  if (!text) return;
-  try {
-    await addDoc(collection(db, 'chatMessages'), {
-      userId: user.uid,
-      username: name,
-      text,
-      createdAt: serverTimestamp()
-    });
-    chatInput.value = '';
-  } catch (err) {
-    alert('Send failed: ' + err.message);
-  }
-});
-
-/* Presence / Online tracking: update own user doc's online status periodically */
-let presenceInterval = null;
-function startPresenceHeartbeat(uid) {
-  const userRef = doc(db, 'users', uid);
-  // set online true and lastSeen
-  updateDoc(userRef, { online: true, lastSeen: serverTimestamp() }).catch(()=>{});
-  if (presenceInterval) clearInterval(presenceInterval);
-  presenceInterval = setInterval(() => {
-    updateDoc(userRef, { online: true, lastSeen: serverTimestamp() }).catch(()=>{});
-  }, 30 * 1000); // every 30s
-}
-function stopPresenceHeartbeat() {
-  if (presenceInterval) clearInterval(presenceInterval);
-  presenceInterval = null;
-}
-
-/* Auth state change */
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    // ensure user document exists
-    const userRef = doc(db, 'users', user.uid);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) {
-      // create initial doc
-      await setDoc(userRef, {
-        balance: 0,
-        totalWatched: 0,
-        dailyWatched: 0,
-        dailyWatchedDate: new Date().toISOString().slice(0,10),
-        telegramUsername: null,
-        cooldowns: {},
-        online: true,
-        lastSeen: serverTimestamp(),
-        displayName: user.isAnonymous ? null : user.displayName || null
-      });
-    } else {
-      // mark online
-      await updateDoc(userRef, { online: true, lastSeen: serverTimestamp() }).catch(()=>{});
-    }
+  if (!user) return;
+  currentUser = user;
 
-    startPresenceHeartbeat(user.uid);
-
-    // subscribe to user doc changes
-    const unsubUser = onSnapshot(userRef, (uSnap) => {
-      const data = uSnap.data() || {};
-      balanceDisplay.textContent = formatNumber(data.balance || 0);
-      statsDisplay.textContent = `Total watched: ${data.totalWatched || 0} • Daily: ${data.dailyWatched || 0}`;
-      telegramDisplay.textContent = data.telegramUsername ? `@${data.telegramUsername}` : 'No telegram set';
-      adminNameEl.textContent = (data.displayName || data.telegramUsername || (user.isAnonymous ? 'Anonymous' : 'User'));
-      // Update ad cooldown UI
-      ADS.forEach(ad => {
-        const cool = (data.cooldowns && data.cooldowns[ad.id]) ? data.cooldowns[ad.id].toMillis ? data.cooldowns[ad.id].toMillis() : data.cooldowns[ad.id] : 0;
-        const el = document.getElementById(`cool_${ad.id}`);
-        const btn = document.getElementById(`btn_ad_${ad.id}`);
-        if (!el || !btn) return;
-        const now = Date.now();
-        if (now - cool < AD_COOLDOWN_MS) {
-          const left = Math.ceil((AD_COOLDOWN_MS - (now - cool))/1000);
-          el.textContent = `Available in ${left}s`;
-          btn.disabled = true;
-        } else {
-          el.textContent = 'Ready';
-          btn.disabled = false;
-        }
-      });
+  // Initialize or read user doc
+  const uDoc = doc(db, 'users', user.uid);
+  const snap = await getDoc(uDoc);
+  const localNick = localStorage.getItem('ph_nick') || '';
+  const localG = localStorage.getItem('ph_gcash') || '';
+  if (!snap.exists()) {
+    await setDoc(uDoc, {
+      uid: user.uid,
+      name: localNick || ('user_' + user.uid.slice(0,6)),
+      balance: 0,
+      gcash: localG,
+      createdAt: serverTimestamp(),
+      lastRewards: {} // map source->timestamp
     });
-
-    // subscribe to withdrawals by this user for immediate updates
-    const q = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'), limit(10));
-    const unsubW = onSnapshot(q, (snap) => {
-      snap.docs.forEach(d => {
-        // We can display statuses in UI e.g., modal or console; for brevity, we show alert for changes
-        // Better: update a dedicated element; but immediate display requirement is covered via real-time above
-      });
-    });
-
-    // show user label
-    userDisplay.textContent = `Signed in: ${user.uid} ${user.isAnonymous ? '(anon)' : ''}`;
-
-    renderAds(user.uid);
-
-    // Start subscriptions for chat, online users, admin etc:
-    startChatListener();
-    startOnlineUsersListener();
-    startWithdrawalsListenerForAdmin();
-
   } else {
-    // user signed out
-    userDisplay.textContent = 'Not signed in';
-    balanceDisplay.textContent = '0.0000';
-    statsDisplay.textContent = 'Total watched: 0 • Daily: 0';
-    telegramDisplay.textContent = '';
-    stopPresenceHeartbeat();
-    renderAds(null);
+    const data = snap.data();
+    usernameInput.value = data.name || localNick;
+    gcashInput.value = data.gcash || localG;
+    balanceEl.textContent = formatMoney(data.balance || 0);
+  }
+
+  logActivity('Signed in: ' + (usernameInput.value || user.uid));
+  subscribeChat();
+  subscribeLeaderboard();
+  subscribeUserDoc();
+  // Try to read Telegram widget data from global (if present). See notes below.
+  detectTelegramLogin();
+});
+
+// Save nickname/gcash
+usernameInput.addEventListener('change', async () => {
+  const name = usernameInput.value.trim();
+  localStorage.setItem('ph_nick', name);
+  if (currentUser) {
+    await updateDoc(doc(db, 'users', currentUser.uid), { name });
   }
 });
 
+gcashInput.addEventListener('change', async () => {
+  const g = gcashInput.value.trim();
+  localStorage.setItem('ph_gcash', g);
+  if (currentUser) {
+    await updateDoc(doc(db, 'users', currentUser.uid), { gcash: g });
+  }
+});
 
-/* Chat listener */
-let chatUnsub = null;
-function startChatListener() {
-  if (chatUnsub) chatUnsub();
-  const q = query(collection(db, 'chatMessages'), orderBy('createdAt', 'desc'), limit(80));
-  chatUnsub = onSnapshot(q, (snap) => {
-    chatMessagesEl.innerHTML = '';
-    snap.docs.slice().reverse().forEach(d => {
-      const data = d.data();
-      const time = data.createdAt && data.createdAt.toDate ? data.createdAt.toDate().toLocaleTimeString() : '';
-      const el = document.createElement('div');
-      el.innerHTML = `<strong>${escapeHtml(data.username||'Anon')}</strong> <span class="muted" style="font-size:12px"> ${time}</span><div>${escapeHtml(data.text)}</div>`;
-      chatMessagesEl.appendChild(el);
+// Chat
+function subscribeChat() {
+  const q = query(collection(db, 'chats'), orderBy('timestamp', 'asc'));
+  onSnapshot(q, snapshot => {
+    chatBox.innerHTML = '';
+    snapshot.forEach(docSnap => {
+      const m = docSnap.data();
+      const div = document.createElement('div');
+      const me = currentUser && m.uid === currentUser.uid;
+      div.className = 'msg ' + (me ? 'me' : 'other');
+      const name = m.tg_username ? `@${m.tg_username}` : (m.name || 'anon');
+      div.innerHTML = `<strong>${escapeHtml(name)}</strong> <span class="muted small" style="margin-left:6px">${new Date(m.timestamp).toLocaleTimeString()}</span><div>${escapeHtml(m.text)}</div>`;
+      chatBox.appendChild(div);
     });
-    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+    chatBox.scrollTop = chatBox.scrollHeight;
   });
 }
 
-/* Online users listener */
-let onlineUnsub = null;
-function startOnlineUsersListener() {
-  if (onlineUnsub) onlineUnsub();
-  const q = query(collection(db, 'users'), where('online', '==', true));
-  onlineUnsub = onSnapshot(q, (snap) => {
-    onlineUsersEl.innerHTML = '';
-    snap.docs.forEach(docSnap => {
-      const data = docSnap.data();
-      const el = document.createElement('div');
-      el.className = 'card';
-      const username = data.telegramUsername || data.displayName || 'Anon';
-      el.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-weight:600;cursor:pointer" data-uid="${docSnap.id}" data-name="${escapeHtml(username)}">${escapeHtml(username)}</div>
-            <div class="muted">Last seen: ${data.lastSeen && data.lastSeen.toDate ? data.lastSeen.toDate().toLocaleTimeString() : '—'}</div>
-          </div>
-          <div style="text-align:right">
-            <div class="muted">Total: ${data.totalWatched || 0}</div>
-            <div class="muted">Daily: ${data.dailyWatched || 0}</div>
-          </div>
-        </div>
-      `;
-      el.querySelector('[data-uid]')?.addEventListener('click', (ev) => {
-        const uid = ev.target.getAttribute('data-uid');
-        showUserStats(uid);
-      });
-      onlineUsersEl.appendChild(el);
+sendMsg.addEventListener('click', async () => {
+  const text = chatInput.value.trim();
+  if (!text || !currentUser) return;
+  const name = usernameInput.value.trim() || ('user_' + currentUser.uid.substr(0,6));
+  await addDoc(collection(db, 'chats'), {
+    uid: currentUser.uid,
+    name,
+    text,
+    timestamp: serverTimestamp(),
+    tg_username: telegramUser ? telegramUser.username : null
+  });
+  chatInput.value = '';
+});
+
+// Leaderboard: top balances
+function subscribeLeaderboard() {
+  const q = query(collection(db, 'users'), orderBy('balance', 'desc'), limit(10));
+  onSnapshot(q, snapshot => {
+    leaderboardEl.innerHTML = '';
+    snapshot.forEach((docSnap, idx) => {
+      const u = docSnap.data();
+      const div = document.createElement('div');
+      div.className = 'leader';
+      const displayName = u.name || docSnap.id.slice(0,6);
+      div.innerHTML = `<div>#${idx+1} <strong>${escapeHtml(displayName)}</strong></div><div class="muted">${formatMoney(u.balance)} PHP</div>`;
+      leaderboardEl.appendChild(div);
     });
   });
 }
 
-/* Show user stats modal/alert */
-async function showUserStats(uid) {
+function subscribeUserDoc() {
+  if (!currentUser) return;
+  const uDoc = doc(db, 'users', currentUser.uid);
+  onSnapshot(uDoc, snap => {
+    if (!snap.exists()) return;
+    const d = snap.data();
+    balanceEl.textContent = formatMoney(d.balance || 0);
+    // if Telegram was verified server-side, update telegramUser
+    if (d.tg_username && (!telegramUser || telegramUser.username !== d.tg_username)) {
+      telegramUser = { username: d.tg_username };
+    }
+    updateAdminStats();
+  });
+}
+
+function updateAdminStats() {
+  // quick stats (client-side)
+  getDocs(query(collection(db, 'users'))).then(snap => {
+    const totalUsers = snap.size;
+    let totalBalance = 0;
+    snap.forEach(d => totalBalance += Number(d.data().balance || 0));
+    adminStats.textContent = `Users: ${totalUsers} — Total balance: ${totalBalance.toFixed(4)} PHP`;
+  });
+}
+
+// Reward logic (uses Firestore atomic increments and per-source cooldown stored in user's lastRewards map)
+async function tryRewardForSource(source) {
+  if (!currentUser) { alert('Not signed in'); return false; }
+  const userRef = doc(db, 'users', currentUser.uid);
+  const snap = await getDoc(userRef);
+  const user = snap.exists() ? snap.data() : null;
+  const lastRewards = (user && user.lastRewards) ? user.lastRewards : {};
+  const lastAt = lastRewards[source] || 0;
+  const elapsed = now() - lastAt;
+  if (elapsed < COOLDOWN_MS) {
+    const left = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+    alert(`You must wait ${left}s before earning from ${source} again.`);
+    return false;
+  }
+  // Allowed: apply reward
+  // Use atomic increment and update lastRewards map
   try {
-    const uref = doc(db,'users',uid);
-    const s = await getDoc(uref);
-    if (!s.exists()) return alert('User not found');
-    const d = s.data();
-    alert(`User ${d.telegramUsername || d.displayName || uid}\nTotal watched: ${d.totalWatched || 0}\nDaily watched: ${d.dailyWatched || 0}`);
+    await updateDoc(userRef, {
+      balance: increment(REWARD_PER_AD),
+      [`lastRewards.${source}`]: now()
+    });
+    // Create reward record (client writes — server verification recommended)
+    await addDoc(collection(db, 'rewards'), {
+      uid: currentUser.uid,
+      amount: REWARD_PER_AD,
+      source,
+      timestamp: serverTimestamp()
+    });
+    logActivity(`Rewarded ${REWARD_PER_AD} PHP for ${source}`);
+    alert(`You earned ${REWARD_PER_AD.toFixed(4)} PHP`);
+    return true;
   } catch (e) {
-    alert('Error: ' + e.message);
+    console.error(e);
+    alert('Reward failed: ' + e.message);
+    return false;
   }
 }
 
-/* Withdrawals listener for admin (shows pending withdraws) */
-let withdrawalsUnsub = null;
-function startWithdrawalsListenerForAdmin() {
-  const user = auth.currentUser;
-  if (!user) return;
-  // Check if user is admin by reading config doc
-  const adminRef = doc(db, 'config', 'admins');
-  getDoc(adminRef).then(s => {
-    const admins = s.exists() ? s.data().uids || [] : [];
-    if (admins.includes(user.uid)) {
-      adminPanel.style.display = 'block';
-      adminNameEl.textContent = user.displayName || user.email || 'Admin';
-      const q = query(collection(db, 'withdrawals'), where('status', '==', 'pending'), orderBy('createdAt', 'asc'));
-      if (withdrawalsUnsub) withdrawalsUnsub();
-      withdrawalsUnsub = onSnapshot(q, (snap) => {
-        withdrawListEl.innerHTML = '';
-        snap.docs.forEach(d => {
-          const w = d.data();
-          const row = document.createElement('div');
-          row.className = 'withdraw-item';
-          row.innerHTML = `
-            <div>
-              <div><strong>${w.telegramUsername || w.userId}</strong></div>
-              <div class="muted">${w.amount} PHP • requested ${w.createdAt && w.createdAt.toDate ? w.createdAt.toDate().toLocaleString() : '—'}</div>
-            </div>
-            <div>
-              <button data-id="${d.id}" data-user="${w.userId}" data-amount="${w.amount}" class="approveBtn">Approve</button>
-              <button data-id="${d.id}" class="rejectBtn">Reject</button>
-            </div>
-          `;
-          withdrawListEl.appendChild(row);
-        });
-        // attach events
-        withdrawListEl.querySelectorAll('.approveBtn').forEach(b => {
-          b.addEventListener('click', async (e) => {
-            const id = b.dataset.id;
-            const uid = b.dataset.user;
-            const amount = Number(b.dataset.amount);
-            await adminApproveWithdraw(id, uid, amount);
-          });
-        });
-        withdrawListEl.querySelectorAll('.rejectBtn').forEach(b => {
-          b.addEventListener('click', async (e) => {
-            const id = b.dataset.id;
-            await adminRejectWithdraw(id);
-          });
-        });
+// Monetag ad button: use provided show_10276123() promise (as in original)
+watchMonetagBtn.addEventListener('click', async () => {
+  if (typeof show_10276123 !== 'function') {
+    alert('Monetag SDK not available.');
+    return;
+  }
+  watchMonetagBtn.disabled = true;
+  try {
+    show_10276123().then(async () => {
+      await tryRewardForSource('monetag');
+      watchMonetagBtn.disabled = false;
+    }).catch(e => {
+      console.warn('Monetag ad error', e);
+      alert('Monetag ad failed/closed');
+      watchMonetagBtn.disabled = false;
+    });
+  } catch (err) {
+    console.error(err);
+    watchMonetagBtn.disabled = false;
+  }
+});
+
+// AdsGram integration
+watchAdsGramBtn.addEventListener('click', async () => {
+  // AdsGram global might be window.AdsGram or window.SAD per your note
+  const AdsGramCtor = window.AdsGram || window.SAD || null;
+  if (!AdsGramCtor) {
+    alert('AdsGram object not found on page.');
+    return;
+  }
+  try {
+    // create controller (reuse a global if you want)
+    const adController = new AdsGramCtor({ blockId: "int-21471" });
+    // Try common methods: show(), open(), click() — many ad SDKs return a promise on show.
+    if (typeof adController.show === 'function') {
+      adController.show().then(async () => {
+        await tryRewardForSource('adsgram');
+      }).catch(e => {
+        console.warn('AdsGram show error', e);
+        alert('AdsGram ad failed/closed');
       });
+    } else if (typeof adController.open === 'function') {
+      adController.open();
+      // we cannot detect completion for some SDKs; still attempt reward (note: insecure)
+      await tryRewardForSource('adsgram');
     } else {
-      adminPanel.style.display = 'none';
-    }
-  });
-}
-
-/* Admin approves: set withdrawal.status=approved and deduct user balance
-   NOTE: this operation is allowed only for admin UIDs configured in config/admins doc.
-*/
-async function adminApproveWithdraw(withdrawId, uid, amount) {
-  try {
-    // update withdrawal doc and user balance in transaction
-    const withdrawRef = doc(db, 'withdrawals', withdrawId);
-    const userRef = doc(db, 'users', uid);
-    await runTransaction(db, async (tx) => {
-      const wSnap = await tx.get(withdrawRef);
-      if (!wSnap.exists()) throw new Error('Withdrawal not found');
-      if (wSnap.data().status !== 'pending') throw new Error('Withdrawal not pending');
-
-      const uSnap = await tx.get(userRef);
-      if (!uSnap.exists()) throw new Error('User not found');
-
-      const curBalance = Number(uSnap.data().balance || 0);
-      if (curBalance < amount) throw new Error('User balance < withdraw amount');
-
-      tx.update(withdrawRef, { status: 'approved', updatedAt: serverTimestamp(), approvedAt: serverTimestamp(), approvedBy: auth.currentUser.uid });
-      tx.update(userRef, { balance: curBalance - amount });
-    });
-    alert('Withdraw approved and balance deducted.');
-  } catch (e) {
-    alert('Approve failed: ' + e.message);
-  }
-}
-
-async function adminRejectWithdraw(withdrawId) {
-  try {
-    const withdrawRef = doc(db, 'withdrawals', withdrawId);
-    await updateDoc(withdrawRef, { status: 'rejected', updatedAt: serverTimestamp(), rejectedBy: auth.currentUser.uid });
-    alert('Rejected.');
-  } catch (e) {
-    alert('Reject failed: ' + e.message);
-  }
-}
-
-/* Utility: escapeHtml */
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-/* Start: render base UI (ads container) */
-renderAds(null);
-
-/* OPTIONAL: automatic in-app interstitial cooldown enforcement client-side
-   We call the show_10276123 provided SDK at page load near top; to avoid showing more often,
-   we store last interstitial timestamp in localStorage and enforce 5-min cooldown.
-*/
-(function handleInterstitialCooldown() {
-  try {
-    const key = 'last_interstitial_ts';
-    const now = Date.now();
-    const last = Number(localStorage.getItem(key) || 0);
-    if (now - last >= INTERSTITIAL_COOLDOWN_MS) {
-      if (typeof show_10276123 === 'function') {
-        show_10276123({
-          type: 'inApp',
-          inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
-        });
-        localStorage.setItem(key, now);
+      // fallback: try calling constructor as function
+      try {
+        const res = adController(); // may throw
+        if (res && res.then) {
+          res.then(async () => await tryRewardForSource('adsgram'));
+        } else {
+          await tryRewardForSource('adsgram');
+        }
+      } catch (e) {
+        console.warn('Unable to show AdsGram', e);
+        alert('AdsGram show unavailable');
       }
     }
   } catch (e) {
-    console.warn('Interstitial call failed', e);
+    console.error('AdsGram error', e);
+    alert('AdsGram integration error');
   }
-})();
-
-/* Real-time withdrawals listening for all users to display immediate status changes for current user's withdrawals */
-function startGlobalWithdrawalListener() {
-  const user = auth.currentUser;
-  if (!user) return;
-  const q = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'), limit(20));
-  onSnapshot(q, (snap) => {
-    // show immediate notifications for status changes
-    snap.docChanges().forEach(change => {
-      const data = change.doc.data();
-      if (change.type === 'added') {
-        // initial add
-      } else if (change.type === 'modified') {
-        alert(`Your withdrawal (${data.amount} PHP) status changed to ${data.status}`);
-      }
-    });
-  });
-}
-
-/* Run when currently signed-in to start withdrawal watcher */
-onAuthStateChanged(auth, (user) => {
-  if (user) startGlobalWithdrawalListener();
 });
+
+// Adsterra link buttons: open link in new page and reward if cooldown passed
+linkButtons.forEach(btn => {
+  btn.addEventListener('click', async (ev) => {
+    const link = btn.dataset.link;
+    window.open(link, '_blank', 'noopener');
+    // try reward for source derived from link index
+    const idx = Array.from(linkButtons).indexOf(btn);
+    await tryRewardForSource('adsterra_' + idx);
+  });
+});
+
+// Banner rotation and click
+function rotateBanner() {
+  bannerIndex = (bannerIndex + 1) % bannerLinks.length;
+  bannerTitle.textContent = `Banner ${bannerIndex+1}`;
+  bannerOpenBtn.onclick = async () => {
+    const link = bannerLinks[bannerIndex];
+    window.open(link, '_blank', 'noopener');
+    // banner click rewards with a separate source with 5 min cooldown too
+    await tryRewardForSource('banner_' + bannerIndex);
+  };
+  bannerCooldownInfo.textContent = 'Rotates every 1 minute';
+}
+rotateBanner();
+setInterval(rotateBanner, BANNER_ROTATE_MS);
+
+// Popounder auto-inject (scripts provided). This function injects the vendor scripts; the network may auto-show a popunder
+function injectPopunder() {
+  try {
+    // atOptions config as provided
+    window.atOptions = {
+      'key' : 'fe70943384c0314737bd62c05e3d520a',
+      'format' : 'iframe',
+      'height' : 300,
+      'width' : 160,
+      'params' : {}
+    };
+
+    // helper to append script
+    const appendScript = (src, inlineContent) => {
+      const s = document.createElement('script');
+      if (src) s.src = src;
+      if (inlineContent) s.text = inlineContent;
+      s.async = true;
+      document.body.appendChild(s);
+    };
+
+    appendScript("https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js");
+    appendScript("https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js");
+    // Duplicate as sample
+    // You may also want to append the other script if required by provider
+    logActivity('Popunder scripts injected');
+    // After injection, some providers trigger open; we award (best-effort) — but prefer server verification
+    // Note: awarding immediately on injection is insecure; here we do not auto-reward for popunder,
+    // but if you want to reward on popunder show, you could call tryRewardForSource('popunder').
+  } catch (e) {
+    console.warn('Popunder injection failed', e);
+  }
+}
+
+// inject now, and set interval every POPOUNDER_MS
+injectPopunder();
+setInterval(injectPopunder, POPOUNDER_MS);
+
+// Withdraw
+withdrawBtn.addEventListener('click', async () => {
+  if (!currentUser) return alert('Not signed in');
+  const uRef = doc(db, 'users', currentUser.uid);
+  const snap = await getDoc(uRef);
+  const data = snap.exists() ? snap.data() : null;
+  const bal = Number(data?.balance || 0);
+  const gcash = gcashInput.value.trim() || data?.gcash || localStorage.getItem('ph_gcash') || '';
+  if (!gcash) return alert('Enter GCash number/email');
+  if (bal < MIN_WITHDRAW) return alert(`Minimum withdrawal ${MIN_WITHDRAW} PHP. Your balance: ${bal.toFixed(4)}`);
+  // create withdrawal request
+  await addDoc(collection(db, 'withdrawals'), {
+    uid: currentUser.uid,
+    amount: parseFloat(bal.toFixed(4)),
+    gcash,
+    status: 'pending',
+    timestamp: serverTimestamp()
+  });
+  // reset balance to 0
+  await updateDoc(uRef, { balance: 0 });
+  alert('Withdrawal requested. Admin will process it.');
+  logActivity(`Withdrawal requested: ${bal.toFixed(4)} PHP`);
+});
+
+// Admin panel (client-side prompt for prototyping only)
+adminBtn.addEventListener('click', () => {
+  const p = prompt('Enter admin password:');
+  if (p === ADMIN_PASSWORD) {
+    adminPanel.style.display = 'block';
+    alert('Admin panel opened (client-side). For production use secure server auth.');
+  } else {
+    alert('Wrong password.');
+  }
+});
+
+adminBroadcastBtn.addEventListener('click', async () => {
+  const text = adminBroadcast.value.trim();
+  if (!text) return alert('Enter message');
+  await addDoc(collection(db, 'chats'), {
+    uid: 'admin',
+    name: 'PAPERHOUSE ADMIN',
+    text,
+    timestamp: serverTimestamp()
+  });
+  adminBroadcast.value = '';
+  alert('Broadcast sent');
+});
+
+adminAdjustBtn.addEventListener('click', async () => {
+  const idOrName = adminUserId.value.trim();
+  const amountRaw = adminAmount.value.trim();
+  if (!amountRaw) return alert('Enter amount like +0.0065 or -0.0065');
+  const delta = Number(amountRaw);
+  if (isNaN(delta)) return alert('Invalid amount');
+  // find by uid or name
+  let targetUid = null;
+  if (!idOrName) return alert('Provide uid or exact nickname');
+  // try uid
+  const targetDoc = await getDoc(doc(db, 'users', idOrName));
+  if (targetDoc.exists()) {
+    targetUid = idOrName;
+  } else {
+    // search by name
+    const q = query(collection(db, 'users'), where('name', '==', idOrName), limit(1));
+    const snap = await getDocs(q);
+    if (!snap.empty) targetUid = snap.docs[0].id;
+  }
+  if (!targetUid) return alert('User not found');
+  const uRef = doc(db, 'users', targetUid);
+  await updateDoc(uRef, {
+    balance: increment(delta)
+  });
+  await addDoc(collection(db, 'rewards'), {
+    uid: targetUid,
+    amount: delta,
+    admin: true,
+    timestamp: serverTimestamp()
+  });
+  alert('Balance updated');
+});
+
+// Small helpers
+function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Telegram login detection (client-side)
+// NOTE: Telegram Widget requires your bot username in the widget. Upon successful login it will call your callback URL or populate document location if configured.
+// There is also `window.TelegramLoginWidget` behavior sometimes; here we attempt to read Telegram auth from window.Telegram or from URL params.
+// IMPORTANT: Proper verification of Telegram auth requires server-side hash verification (HMAC with bot token). Client-side acceptance is insecure.
+function detectTelegramLogin() {
+  // 1) If URL contains Telegram auth data (if you used data-auth-url to redirect back with auth), parse it
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('telegram_user')) {
+    // custom integration — depends on how you set up redirect
+  }
+  // 2) Some widgets call window.TelegramLoginWidget or call a global callback; we attempt to read window.TelegramLoginData if present
+  if (window.TelegramLoginWidget && window.TelegramLoginWidget.data) {
+    telegramUser = window.TelegramLoginWidget.data;
+  }
+  // If telegramUser exists, write to user doc (best-effort)
+  if (telegramUser && currentUser) {
+    const uRef = doc(db, 'users', currentUser.uid);
+    updateDoc(uRef, {
+      tg_username: telegramUser.username || null,
+      tg_name: telegramUser.first_name || null
+    }).then(() => logActivity('Telegram username stored: ' + telegramUser.username));
+  }
+}
+
+// Periodic leaderboard refresh (extra safety)
+setInterval(updateAdminStats, 15000);
+
+// helper to update admin stats explicitly
+function updateAdminStats() {
+  getDocs(collection(db, 'users')).then(snap => {
+    const totalUsers = snap.size;
+    let totalBalance = 0;
+    snap.forEach(d => totalBalance += Number(d.data().balance || 0));
+    adminStats.textContent = `Users: ${totalUsers} — Total: ${totalBalance.toFixed(4)} PHP`;
+  });
+}

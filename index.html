@@ -1,82 +1,155 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FreeGcashads - Earn Rewards</title>
-    <link rel="stylesheet" href="style.css"> <!-- We'll create a simple CSS file -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FreeGcashads</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Very small inline CSS for readability (you can separate to style.css) */
+    body { font-family: Arial, sans-serif; margin:0; background:#f4f4f4; color:#222; }
+    header{background:#1e88e5;color:#fff;padding:12px 20px}
+    main{max-width:1100px;margin:18px auto;padding:18px;background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+    .card{background:#fff;border:1px solid #e6e6e6;padding:12px;border-radius:8px}
+    button{background:#1e88e5;color:#fff;border:0;padding:10px;border-radius:6px;cursor:pointer}
+    button:disabled{background:#cfcfcf;cursor:not-allowed}
+    .muted{color:#666;font-size:13px}
+    .row{display:flex;gap:10px;align-items:center}
+    input[type=text]{padding:8px;border:1px solid #ddd;border-radius:6px;width:100%}
+    #chatMessages{height:240px;overflow:auto;border:1px solid #eee;padding:8px;border-radius:6px;background:#fafafa}
+    .online {color:green;font-weight:600}
+    .admin-badge {background:gold;color:#000;padding:2px 6px;border-radius:4px;font-size:12px;margin-left:8px}
+    .withdraw-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #eee}
+  </style>
 
-    <!-- Adsterra Popunder Script (Place these early in the head or body) -->
-    <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
-    <script>
-      atOptions = {
-        'key' : 'fe70943384c0314737bd62c05e3d520a',
-        'format' : 'iframe',
-        'height' : 300,
-        'width' : 160,
-        'params' : {}
-      };
-    </script>
-    <script src="https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js"></script>
-    <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
-    <!-- End Adsterra Popunder -->
+  <!-- Popunder / Adsterra / Interstitial scripts (as provided) -->
+  <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
 
-    <!-- Firebase SDKs -->
-    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js"></script>
-    <!-- If you plan to use Firestore -->
-    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+  <!-- In-App Interstitial SDK you provided -->
+  <script src="//libtl.com/sdk.js" data-zone="10276123" data-sdk="show_10276123"></script>
 
+  <!-- Firebase SDKs (modular) -->
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js"></script>
 </head>
 <body>
-    <header>
-        <h1>FreeGcashads</h1>
-        <p>Click, Earn, Repeat!</p>
-    </header>
+  <header>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <strong>FreeGcashads</strong>        <div class="muted" style="font-size:13px">Earn 0.0077 PHP per ad click • Minimum withdraw 0.02 PHP</div>
+      </div>
+      <div id="userPanel" style="text-align:right">
+        <div id="userDisplay" class="muted">Not signed in</div>
+        <div style="margin-top:8px">
+          <button id="btnSignIn">Sign In (Anon)</button>
+          <button id="btnAdminLogin">Admin Login</button>
+        </div>
+      </div>
+    </div>
+  </header>
 
-    <main>
-        <section id="adsterra-banner-top" class="ad-banner">
-            <!-- Adsterra Smart Link Banner (Top) -->
-            <a href="https://www.effectivegatecpm.com/mwbmp8yxc?key=9ce01dec19ec86d0fbabe111b4439981" target="_blank" rel="noopener noreferrer">
-                <img src="https://via.placeholder.com/728x90?text=Adsterra+Banner+Ad+1" alt="Adsterra Ad 1" style="max-width: 100%; height: auto;">
-            </a>
-        </section>
+  <main>
+    <section style="margin-bottom:14px">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <div style="flex:1;min-width:220px">
+          <label class="muted">Telegram username</label>
+          <div class="row" style="margin-top:6px">
+            <input id="telegramInput" placeholder="@yourtelegram" />
+            <button id="saveTelegramBtn">Save</button>
+          </div>
+          <div id="telegramDisplay" class="muted" style="margin-top:6px"></div>
+        </div>
 
-        <section id="buttons-section">
-            <h2>Click & Earn Links</h2>
-            <div id="button-container" class="grid-container">
-                <!-- Buttons will be dynamically loaded here by app.js -->
+        <div style="min-width:220px">
+          <label class="muted">Balance (PHP)</label>
+          <div style="font-size:22px;font-weight:700" id="balanceDisplay">0.0000</div>
+          <div class="muted">Minimum withdraw: 0.02 PHP</div>
+          <div style="margin-top:8px">
+            <input id="withdrawAmount" type="text" placeholder="Amount e.g. 0.02" />
+            <button id="requestWithdrawBtn">Request Withdraw</button>
+          </div>
+        </div>
+
+        <div style="min-width:260px">
+          <label class="muted">Your stats</label>
+          <div id="stats" style="margin-top:6px" class="muted">Total watched: 0 • Daily: 0</div>
+        </div>
+      </div>
+    </section>
+
+    <section style="margin-bottom:18px">
+      <h3 style="margin:0 0 12px 0">Ads & Offers (Click to open ad and earn)</h3>
+      <div id="adsContainer" class="grid"></div>
+    </section>
+
+    <section style="margin-bottom:18px">
+      <h3 style="margin:0 0 12px 0">In-App Interstitial (auto show)</h3>
+      <div class="muted">In-app interstitial will show automatically on open. Separate cooldown every 5 minutes.</div>
+    </section>
+
+    <section style="margin-bottom:18px">
+      <h3 style="margin:0 0 12px 0">Chat</h3>
+      <div id="chatMessages"></div>      <div style="display:flex;gap:8px;margin-top:8px">
+        <input id="chatInput" placeholder="Say something..." />
+        <button id="sendChatBtn">Send</button>
+      </div>
+    </section>
+
+    <section style="margin-bottom:18px">
+      <h3 style="margin:0 0 12px 0">Online Users</h3>
+      <div id="onlineUsers" class="grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))"></div>
+    </section>
+
+    <section>
+      <h3 style="margin:0 0 12px 0">Admin Dashboard</h3>
+      <div id="adminPanel" style="display:none">
+        <div style="margin-bottom:8px">
+          <strong>Admin: <span id="adminName"></span></strong>
+        </div>
+        <div style="display:flex;gap:12px">
+          <div style="flex:1">
+            <div class="muted">Pending withdrawals</div>
+            <div id="withdrawList" style="border:1px solid #eee;padding:8px;border-radius:6px;background:#fff"></div>
+          </div>
+          <div style="width:320px">
+            <div class="muted">Admin actions</div>
+            <div style="margin-top:8px">
+              <button id="refreshAdminBtn">Refresh</button>
             </div>
-        </section>
+          </div>
+        </div>
+      </div>
+    </section>
 
-        <section id="adsterra-banner-middle" class="ad-banner">
-            <!-- Adsterra Smart Link Banner (Middle) -->
-            <a href="https://www.effectivegatecpm.com/iefwgzfy8w?key=ef8a98a84b67232d3808db269675011c" target="_blank" rel="noopener noreferrer">
-                <img src="https://via.placeholder.com/300x250?text=Adsterra+Banner+Ad+2" alt="Adsterra Ad 2" style="max-width: 100%; height: auto;">
-            </a>
-        </section>
+  </main>
 
-        <section id="cards-section">
-            <h2>Special Offers (Cooldown: 1 min)</h2>
-            <div id="card-container" class="grid-container">
-                <!-- Cards will be dynamically loaded here by app.js -->
-            </div>
-        </section>
+  <script type="module" src="app.js"></script>
 
-        <section id="adsterra-banner-bottom" class="ad-banner">
-            <!-- Adsterra Smart Link Banner (Bottom) -->
-            <a href="https://www.effectivegatecpm.com/hebhpc3tcm?key=e18e0c3b11bce2e7a0d722f6ac554232" target="_blank" rel="noopener noreferrer">
-                <img src="https://via.placeholder.com/728x90?text=Adsterra+Banner+Ad+3" alt="Adsterra Ad 3" style="max-width: 100%; height: auto;">
-            </a>
-        </section>
-
-    </main>
-
-    <footer>
-        <p>&copy; 2023 FreeGcashads. All rights reserved.</p>
-    </footer>
-
-    <!-- Your main application logic -->
-    <script type="module" src="app.js"></script>
+  <script>
+    /* In-app interstitial initial call provided by you.
+       We'll call it on app open (page load). The SDK expects show_10276123 available. */
+    try {
+      // configure as requested: autoplay frequency=2, capping=0.1, interval=30, timeout=5 (that's your provided config)
+      window.setTimeout(() => {
+        if (typeof show_10276123 === 'function') {
+          show_10276123({
+            type: 'inApp',
+            inAppSettings: {
+              frequency: 2,
+              capping: 0.1,
+              interval: 30,
+              timeout: 5,
+              everyPage: false
+            }
+          });
+        }
+      }, 1500);
+    } catch (e) {
+      console.warn('Interstitial SDK not available or failed', e);
+    }
+  </script>
 </body>
 </html>

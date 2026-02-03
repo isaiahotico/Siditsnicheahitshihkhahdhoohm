@@ -1,109 +1,65 @@
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>DashJam Mini App </title>
-  <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin: 12px; }
-    .card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
-    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .btn { padding:8px 12px; border-radius:8px; border:none; cursor:pointer; }
-    .btn-primary { background:#2563eb; color:white; }
-    .btn-ghost { background:#f3f4f6; }
-    .stats { font-size: 18px; font-weight:600; }
-    .small { font-size:13px; color:#6b7280; }
-    input, select { padding:8px; border-radius:8px; border:1px solid #d1d5db; }
-    .controls { display:flex; gap:8px; margin-top:12px; }
-  </style>
-  <!-- libtl ad SDK (provided snippet) -->
-  <script src="//libtl.com/sdk.js" data-zone="10555663" data-sdk="show_10555663"></script>
+<meta charset="UTF-8">
+<title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://www.youtube.com/iframe_api"></script>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<!-- Monetag SDKs -->
+<script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
+<script src='//libtl.com/sdk.js' data-zone='10555727' data-sdk='show_10555727'></script>
+<script src='//libtl.com/sdk.js' data-zone='10555746' data-sdk='show_10555746'></script>
+
+<style>
+body{margin:0;font-family:sans-serif;background:#0f2027;color:#fff}
+.sidebar{width:220px;position:fixed;height:100%;background:#132d46;padding:10px}
+.sidebar button{width:100%;margin:6px 0;padding:10px;border:0;border-radius:8px}
+.main{margin-left:230px;padding:10px}
+.card{background:#1c3b57;padding:12px;border-radius:12px;margin-bottom:10px}
+input,button{padding:10px;border-radius:8px;border:0}
+#player{width:100%;height:200px;border-radius:12px}
+.chat{max-height:200px;overflow:auto;background:#0b2233;padding:10px}
+</style>
 </head>
+
 <body>
-  <div class="card">
-    <div class="row">
-      <div>
-        <div class="small">Telegram user</div>
-        <div id="tg-user" class="stats">Not detected yet...</div>
-        <div id="tg-user-sub" class="small"></div>
-      </div>
-      <div style="margin-left:auto">
-        <button id="btn-open-tg" class="btn btn-ghost">Open in Telegram</button>
-      </div>
-    </div>
-  </div>
 
-  <div class="card">
-    <div class="small">Live progress</div>
-    <div class="row" style="margin-top:8px">
-      <div style="flex:1">
-        <div class="small">Barriers passed</div>
-        <div id="barriers" class="stats">0</div>
-      </div>
-      <div style="flex:1">
-        <div class="small">Earned</div>
-        <div id="earned" class="stats">₱0.00</div>
-      </div>
-      <div style="flex:1">
-        <div class="small">Referral</div>
-        <div id="ref-code" class="stats">—</div>
-      </div>
-    </div>
+<div class="sidebar">
+  <h3>💸 PAPERHOUSE</h3>
+  <button onclick="showAds()">🎥 Watch Ad</button>
+  <button onclick="copyPaste()">📋 Paste YouTube</button>
+  <button onclick="adminLogin()">🔐 Admin</button>
+</div>
 
-    <div class="controls">
-      <button id="btn-left" class="btn btn-primary">Left</button>
-      <button id="btn-right" class="btn btn-primary">Right</button>
+<div class="main">
 
-      <button id="btn-pass" class="btn btn-ghost">Simulate +1 barrier</button>
-      <button id="btn-die" class="btn btn-ghost">Simulate Game Over (rewarded ad)</button>
-    </div>
+<div class="card">
+  <h3>💰 Balance: ₱<span id="bal">0.00</span></h3>
+</div>
 
-    <div style="margin-top:12px" class="small">Counter example: Bars: <span id="counter-example">0</span> / 2000</div>
-  </div>
+<div class="card">
+  <h3>🎬 YouTube Player</h3>
+  <input id="ytLink" placeholder="Paste YouTube link">
+  <button onclick="addVideo()">➕ Add</button>
+  <div id="player"></div>
+  <button onclick="nextRandom()">🔀 Next Random</button>
+</div>
 
-  <div class="card">
-    <div class="small">Referral & Invite</div>
-    <div style="margin-top:8px" class="row">
-      <div>
-        <button id="btn-copy-ref" class="btn btn-primary">Copy invite link</button>
-      </div>
-      <div>
-        <input id="input-ref" placeholder="Paste invite code to simulate ?ref=" />
-        <button id="btn-apply-ref" class="btn btn-ghost">Apply</button>
-      </div>
-      <div id="ref-status" class="small" style="margin-left:auto"></div>
-    </div>
-  </div>
+<div class="card">
+  <h3>💬 Global Chat</h3>
+  <div class="chat" id="chatBox"></div>
+  <input id="chatMsg" placeholder="Type message">
+  <button onclick="sendChat()">Send</button>
+</div>
 
-  <div class="card">
-    <div class="small">Withdraw</div>
-    <div style="margin-top:8px" class="row">
-      <input id="withdraw-amount" placeholder="Amount (PHP)" style="width:140px" />
-      <select id="withdraw-method">
-        <option>GCash</option>
-        <option>Maya</option>
-        <option>USDT</option>
-      </select>
-      <button id="btn-withdraw" class="btn btn-primary">Request Withdraw</button>
-      <div id="withdraw-status" class="small" style="margin-left:auto"></div>
-    </div>
-  </div>
+<div class="card">
+  <h3>🏆 Leaderboard</h3>
+  <ul id="leaderboard"></ul>
+</div>
 
-  <div class="card small">
-    Demo Notes:
-    <ul>
-      <li>Use Telegram Web App (button "Open in Telegram") to populate Telegram user automatically when served via Bot web_app.</li>
-      <li>Ad SDK is initialized via included script and invoked on Game Over / Daily Bonus examples.</li>
-      <li>In production replace anonymous auth with proper mapping to Telegram accounts (optional: custom tokens) to increase security trust.</li>
-    </ul>
-  </div>
+</div>
 
-  <script src="app.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>

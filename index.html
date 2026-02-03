@@ -1,63 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YouTube Watch & Earn</title>
-<style>
-body { font-family: Arial, sans-serif; background:#f0f0f0; padding:15px; }
-h2,h3 { margin:8px 0; }
-button { padding:8px 14px; margin:5px; cursor:pointer; }
-input { padding:8px; width:65%; }
-iframe { width:100%; height:360px; margin-top:10px; border:none; }
-
-.card {
-  background:#fff;
-  padding:12px;
-  border-radius:10px;
-  margin-top:15px;
-  box-shadow:0 2px 6px rgba(0,0,0,.15);
-}
-#videoList li,#leaderboard li,#viralRanking li { margin:6px 0; font-size:13px; }
-.badge { background:#222; color:#fff; padding:2px 6px; border-radius:5px; font-size:12px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎖🤑Watch & Earn YouTube🤑🎖</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/3.3.3/tailwind.min.css">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
+  <script src="app.js" defer></script>
 </head>
-<body>
+<body class="bg-gradient-to-r from-blue-400 to-green-400 min-h-screen flex flex-col items-center justify-start p-4 font-sans">
 
-<h2>👋 Welcome, <span id="username"></span></h2>
-<h3>💰 Coins: <span id="coins">0</span></h3>
+  <h1 class="text-3xl font-bold mb-4 text-white text-center">🎖🤑 Watch & Earn YouTube 🤑🎖</h1>
 
-<div class="card">
-<h3>🎥 Your Videos (5 free / +50 coins)</h3>
-<input id="videoURL" placeholder="Paste YouTube link">
-<button onclick="addVideo()">Add</button>
-<ul id="videoList"></ul>
-</div>
+  <div class="w-full max-w-xl bg-white rounded-2xl shadow-lg p-6 flex flex-col gap-4">
+    <div class="flex flex-col">
+      <label class="font-semibold mb-1">Paste Your YouTube URL</label>
+      <input type="text" id="videoUrl" class="border rounded-lg p-2" placeholder="https://www.youtube.com/watch?v=..." />
+      <button id="addVideo" class="bg-blue-500 text-white rounded-lg py-2 mt-2 hover:bg-blue-600">Add Video</button>
+    </div>
 
-<div class="card">
-<h3>▶ Watch & Earn</h3>
-<iframe id="ytPlayer" allowfullscreen></iframe><br>
-<button onclick="playRandomVideo()">Watch Random</button>
-<button onclick="nextVideo()">Next</button>
-</div>
+    <div class="flex justify-between">
+      <span>Coins: <span id="coins">0</span></span>
+      <span>Videos Added: <span id="videoCount">0</span>/5 Free</span>
+    </div>
 
-<div class="card">
-<h3>🏆 Top Earners</h3>
-<ol id="leaderboard"></ol>
-</div>
+    <div class="flex flex-col gap-4 mt-4">
+      <div id="playerContainer" class="w-full aspect-video bg-black rounded-lg flex items-center justify-center">
+        <p class="text-white">Your video will appear here</p>
+      </div>
 
-<div class="card">
-<h3>🔥 Viral Videos</h3>
-<ol id="viralRanking"></ol>
-</div>
+      <div class="flex justify-between">
+        <button id="playVideo" class="bg-green-500 text-white rounded-lg py-2 px-4 hover:bg-green-600">Play</button>
+        <button id="nextVideo" class="bg-yellow-500 text-white rounded-lg py-2 px-4 hover:bg-yellow-600">Next</button>
+      </div>
+    </div>
+  </div>
 
-<!-- Ads -->
-<script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
-<script>
-atOptions={ 'key':'fe70943384c0314737bd62c05e3d520a', 'format':'iframe', 'height':300, 'width':160 };
-</script>
-<script src="https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js"></script>
-<script src="app.js" type="module"></script>
+  <!-- Popunder ad scripts -->
+  <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
+  <script>
+    atOptions = {
+      'key' : 'fe70943384c0314737bd62c05e3d520a',
+      'format' : 'iframe',
+      'height' : 300,
+      'width' : 160,
+      'params' : {}
+    };
+  </script>
+  <script src="https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js"></script>
+  <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
 
 </body>
 </html>

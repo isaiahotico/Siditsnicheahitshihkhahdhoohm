@@ -3,69 +3,61 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Telegram RichAds App</title>
-
-<!-- Telegram WebApp SDK -->
-<script src="https://telegram.org/js/telegram-web-app.js?56"></script>
-
-<!-- RichAds Telegram SDK -->
-<script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
-
+<title>YouTube Watch & Earn</title>
 <style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #0f172a;
-  color: #fff;
-  text-align: center;
-}
+body { font-family: Arial, sans-serif; background:#f0f0f0; padding:15px; }
+h2,h3 { margin:8px 0; }
+button { padding:8px 14px; margin:5px; cursor:pointer; }
+input { padding:8px; width:65%; }
+iframe { width:100%; height:360px; margin-top:10px; border:none; }
 
-h2 {
-  margin-top: 16px;
+.card {
+  background:#fff;
+  padding:12px;
+  border-radius:10px;
+  margin-top:15px;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
 }
-
-#username {
-  margin: 10px;
-  font-size: 15px;
-  color: #38bdf8;
-}
-
-.buttons {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  padding: 20px;
-}
-
-button {
-  padding: 15px;
-  font-size: 16px;
-  border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg,#22c55e,#06b6d4);
-  color: #fff;
-  cursor: pointer;
-}
-
-button:active {
-  transform: scale(0.97);
-}
+#videoList li,#leaderboard li,#viralRanking li { margin:6px 0; font-size:13px; }
+.badge { background:#222; color:#fff; padding:2px 6px; border-radius:5px; font-size:12px; }
 </style>
 </head>
-
 <body>
 
-<h2>💎 Watch Ads & Earn</h2>
-<div id="username">Loading Telegram user...</div>
+<h2>👋 Welcome, <span id="username"></span></h2>
+<h3>💰 Coins: <span id="coins">0</span></h3>
 
-<div class="buttons">
-  <button onclick="showAd()">Ad Button 1</button>
-  <button onclick="showAd()">Ad Button 2</button>
-  <button onclick="showAd()">Ad Button 3</button>
-  <button onclick="showAd()">Ad Button 4</button>
+<div class="card">
+<h3>🎥 Your Videos (5 free / +50 coins)</h3>
+<input id="videoURL" placeholder="Paste YouTube link">
+<button onclick="addVideo()">Add</button>
+<ul id="videoList"></ul>
 </div>
 
-<script src="app.js"></script>
+<div class="card">
+<h3>▶ Watch & Earn</h3>
+<iframe id="ytPlayer" allowfullscreen></iframe><br>
+<button onclick="playRandomVideo()">Watch Random</button>
+<button onclick="nextVideo()">Next</button>
+</div>
+
+<div class="card">
+<h3>🏆 Top Earners</h3>
+<ol id="leaderboard"></ol>
+</div>
+
+<div class="card">
+<h3>🔥 Viral Videos</h3>
+<ol id="viralRanking"></ol>
+</div>
+
+<!-- Ads -->
+<script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
+<script>
+atOptions={ 'key':'fe70943384c0314737bd62c05e3d520a', 'format':'iframe', 'height':300, 'width':160 };
+</script>
+<script src="https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js"></script>
+<script src="app.js" type="module"></script>
+
 </body>
 </html>

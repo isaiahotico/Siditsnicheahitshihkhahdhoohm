@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Telegram RichAds App</title>
 
-<!-- Telegram WebApp -->
+<!-- Telegram WebApp SDK -->
 <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
 
 <!-- RichAds Telegram SDK -->
@@ -21,12 +22,12 @@ body {
 }
 
 h2 {
-  margin-top: 15px;
+  margin-top: 16px;
 }
 
-.user {
+#username {
   margin: 10px;
-  font-size: 16px;
+  font-size: 15px;
   color: #38bdf8;
 }
 
@@ -54,15 +55,16 @@ button:active {
 </head>
 
 <body>
-  <h2>💎 Watch Ads & Earn</h2>
-  <div class="user" id="username">Loading Telegram user...</div>
 
-  <div class="buttons">
-    <button onclick="showRandomAd()">Ad Button 1</button>
-    <button onclick="showRandomAd()">Ad Button 2</button>
-    <button onclick="showRandomAd()">Ad Button 3</button>
-    <button onclick="showRandomAd()">Ad Button 4</button>
-  </div>
+<h2>💎 Watch Ads & Earn</h2>
+<div id="username">Loading Telegram user...</div>
+
+<div class="buttons">
+  <button onclick="showAd()">Ad Button 1</button>
+  <button onclick="showAd()">Ad Button 2</button>
+  <button onclick="showAd()">Ad Button 3</button>
+  <button onclick="showAd()">Ad Button 4</button>
+</div>
 
 <script src="app.js"></script>
 </body>

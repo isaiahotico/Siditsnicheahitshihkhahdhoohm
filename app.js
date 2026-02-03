@@ -1,498 +1,383 @@
 
-// app.js (type=module)
-// Firebase v9 modular + Firestore usage
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+// app.js — game logic + firebase interactions (ES module)
 import {
-  getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, updateDoc,
-  serverTimestamp, increment, query, orderBy, limit, where, getDocs
-} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+  onAuthStateChanged,
+  signInAnonymously
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-// --- Firebase config (use provided) ---
-const firebaseConfig = {
-  apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
-  authDomain: "freegcash-ads.firebaseapp.com",
-  databaseURL: "https://freegcash-ads-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "freegcash-ads",
-  storageBucket: "freegcash-ads.firebasestorage.app",
-  messagingSenderId: "608086825364",
-  appId: "1:608086825364:web:3a8e628d231b52c6171781",
-  measurementId: "G-Z64B87ELGP"
-};
+import {
+  collection,
+  addDoc,
+  doc,
+  setDoc,
+  getDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Ensure firebase was initialized in index.html
+if (!window._firebaseReady || !window._fb) {
+  console.error('Firebase not ready. Ensure index.html initializes Firebase before app.js');
+}
 
-// Constants
-const REWARD_PER_AD = 0.0065; // reward per showed ad (PHP)
-const MIN_WITHDRAW = 0.02;
-const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes per user per ad source
-const BANNER_ROTATE_MS = 60 * 1000; // 1 minute rotate for banners
-const POPOUNDER_MS = 30 * 60 * 1000; // auto show popounder every 30 minutes
-const ADMIN_PASSWORD = "Propetas12";
+const auth = window._fb.auth;
+const db = window._fb.db;
 
-// UI elements
-const watchMonetagBtn = document.getElementById('watchMonetagBtn');
-const watchAdsGramBtn = document.getElementById('watchAdsGramBtn');
-const balanceEl = document.getElementById('balance');
-const usernameInput = document.getElementById('username');
-const gcashInput = document.getElementById('gcashNumber');
-const chatBox = document.getElementById('chatBox');
-const chatInput = document.getElementById('chatInput');
-const sendMsg = document.getElementById('sendMsg');
-const leaderboardEl = document.getElementById('leaderboard');
-const activityLog = document.getElementById('activityLog');
-const withdrawBtn = document.getElementById('withdrawBtn');
-const adminBtn = document.getElementById('adminBtn');
-const adminPanel = document.getElementById('adminPanel');
-const adminBroadcast = document.getElementById('adminBroadcast');
-const adminBroadcastBtn = document.getElementById('adminBroadcastBtn');
-const adminUserId = document.getElementById('adminUserId');
-const adminAmount = document.getElementById('adminAmount');
-const adminAdjustBtn = document.getElementById('adminAdjustBtn');
-const adminStats = document.getElementById('adminStats');
+// --- Game config ---
+const LANES = 6;
+const CANVAS_W = 360;
+const CANVAS_H = 640;
+const LANE_W = CANVAS_W / LANES;
+const PLAYER_Y = CANVAS_H - 120;
+const BASE_SPEED = 2.0;
+const BARRIER_VALUE_PER = 0.001; // ₱ per barrier
+const SPEED_INCR_EVERY = 50;
 
-const bannerCard = document.getElementById('bannerCard');
-const bannerTitle = document.getElementById('bannerTitle');
-const bannerOpenBtn = document.getElementById('bannerOpenBtn');
-const bannerCooldownInfo = document.getElementById('bannerCooldownInfo');
-const linkButtons = document.querySelectorAll('.linkBtn');
-
+// --- State ---
+let canvas, ctx;
+let playerLane = Math.floor(LANES/2);
+let barriers = [];
+let barrierTimer = 0;
+let barrierInterval = 80;
+let speed = BASE_SPEED;
+let frames = 0;
+let barriersPassed = 0;
+let score = 0;
+let level = 1;
+let localEarned = 0;
 let currentUser = null;
-let telegramUser = null; // will hold Telegram login info if provided
-let bannerIndex = 0;
-let bannerLinks = [
-  "https://www.effectivegatecpm.com/mwbmp8yxc?key=9ce01dec19ec86d0fbabe111b4439981",
-  "https://www.effectivegatecpm.com/iefwgzfy8w?key=ef8a98a84b67232d3808db269675011c",
-  "https://www.effectivegatecpm.com/hebhpc3tcm?key=e18e0c3b11bce2e7a0d722f6ac554232",
-  "https://www.effectivegatecpm.com/ai7csj41?key=7e287f34b34183342aa072ceeccb42cf"
-];
 
-// Utilities
-function logActivity(text) {
-  const p = document.createElement('div');
-  p.textContent = `${new Date().toLocaleTimeString()} — ${text}`;
-  activityLog.prepend(p);
+// UI
+const scoreEl = document.getElementById('score');
+const barriersEl = document.getElementById('barriers');
+const earnedEl = document.getElementById('earned');
+const levelEl = document.getElementById('level');
+const messagesEl = document.getElementById('messages');
+const userInfoEl = document.getElementById('userInfo');
+
+function logMsg(msg) {
+  messagesEl.textContent = msg;
 }
 
-function formatMoney(v) { return Number(v || 0).toFixed(4); } // show 4 decimals for small amounts
-
-function now() { return Date.now(); }
-
-// Anonymous sign-in
-signInAnonymously(auth).catch(e => {
-  console.error('Auth error', e);
-  alert('Auth failed: ' + e.message);
-});
-
-onAuthStateChanged(auth, async (user) => {
-  if (!user) return;
-  currentUser = user;
-
-  // Initialize or read user doc
-  const uDoc = doc(db, 'users', user.uid);
-  const snap = await getDoc(uDoc);
-  const localNick = localStorage.getItem('ph_nick') || '';
-  const localG = localStorage.getItem('ph_gcash') || '';
-  if (!snap.exists()) {
-    await setDoc(uDoc, {
-      uid: user.uid,
-      name: localNick || ('user_' + user.uid.slice(0,6)),
-      balance: 0,
-      gcash: localG,
-      createdAt: serverTimestamp(),
-      lastRewards: {} // map source->timestamp
-    });
-  } else {
-    const data = snap.data();
-    usernameInput.value = data.name || localNick;
-    gcashInput.value = data.gcash || localG;
-    balanceEl.textContent = formatMoney(data.balance || 0);
-  }
-
-  logActivity('Signed in: ' + (usernameInput.value || user.uid));
-  subscribeChat();
-  subscribeLeaderboard();
-  subscribeUserDoc();
-  // Try to read Telegram widget data from global (if present). See notes below.
-  detectTelegramLogin();
-});
-
-// Save nickname/gcash
-usernameInput.addEventListener('change', async () => {
-  const name = usernameInput.value.trim();
-  localStorage.setItem('ph_nick', name);
-  if (currentUser) {
-    await updateDoc(doc(db, 'users', currentUser.uid), { name });
-  }
-});
-
-gcashInput.addEventListener('change', async () => {
-  const g = gcashInput.value.trim();
-  localStorage.setItem('ph_gcash', g);
-  if (currentUser) {
-    await updateDoc(doc(db, 'users', currentUser.uid), { gcash: g });
-  }
-});
-
-// Chat
-function subscribeChat() {
-  const q = query(collection(db, 'chats'), orderBy('timestamp', 'asc'));
-  onSnapshot(q, snapshot => {
-    chatBox.innerHTML = '';
-    snapshot.forEach(docSnap => {
-      const m = docSnap.data();
-      const div = document.createElement('div');
-      const me = currentUser && m.uid === currentUser.uid;
-      div.className = 'msg ' + (me ? 'me' : 'other');
-      const name = m.tg_username ? `@${m.tg_username}` : (m.name || 'anon');
-      div.innerHTML = `<strong>${escapeHtml(name)}</strong> <span class="muted small" style="margin-left:6px">${new Date(m.timestamp).toLocaleTimeString()}</span><div>${escapeHtml(m.text)}</div>`;
-      chatBox.appendChild(div);
-    });
-    chatBox.scrollTop = chatBox.scrollHeight;
-  });
-}
-
-sendMsg.addEventListener('click', async () => {
-  const text = chatInput.value.trim();
-  if (!text || !currentUser) return;
-  const name = usernameInput.value.trim() || ('user_' + currentUser.uid.substr(0,6));
-  await addDoc(collection(db, 'chats'), {
-    uid: currentUser.uid,
-    name,
-    text,
-    timestamp: serverTimestamp(),
-    tg_username: telegramUser ? telegramUser.username : null
-  });
-  chatInput.value = '';
-});
-
-// Leaderboard: top balances
-function subscribeLeaderboard() {
-  const q = query(collection(db, 'users'), orderBy('balance', 'desc'), limit(10));
-  onSnapshot(q, snapshot => {
-    leaderboardEl.innerHTML = '';
-    snapshot.forEach((docSnap, idx) => {
-      const u = docSnap.data();
-      const div = document.createElement('div');
-      div.className = 'leader';
-      const displayName = u.name || docSnap.id.slice(0,6);
-      div.innerHTML = `<div>#${idx+1} <strong>${escapeHtml(displayName)}</strong></div><div class="muted">${formatMoney(u.balance)} PHP</div>`;
-      leaderboardEl.appendChild(div);
-    });
-  });
-}
-
-function subscribeUserDoc() {
-  if (!currentUser) return;
-  const uDoc = doc(db, 'users', currentUser.uid);
-  onSnapshot(uDoc, snap => {
-    if (!snap.exists()) return;
-    const d = snap.data();
-    balanceEl.textContent = formatMoney(d.balance || 0);
-    // if Telegram was verified server-side, update telegramUser
-    if (d.tg_username && (!telegramUser || telegramUser.username !== d.tg_username)) {
-      telegramUser = { username: d.tg_username };
-    }
-    updateAdminStats();
-  });
-}
-
-function updateAdminStats() {
-  // quick stats (client-side)
-  getDocs(query(collection(db, 'users'))).then(snap => {
-    const totalUsers = snap.size;
-    let totalBalance = 0;
-    snap.forEach(d => totalBalance += Number(d.data().balance || 0));
-    adminStats.textContent = `Users: ${totalUsers} — Total balance: ${totalBalance.toFixed(4)} PHP`;
-  });
-}
-
-// Reward logic (uses Firestore atomic increments and per-source cooldown stored in user's lastRewards map)
-async function tryRewardForSource(source) {
-  if (!currentUser) { alert('Not signed in'); return false; }
-  const userRef = doc(db, 'users', currentUser.uid);
-  const snap = await getDoc(userRef);
-  const user = snap.exists() ? snap.data() : null;
-  const lastRewards = (user && user.lastRewards) ? user.lastRewards : {};
-  const lastAt = lastRewards[source] || 0;
-  const elapsed = now() - lastAt;
-  if (elapsed < COOLDOWN_MS) {
-    const left = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
-    alert(`You must wait ${left}s before earning from ${source} again.`);
-    return false;
-  }
-  // Allowed: apply reward
-  // Use atomic increment and update lastRewards map
+// --- Ads wrappers (example using libtl show_10555663 API) ---
+async function showRewardedAd() {
   try {
-    await updateDoc(userRef, {
-      balance: increment(REWARD_PER_AD),
-      [`lastRewards.${source}`]: now()
-    });
-    // Create reward record (client writes — server verification recommended)
-    await addDoc(collection(db, 'rewards'), {
-      uid: currentUser.uid,
-      amount: REWARD_PER_AD,
-      source,
-      timestamp: serverTimestamp()
-    });
-    logActivity(`Rewarded ${REWARD_PER_AD} PHP for ${source}`);
-    alert(`You earned ${REWARD_PER_AD.toFixed(4)} PHP`);
-    return true;
-  } catch (e) {
-    console.error(e);
-    alert('Reward failed: ' + e.message);
-    return false;
-  }
-}
-
-// Monetag ad button: use provided show_10276123() promise (as in original)
-watchMonetagBtn.addEventListener('click', async () => {
-  if (typeof show_10276123 !== 'function') {
-    alert('Monetag SDK not available.');
-    return;
-  }
-  watchMonetagBtn.disabled = true;
-  try {
-    show_10276123().then(async () => {
-      await tryRewardForSource('monetag');
-      watchMonetagBtn.disabled = false;
-    }).catch(e => {
-      console.warn('Monetag ad error', e);
-      alert('Monetag ad failed/closed');
-      watchMonetagBtn.disabled = false;
-    });
-  } catch (err) {
-    console.error(err);
-    watchMonetagBtn.disabled = false;
-  }
-});
-
-// AdsGram integration
-watchAdsGramBtn.addEventListener('click', async () => {
-  // AdsGram global might be window.AdsGram or window.SAD per your note
-  const AdsGramCtor = window.AdsGram || window.SAD || null;
-  if (!AdsGramCtor) {
-    alert('AdsGram object not found on page.');
-    return;
-  }
-  try {
-    // create controller (reuse a global if you want)
-    const adController = new AdsGramCtor({ blockId: "int-21471" });
-    // Try common methods: show(), open(), click() — many ad SDKs return a promise on show.
-    if (typeof adController.show === 'function') {
-      adController.show().then(async () => {
-        await tryRewardForSource('adsgram');
-      }).catch(e => {
-        console.warn('AdsGram show error', e);
-        alert('AdsGram ad failed/closed');
-      });
-    } else if (typeof adController.open === 'function') {
-      adController.open();
-      // we cannot detect completion for some SDKs; still attempt reward (note: insecure)
-      await tryRewardForSource('adsgram');
+    if (typeof show_10555663 === 'function') {
+      await show_10555663();
+      return true;
     } else {
-      // fallback: try calling constructor as function
-      try {
-        const res = adController(); // may throw
-        if (res && res.then) {
-          res.then(async () => await tryRewardForSource('adsgram'));
-        } else {
-          await tryRewardForSource('adsgram');
-        }
-      } catch (e) {
-        console.warn('Unable to show AdsGram', e);
-        alert('AdsGram show unavailable');
+      console.warn('Rewarded ad function not present.');
+      return false;
+    }
+  } catch (e) {
+    console.warn('Rewarded ad error:', e);
+    return false;
+  }
+}
+
+async function showInAppInterstitial() {
+  try {
+    if (typeof show_10555663 === 'function') {
+      await show_10555663({ type: 'inApp', inAppSettings: { frequency: 1, capping: 0.1, interval: 30, timeout: 3, everyPage: false }});
+      return true;
+    } else {
+      console.warn('Interstitial ad function not present.');
+      return false;
+    }
+  } catch (e) {
+    console.warn('Interstitial ad error:', e);
+    return false;
+  }
+}
+
+// --- Game functions ---
+function initCanvas() {
+  canvas = document.getElementById('game');
+  ctx = canvas.getContext('2d');
+  canvas.width = CANVAS_W;
+  canvas.height = CANVAS_H;
+  render();
+}
+
+function resetSession() {
+  barriers = [];
+  barrierTimer = 0;
+  barrierInterval = 80;
+  frames = 0;
+  barriersPassed = 0;
+  score = 0;
+  level = 1;
+  localEarned = 0;
+  speed = BASE_SPEED;
+  updateHUD();
+}
+
+function spawnBarrier() {
+  const types = ['cone', 'car'];
+  if (barriersPassed >= 100) types.push('moving');
+  if (barriersPassed >= 250) types.push('fake');
+  const type = types[Math.floor(Math.random()*types.length)];
+  const lane = Math.floor(Math.random()*LANES);
+  const b = {
+    lane,
+    x: lane*LANE_W + LANE_W/2,
+    y: -40,
+    speed: speed * (type === 'car' ? 1.1 : 1.0),
+    type,
+    dir: Math.random() < 0.5 ? -1 : 1
+  };
+  barriers.push(b);
+}
+
+function updateGame() {
+  frames++;
+  barrierTimer++;
+  if (barrierTimer > Math.max(20, barrierInterval - Math.floor(speed*6))) {
+    spawnBarrier();
+    barrierTimer = 0;
+  }
+
+  for (let i = barriers.length - 1; i >= 0; i--) {
+    const b = barriers[i];
+    if (b.type === 'moving') {
+      b.x += b.dir * 0.6 * speed;
+      if (b.x < 0 || b.x > CANVAS_W) b.dir *= -1;
+      b.y += b.speed;
+    } else {
+      b.y += b.speed;
+    }
+
+    if (b.y > PLAYER_Y + 40) {
+      barriers.splice(i,1);
+      barriersPassed++;
+      score += 1;
+      localEarned += BARRIER_VALUE_PER;
+      updateProgression();
+      updateHUD();
+    } else {
+      const playerX = playerLane*LANE_W + LANE_W/2;
+      const dx = Math.abs((b.x || (b.lane*LANE_W + LANE_W/2)) - playerX);
+      const collided = (b.y >= PLAYER_Y - 40 && b.y <= PLAYER_Y + 40 && (b.type !== 'fake') && (dx < LANE_W/2));
+      if (collided) {
+        handleDeath();
+        return;
       }
     }
-  } catch (e) {
-    console.error('AdsGram error', e);
-    alert('AdsGram integration error');
   }
-});
 
-// Adsterra link buttons: open link in new page and reward if cooldown passed
-linkButtons.forEach(btn => {
-  btn.addEventListener('click', async (ev) => {
-    const link = btn.dataset.link;
-    window.open(link, '_blank', 'noopener');
-    // try reward for source derived from link index
-    const idx = Array.from(linkButtons).indexOf(btn);
-    await tryRewardForSource('adsterra_' + idx);
+  render();
+  requestAnimationFrame(updateGame);
+}
+
+function render() {
+  ctx.clearRect(0,0,CANVAS_W,CANVAS_H);
+  ctx.fillStyle = '#2a2a2a';
+  ctx.fillRect(0,0,CANVAS_W,CANVAS_H);
+
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 2;
+  for (let i=1;i<LANES;i++){
+    const x = i*LANE_W;
+    ctx.beginPath();
+    ctx.moveTo(x,0);
+    ctx.lineTo(x,CANVAS_H);
+    ctx.stroke();
+  }
+
+  barriers.forEach(b => {
+    ctx.save();
+    if (b.type === 'cone') ctx.fillStyle = '#e67e22';
+    else if (b.type === 'car') ctx.fillStyle = '#c0392b';
+    else if (b.type === 'moving') ctx.fillStyle = '#8e44ad';
+    else if (b.type === 'fake') ctx.fillStyle = '#3498db';
+    const bx = b.x || (b.lane*LANE_W + LANE_W/2);
+    ctx.beginPath();
+    ctx.arc(bx, b.y, 18, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
   });
-});
 
-// Banner rotation and click
-function rotateBanner() {
-  bannerIndex = (bannerIndex + 1) % bannerLinks.length;
-  bannerTitle.textContent = `Banner ${bannerIndex+1}`;
-  bannerOpenBtn.onclick = async () => {
-    const link = bannerLinks[bannerIndex];
-    window.open(link, '_blank', 'noopener');
-    // banner click rewards with a separate source with 5 min cooldown too
-    await tryRewardForSource('banner_' + bannerIndex);
-  };
-  bannerCooldownInfo.textContent = 'Rotates every 1 minute';
+  ctx.fillStyle = '#2ecc71';
+  const px = playerLane*LANE_W + LANE_W/2;
+  ctx.beginPath();
+  ctx.rect(px - 20, PLAYER_Y - 30, 40, 60);
+  ctx.fill();
 }
-rotateBanner();
-setInterval(rotateBanner, BANNER_ROTATE_MS);
 
-// Popounder auto-inject (scripts provided). This function injects the vendor scripts; the network may auto-show a popunder
-function injectPopunder() {
-  try {
-    // atOptions config as provided
-    window.atOptions = {
-      'key' : 'fe70943384c0314737bd62c05e3d520a',
-      'format' : 'iframe',
-      'height' : 300,
-      'width' : 160,
-      'params' : {}
-    };
+function updateHUD() {
+  scoreEl.textContent = score;
+  barriersEl.textContent = barriersPassed;
+  earnedEl.textContent = localEarned.toFixed(2);
+  levelEl.textContent = level;
+}
 
-    // helper to append script
-    const appendScript = (src, inlineContent) => {
-      const s = document.createElement('script');
-      if (src) s.src = src;
-      if (inlineContent) s.text = inlineContent;
-      s.async = true;
-      document.body.appendChild(s);
-    };
+function updateProgression() {
+  level = Math.floor(barriersPassed / SPEED_INCR_EVERY) + 1;
+  speed = BASE_SPEED + Math.floor(barriersPassed / SPEED_INCR_EVERY) * 0.6;
+}
 
-    appendScript("https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js");
-    appendScript("https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js");
-    // Duplicate as sample
-    // You may also want to append the other script if required by provider
-    logActivity('Popunder scripts injected');
-    // After injection, some providers trigger open; we award (best-effort) — but prefer server verification
-    // Note: awarding immediately on injection is insecure; here we do not auto-reward for popunder,
-    // but if you want to reward on popunder show, you could call tryRewardForSource('popunder').
-  } catch (e) {
-    console.warn('Popunder injection failed', e);
+async function handleDeath() {
+  logMsg('You crashed! Saving session...');
+  // Save earnings doc for server validation
+  if (currentUser) {
+    try {
+      await addEarnings({
+        uid: currentUser.uid,
+        barriersPassed,
+        earned: Number(localEarned.toFixed(4)),
+        timestamp: serverTimestamp(),
+        approved: false,
+        sessionId: `sess_${Date.now()}`
+      });
+      logMsg('Session saved for admin review.');
+    } catch (e) {
+      console.warn('Failed to save earnings', e);
+      logMsg('Failed to save session.');
+    }
   }
+
+  const cont = confirm('Game over. Watch ad to continue?');
+  if (cont) {
+    const ok = await showRewardedAd();
+    if (ok) {
+      // small revive
+      barriers = barriers.filter(b => b.y < PLAYER_Y - 60);
+      logMsg('You continued after ad.');
+      requestAnimationFrame(updateGame);
+      return;
+    } else {
+      logMsg('Ad unavailable.');
+    }
+  }
+
+  resetSession();
+  updateHUD();
+  await showInAppInterstitial();
 }
 
-// inject now, and set interval every POPOUNDER_MS
-injectPopunder();
-setInterval(injectPopunder, POPOUNDER_MS);
+// --- Firebase helpers ---
+async function addEarnings(data) {
+  const col = collection(db, 'earnings');
+  return await addDoc(col, data);
+}
 
-// Withdraw
-withdrawBtn.addEventListener('click', async () => {
-  if (!currentUser) return alert('Not signed in');
-  const uRef = doc(db, 'users', currentUser.uid);
-  const snap = await getDoc(uRef);
-  const data = snap.exists() ? snap.data() : null;
-  const bal = Number(data?.balance || 0);
-  const gcash = gcashInput.value.trim() || data?.gcash || localStorage.getItem('ph_gcash') || '';
-  if (!gcash) return alert('Enter GCash number/email');
-  if (bal < MIN_WITHDRAW) return alert(`Minimum withdrawal ${MIN_WITHDRAW} PHP. Your balance: ${bal.toFixed(4)}`);
-  // create withdrawal request
-  await addDoc(collection(db, 'withdrawals'), {
-    uid: currentUser.uid,
-    amount: parseFloat(bal.toFixed(4)),
-    gcash,
+async function createWithdrawRequest(uid, amount, method) {
+  const col = collection(db, 'withdrawals');
+  return await addDoc(col, {
+    uid,
+    amount: Number(amount),
+    method,
     status: 'pending',
-    timestamp: serverTimestamp()
-  });
-  // reset balance to 0
-  await updateDoc(uRef, { balance: 0 });
-  alert('Withdrawal requested. Admin will process it.');
-  logActivity(`Withdrawal requested: ${bal.toFixed(4)} PHP`);
-});
-
-// Admin panel (client-side prompt for prototyping only)
-adminBtn.addEventListener('click', () => {
-  const p = prompt('Enter admin password:');
-  if (p === ADMIN_PASSWORD) {
-    adminPanel.style.display = 'block';
-    alert('Admin panel opened (client-side). For production use secure server auth.');
-  } else {
-    alert('Wrong password.');
-  }
-});
-
-adminBroadcastBtn.addEventListener('click', async () => {
-  const text = adminBroadcast.value.trim();
-  if (!text) return alert('Enter message');
-  await addDoc(collection(db, 'chats'), {
-    uid: 'admin',
-    name: 'PAPERHOUSE ADMIN',
-    text,
-    timestamp: serverTimestamp()
-  });
-  adminBroadcast.value = '';
-  alert('Broadcast sent');
-});
-
-adminAdjustBtn.addEventListener('click', async () => {
-  const idOrName = adminUserId.value.trim();
-  const amountRaw = adminAmount.value.trim();
-  if (!amountRaw) return alert('Enter amount like +0.0065 or -0.0065');
-  const delta = Number(amountRaw);
-  if (isNaN(delta)) return alert('Invalid amount');
-  // find by uid or name
-  let targetUid = null;
-  if (!idOrName) return alert('Provide uid or exact nickname');
-  // try uid
-  const targetDoc = await getDoc(doc(db, 'users', idOrName));
-  if (targetDoc.exists()) {
-    targetUid = idOrName;
-  } else {
-    // search by name
-    const q = query(collection(db, 'users'), where('name', '==', idOrName), limit(1));
-    const snap = await getDocs(q);
-    if (!snap.empty) targetUid = snap.docs[0].id;
-  }
-  if (!targetUid) return alert('User not found');
-  const uRef = doc(db, 'users', targetUid);
-  await updateDoc(uRef, {
-    balance: increment(delta)
-  });
-  await addDoc(collection(db, 'rewards'), {
-    uid: targetUid,
-    amount: delta,
-    admin: true,
-    timestamp: serverTimestamp()
-  });
-  alert('Balance updated');
-});
-
-// Small helpers
-function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-// Telegram login detection (client-side)
-// NOTE: Telegram Widget requires your bot username in the widget. Upon successful login it will call your callback URL or populate document location if configured.
-// There is also `window.TelegramLoginWidget` behavior sometimes; here we attempt to read Telegram auth from window.Telegram or from URL params.
-// IMPORTANT: Proper verification of Telegram auth requires server-side hash verification (HMAC with bot token). Client-side acceptance is insecure.
-function detectTelegramLogin() {
-  // 1) If URL contains Telegram auth data (if you used data-auth-url to redirect back with auth), parse it
-  const params = new URLSearchParams(window.location.search);
-  if (params.has('telegram_user')) {
-    // custom integration — depends on how you set up redirect
-  }
-  // 2) Some widgets call window.TelegramLoginWidget or call a global callback; we attempt to read window.TelegramLoginData if present
-  if (window.TelegramLoginWidget && window.TelegramLoginWidget.data) {
-    telegramUser = window.TelegramLoginWidget.data;
-  }
-  // If telegramUser exists, write to user doc (best-effort)
-  if (telegramUser && currentUser) {
-    const uRef = doc(db, 'users', currentUser.uid);
-    updateDoc(uRef, {
-      tg_username: telegramUser.username || null,
-      tg_name: telegramUser.first_name || null
-    }).then(() => logActivity('Telegram username stored: ' + telegramUser.username));
-  }
-}
-
-// Periodic leaderboard refresh (extra safety)
-setInterval(updateAdminStats, 15000);
-
-// helper to update admin stats explicitly
-function updateAdminStats() {
-  getDocs(collection(db, 'users')).then(snap => {
-    const totalUsers = snap.size;
-    let totalBalance = 0;
-    snap.forEach(d => totalBalance += Number(d.data().balance || 0));
-    adminStats.textContent = `Users: ${totalUsers} — Total: ${totalBalance.toFixed(4)} PHP`;
+    createdAt: serverTimestamp()
   });
 }
+
+// --- UI bindings ---
+document.getElementById('leftBtn').addEventListener('click', () => {
+  if (playerLane > 0) playerLane--;
+});
+
+document.getElementById('rightBtn').addEventListener('click', () => {
+  if (playerLane < LANES-1) playerLane++;
+});
+
+document.getElementById('signinBtn').addEventListener('click', async () => {
+  try {
+    await signInAnonymously(auth);
+    logMsg('Signing in...');
+  } catch (e) {
+    console.error('Sign-in error', e);
+    logMsg('Sign-in failed.');
+  }
+});
+
+document.getElementById('applyReferral').addEventListener('click', async () => {
+  const code = document.getElementById('useReferral').value.trim();
+  if (!code) { logMsg('Enter referral code.'); return; }
+  if (!currentUser) { logMsg('Sign in first.'); return; }
+  try {
+    await addDoc(collection(db, 'referrals'), {
+      usedBy: currentUser.uid,
+      code,
+      createdAt: serverTimestamp()
+    });
+    logMsg('Referral recorded for server validation.');
+  } catch (e) {
+    console.warn(e);
+    logMsg('Failed to record referral.');
+  }
+});
+
+document.getElementById('withdrawBtn').addEventListener('click', async () => {
+  const amount = Number(document.getElementById('withdrawAmount').value);
+  const method = document.getElementById('withdrawMethod').value;
+  if (!currentUser) { logMsg('Sign in first.'); return; }
+  if (!amount || amount < 50) { logMsg('Minimum withdrawal ₱50.'); return; }
+  try {
+    await createWithdrawRequest(currentUser.uid, amount, method);
+    logMsg('Withdraw request created. Admin will review.');
+  } catch (e) {
+    console.warn(e);
+    logMsg('Withdraw request failed.');
+  }
+});
+
+document.getElementById('dailyBonusBtn').addEventListener('click', async () => {
+  if (!currentUser) { logMsg('Sign in first.'); return; }
+  const ok = confirm('Watch ad to claim daily bonus?');
+  if (!ok) return;
+  const watched = await showRewardedAd();
+  if (watched) {
+    try {
+      await addDoc(collection(db, 'dailyClaims'), {
+        uid: currentUser.uid,
+        ts: serverTimestamp()
+      });
+      logMsg('Daily claim submitted (server will validate).');
+    } catch (e) {
+      console.warn(e);
+      logMsg('Failed to submit daily claim.');
+    }
+  } else {
+    logMsg('Ad not available.');
+  }
+});
+
+// --- Auth listener ---
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    userInfoEl.textContent = `User: ${user.uid.substring(0,8)}`;
+    // Ensure user doc exists
+    try {
+      const uDocRef = doc(db, 'users', user.uid);
+      const snap = await getDoc(uDocRef);
+      if (!snap.exists()) {
+        await setDoc(uDocRef, {
+          createdAt: serverTimestamp(),
+          referralCode: generateReferralCode(),
+          publicName: 'Player'
+        });
+      }
+    } catch (e) {
+      console.warn('Error creating user doc', e);
+    }
+  } else {
+    currentUser = null;
+    userInfoEl.textContent = 'Not signed in';
+  }
+});
+
+function generateReferralCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let s = '';
+  for (let i=0;i<5;i++) s += chars.charAt(Math.floor(Math.random()*chars.length));
+  return s;
+}
+
+// --- Start ---
+initCanvas();
+resetSession();
+requestAnimationFrame(updateGame);
+
+// debug
+window._debug = { resetSession };

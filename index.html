@@ -1,108 +1,109 @@
+
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Telegram Ads DashJam — Demo</title>
+  <title>DashJam Mini App </title>
   <style>
-    body { font-family: Arial, sans-serif; margin:0; padding:14px; display:flex; flex-direction:column; align-items:center; gap:12px; background:#0f0f12; color:#e6eef8; }
-    h1 { font-size:18px; margin:0; }
-    #gameContainer { position:relative; width:360px; height:640px; background:#191919; border-radius:8px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,0.6); }
-    canvas { display:block; background:linear-gradient(#333,#222); }
-    .hud { width:360px; display:flex; justify-content:space-between; align-items:center; }
-    .btnRow { display:flex; gap:10px; margin-top:8px; }
-    button { padding:10px 14px; border-radius:6px; border:none; background:#1e90ff; color:#fff; cursor:pointer; }
-    .small { font-size:13px; padding:8px 10px; }
-    #leftBtn, #rightBtn { width:160px; height:48px; font-size:18px; }
-    #panel { width:360px; background:#111217; padding:10px; border-radius:8px; box-sizing:border-box; }
-    input, select { padding:8px; border-radius:6px; border:1px solid #333; background:#0f0f12; color:#fff; }
-    #messages { min-height:20px; color:#ffd580; font-size:13px; margin-top:8px; }
-    a { color:#7fdcff; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin: 12px; }
+    .card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .btn { padding:8px 12px; border-radius:8px; border:none; cursor:pointer; }
+    .btn-primary { background:#2563eb; color:white; }
+    .btn-ghost { background:#f3f4f6; }
+    .stats { font-size: 18px; font-weight:600; }
+    .small { font-size:13px; color:#6b7280; }
+    input, select { padding:8px; border-radius:8px; border:1px solid #d1d5db; }
+    .controls { display:flex; gap:8px; margin-top:12px; }
   </style>
-</head>
-<body>
-  <h1>DashJam — Telegram Ads App (Demo)</h1>
-
-  <div class="hud">
-    <div>Score: <strong id="score">0</strong> | Barriers: <strong id="barriers">0</strong></div>
-    <div>Earned: ₱<strong id="earned">0.00</strong></div>
-  </div>
-
-  <div id="gameContainer">
-    <canvas id="game" width="360" height="640"></canvas>
-    <div style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.45); padding:6px; border-radius:6px;">
-      Level: <span id="level">1</span>
-    </div>
-  </div>
-
-  <div class="btnRow">
-    <button id="leftBtn">◀ LEFT</button>
-    <button id="rightBtn">RIGHT ▶</button>
-  </div>
-
-  <div id="panel">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <div>
-        <button id="signinBtn" class="small">Sign in (anonymous)</button>
-        <button id="dailyBonusBtn" class="small">Daily Bonus (watch)</button>
-      </div>
-      <div id="userInfo">Not signed in</div>
-    </div>
-
-    <div style="margin-top:8px;">
-      <label>Referral code: <input id="useReferral" placeholder="optional" /></label>
-      <button id="applyReferral" class="small">Apply</button>
-
-    </div>
-
-    <hr style="border-color:#222;margin:10px 0;" />
-
-    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-      <label>Withdraw (₱ min 50):</label>
-      <input id="withdrawAmount" type="number" min="50" placeholder="50" style="width:100px;" />
-      <select id="withdrawMethod">
-        <option value="gcash">GCash</option>
-        <option value="maya">Maya</option>
-        <option value="usdt">USDT</option>
-      </select>
-      <button id="withdrawBtn" class="small">Request</button>
-    </div>
-
-    <div id="messages"></div>
-  </div>
-
-  <!-- Example ad SDKs -->
-  <!-- Replace with your own ad provider scripts and IDs. -->
+  <!-- libtl ad SDK (provided snippet) -->
   <script src="//libtl.com/sdk.js" data-zone="10555663" data-sdk="show_10555663"></script>
 
-  <!-- Example popunder script placeholders (replace in production) -->
-  <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <div class="card">
+    <div class="row">
+      <div>
+        <div class="small">Telegram user</div>
+        <div id="tg-user" class="stats">Not detected yet...</div>
+        <div id="tg-user-sub" class="small"></div>
+      </div>
+      <div style="margin-left:auto">
+        <button id="btn-open-tg" class="btn btn-ghost">Open in Telegram</button>
+      </div>
+    </div>
+  </div>
 
-  <!-- Firebase initialization (modular) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-    import { getFirestore } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+  <div class="card">
+    <div class="small">Live progress</div>
+    <div class="row" style="margin-top:8px">
+      <div style="flex:1">
+        <div class="small">Barriers passed</div>
+        <div id="barriers" class="stats">0</div>
+      </div>
+      <div style="flex:1">
+        <div class="small">Earned</div>
+        <div id="earned" class="stats">₱0.00</div>
+      </div>
+      <div style="flex:1">
+        <div class="small">Referral</div>
+        <div id="ref-code" class="stats">—</div>
+      </div>
+    </div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBXYAc9-UAB0DzqYsFKAHR_OsRD2UhVLjs",
-      authDomain: "project-ads-app-telegram.firebaseapp.com",
-      projectId: "project-ads-app-telegram",
-      storageBucket: "project-ads-app-telegram.firebasestorage.app",
-      messagingSenderId: "867442007509",
-      appId: "1:867442007509:web:3fe7c9872d0ab88c1bf15c"
-    };
+    <div class="controls">
+      <button id="btn-left" class="btn btn-primary">Left</button>
+      <button id="btn-right" class="btn btn-primary">Right</button>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+      <button id="btn-pass" class="btn btn-ghost">Simulate +1 barrier</button>
+      <button id="btn-die" class="btn btn-ghost">Simulate Game Over (rewarded ad)</button>
+    </div>
 
-    // Expose to window for app.js usage
-    window._fb = { app, auth, db };
-    window._firebaseReady = true;
-  </script>
+    <div style="margin-top:12px" class="small">Counter example: Bars: <span id="counter-example">0</span> / 2000</div>
+  </div>
 
-  <!-- Main app script -->
-  <script type="module" src="./app.js"></script>
+  <div class="card">
+    <div class="small">Referral & Invite</div>
+    <div style="margin-top:8px" class="row">
+      <div>
+        <button id="btn-copy-ref" class="btn btn-primary">Copy invite link</button>
+      </div>
+      <div>
+        <input id="input-ref" placeholder="Paste invite code to simulate ?ref=" />
+        <button id="btn-apply-ref" class="btn btn-ghost">Apply</button>
+      </div>
+      <div id="ref-status" class="small" style="margin-left:auto"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="small">Withdraw</div>
+    <div style="margin-top:8px" class="row">
+      <input id="withdraw-amount" placeholder="Amount (PHP)" style="width:140px" />
+      <select id="withdraw-method">
+        <option>GCash</option>
+        <option>Maya</option>
+        <option>USDT</option>
+      </select>
+      <button id="btn-withdraw" class="btn btn-primary">Request Withdraw</button>
+      <div id="withdraw-status" class="small" style="margin-left:auto"></div>
+    </div>
+  </div>
+
+  <div class="card small">
+    Demo Notes:
+    <ul>
+      <li>Use Telegram Web App (button "Open in Telegram") to populate Telegram user automatically when served via Bot web_app.</li>
+      <li>Ad SDK is initialized via included script and invoked on Game Over / Daily Bonus examples.</li>
+      <li>In production replace anonymous auth with proper mapping to Telegram accounts (optional: custom tokens) to increase security trust.</li>
+    </ul>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>

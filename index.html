@@ -1,185 +1,108 @@
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
-
+  <title>Telegram Ads DashJam — Demo</title>
   <style>
-    :root{--bg:#071028;--card:#0b1220;--accent:#ffcc00;--muted:#9aa4b2}
-    body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial;background:linear-gradient(180deg,#071028 0%,#081328 100%);color:#e6eef8}
-    .wrap{max-width:980px;margin:20px auto;padding:20px}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .brand{font-weight:800;font-size:20px;display:flex;align-items:center;gap:10px}
-    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); padding:16px;border-radius:12px; margin-top:14px}
-    .controls{display:flex;gap:10px;flex-wrap:wrap}
-    button{background:var(--accent);border:none;color:#021018;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
-    .muted{color:var(--muted);font-size:13px}
-    .grid{display:grid;grid-template-columns:1fr 360px;gap:12px;margin-top:12px}
-    #chatBox{height:360px;overflow:auto;padding:10px;background:rgba(255,255,255,0.01);border-radius:8px;border:1px solid rgba(255,255,255,0.02)}
-    .msg{padding:6px 8px;border-radius:6px;margin-bottom:8px}
-    .msg.me{background:rgba(34,197,94,0.12)}
-    .msg.other{background:rgba(255,255,255,0.02)}
-    .leader{display:flex;justify-content:space-between;padding:8px 6px;border-bottom:1px dashed rgba(255,255,255,0.02)}
-    input, textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit}
-    .admin-panel{display:none;margin-top:12px}
-    .banner-wrap{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .banner-card{width:180px;height:100px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));display:flex;align-items:center;justify-content:center;flex-direction:column;padding:8px;border:1px solid rgba(255,255,255,0.02)}
-    .small{font-size:13px}
-    .tg-widget-placeholder{margin-top:10px}
+    body { font-family: Arial, sans-serif; margin:0; padding:14px; display:flex; flex-direction:column; align-items:center; gap:12px; background:#0f0f12; color:#e6eef8; }
+    h1 { font-size:18px; margin:0; }
+    #gameContainer { position:relative; width:360px; height:640px; background:#191919; border-radius:8px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,0.6); }
+    canvas { display:block; background:linear-gradient(#333,#222); }
+    .hud { width:360px; display:flex; justify-content:space-between; align-items:center; }
+    .btnRow { display:flex; gap:10px; margin-top:8px; }
+    button { padding:10px 14px; border-radius:6px; border:none; background:#1e90ff; color:#fff; cursor:pointer; }
+    .small { font-size:13px; padding:8px 10px; }
+    #leftBtn, #rightBtn { width:160px; height:48px; font-size:18px; }
+    #panel { width:360px; background:#111217; padding:10px; border-radius:8px; box-sizing:border-box; }
+    input, select { padding:8px; border-radius:6px; border:1px solid #333; background:#0f0f12; color:#fff; }
+    #messages { min-height:20px; color:#ffd580; font-size:13px; margin-top:8px; }
+    a { color:#7fdcff; }
   </style>
-
-  <!-- Monetag (existing) -->
-  <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
-
-  <!-- Popounder snippets will be injected programmatically but include a static copy here if needed -->
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="brand">
+  <h1>DashJam — Telegram Ads App (Demo)</h1>
 
-        <span style="font-size:22px">🎖🤑</span>
-        <div>
-          <div>PAPERHOUSE INC ADS</div>
-          <div class="muted" style="font-weight:600;font-size:12px">Monetag 3136495 — AdsGram & Adsterra integrated</div>
-        </div>
-      </div>
+  <div class="hud">
+    <div>Score: <strong id="score">0</strong> | Barriers: <strong id="barriers">0</strong></div>
+    <div>Earned: ₱<strong id="earned">0.00</strong></div>
+  </div>
 
-      <div style="display:flex;gap:10px;align-items:center">
-        <div class="muted small">Balance: <span id="balance">0.00</span> PHP</div>
-        <button id="watchMonetagBtn">Monetag Ad (0.0065)</button>
-        <button id="watchAdsGramBtn">AdsGram Ad (0.0065)</button>
-        <button id="withdrawBtn">Withdraw</button>
-        <button id="adminBtn" title="Admin panel (password protected)">Admin</button>
-      </div>
-    </header>
-
-    <div class="card">
-      <div class="controls">
-        <div style="flex:1">
-          <div class="muted small">Profile</div>
-          <input id="username" placeholder="Enter nickname (saved locally)" />
-        </div>
-
-        <div style="width:220px">
-          <div class="muted small">GCash # (for withdrawals)</div>
-          <input id="gcashNumber" placeholder="09XXXXXXXXX or email" />
-        </div>
-
-        <div style="min-width:160px">
-          <div class="muted small">Telegram login</div>
-          <div class="tg-widget-placeholder">
-            <!-- Replace data-telegram-login value with your bot's username (example: MyBot) -->
-            <script async src="https://telegram.org/js/telegram-widget.js?15"
-              data-telegram-login="YourBotUsername"
-              data-size="large"
-              data-userpic="false"
-              data-auth-url=""
-              data-request-access="write"></script>
-            <div class="muted small">If you use Telegram Login widget, your Telegram username will be shown live (must configure bot).</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid">
-      <div class="left">
-        <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <div>
-              <strong>Chat Room</strong>
-              <div class="muted small">Real-time chat for users</div>
-            </div>
-            <div class="muted small">Be kind — public chat</div>
-          </div>
-
-          <div id="chatBox" style="margin-top:10px"></div>
-
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <input id="chatInput" placeholder="Write a message..." />
-            <button id="sendMsg">Send</button>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top:12px">
-          <strong>Ads & Banners</strong>
-          <div class="muted small">Click each card/button to open ad (reward 0.0065 PHP). Global ad cooldown: 5 minutes per user. Banner rotate every 1 minute.</div>
-
-          <div style="margin-top:10px">
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <div class="banner-card" id="bannerCard">
-                <div id="bannerTitle">Adsterra Banner</div>
-                <button id="bannerOpenBtn">Open</button>
-                <div class="muted small" id="bannerCooldownInfo"></div>
-              </div>
-
-              <!-- Links buttons (Adsterra smart links) -->
-              <div style="display:flex;flex-direction:column;gap:6px;margin-left:6px">
-                <button class="linkBtn" data-link="https://www.effectivegatecpm.com/mwbmp8yxc?key=9ce01dec19ec86d0fbabe111b4439981">Adsterra Link 1</button>
-                <button class="linkBtn" data-link="https://www.effectivegatecpm.com/iefwgzfy8w?key=ef8a98a84b67232d3808db269675011c">Adsterra Link 2</button>
-                <button class="linkBtn" data-link="https://www.effectivegatecpm.com/hebhpc3tcm?key=e18e0c3b11bce2e7a0d722f6ac554232">Adsterra Link 3</button>
-
-<button class="linkBtn" data-link="https://www.effectivegatecpm.com/ai7csj41?key=7e287f34b34183342aa072ceeccb42cf">Adsterra Link 4</button>
-              </div>
-            </div>
-
-            <div style="margin-top:10px" class="muted small">
-              Popounder auto-show every 30 minutes (script included). You can disable in code.
-            </div>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top:12px">
-          <strong>Activity / Logs</strong>
-          <div id="activityLog" class="muted small" style="margin-top:10px;max-height:120px;overflow:auto"></div>
-        </div>
-      </div>
-
-      <div class="right">
-        <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <div><strong>Leaderboard</strong><div class="muted small">Top balances</div></div>
-            <div class="muted small">Min withdraw: 0.02 PHP</div>
-          </div>
-
-          <div id="leaderboard" style="margin-top:12px"></div>
-        </div>
-
-        <div class="card" style="margin-top:12px">
-          <strong>Admin Panel (password required)</strong>
-          <div class="muted small">Open admin panel with the button above</div>
-
-          <div class="admin-panel" id="adminPanel">
-            <div style="margin-top:8px">
-              <div class="muted small">Broadcast message to chat</div>
-              <input id="adminBroadcast" placeholder="Message to all" />
-              <button id="adminBroadcastBtn" style="margin-top:6px">Broadcast</button>
-            </div>
-
-            <div style="margin-top:10px">
-              <div class="muted small">Adjust user balance (credit/debit)</div>
-              <input id="adminUserId" placeholder="User ID (uid) or nickname" />
-              <input id="adminAmount" placeholder="+0.0065 or -0.0065" />
-              <button id="adminAdjustBtn" style="margin-top:6px">Apply</button>
-            </div>
-
-            <div style="margin-top:10px">
-              <div class="muted small">Quick stats</div>
-              <div id="adminStats" class="muted small"></div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <div style="margin-top:12px;text-align:center" class="muted small">
-      Fast UI concept — reward per ad: 0.0065 PHP. Withdraw minimum: 0.02 PHP. Client‑side admin prompt used only for prototyping.
+  <div id="gameContainer">
+    <canvas id="game" width="360" height="640"></canvas>
+    <div style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.45); padding:6px; border-radius:6px;">
+      Level: <span id="level">1</span>
     </div>
   </div>
 
-  <script type="module" src="app.js"></script>
+  <div class="btnRow">
+    <button id="leftBtn">◀ LEFT</button>
+    <button id="rightBtn">RIGHT ▶</button>
+  </div>
+
+  <div id="panel">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <button id="signinBtn" class="small">Sign in (anonymous)</button>
+        <button id="dailyBonusBtn" class="small">Daily Bonus (watch)</button>
+      </div>
+      <div id="userInfo">Not signed in</div>
+    </div>
+
+    <div style="margin-top:8px;">
+      <label>Referral code: <input id="useReferral" placeholder="optional" /></label>
+      <button id="applyReferral" class="small">Apply</button>
+
+    </div>
+
+    <hr style="border-color:#222;margin:10px 0;" />
+
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <label>Withdraw (₱ min 50):</label>
+      <input id="withdrawAmount" type="number" min="50" placeholder="50" style="width:100px;" />
+      <select id="withdrawMethod">
+        <option value="gcash">GCash</option>
+        <option value="maya">Maya</option>
+        <option value="usdt">USDT</option>
+      </select>
+      <button id="withdrawBtn" class="small">Request</button>
+    </div>
+
+    <div id="messages"></div>
+  </div>
+
+  <!-- Example ad SDKs -->
+  <!-- Replace with your own ad provider scripts and IDs. -->
+  <script src="//libtl.com/sdk.js" data-zone="10555663" data-sdk="show_10555663"></script>
+
+  <!-- Example popunder script placeholders (replace in production) -->
+  <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
+
+  <!-- Firebase initialization (modular) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXYAc9-UAB0DzqYsFKAHR_OsRD2UhVLjs",
+      authDomain: "project-ads-app-telegram.firebaseapp.com",
+      projectId: "project-ads-app-telegram",
+      storageBucket: "project-ads-app-telegram.firebasestorage.app",
+      messagingSenderId: "867442007509",
+      appId: "1:867442007509:web:3fe7c9872d0ab88c1bf15c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Expose to window for app.js usage
+    window._fb = { app, auth, db };
+    window._firebaseReady = true;
+  </script>
+
+  <!-- Main app script -->
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

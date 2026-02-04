@@ -1,5 +1,6 @@
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, increment, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBwpa8mA83JAv2A2Dj0rh5VHwodyv5N3dg",
@@ -13,143 +14,153 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Get User from Telegram (Mock ID for browser testing)
-const urlParams = new URLSearchParams(window.location.search);
-const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || { id: "Guest_" + Math.random().toString(36).substr(2, 5), first_name: "User" };
-const userId = String(tgUser.id);
+// --- Telegram User Initialization ---
+const tg = window.Telegram.WebApp;
+tg.expand();
+const user = tg.initDataUnsafe?.user || { id: "12345", first_name: "Guest", username: "GuestUser" };
+const userId = String(user.id);
+const userName = user.username ? "@" + user.username : user.first_name;
 
-// --- State ---
-let userData = { balance: 0 };
+// Display username immediately
+document.getElementById('top-username').innerText = `Welcome, ${userName}`;
 
-// --- Initialize User ---
-async function initUser() {
+let currentBalance = 0;
+
+// --- Load User Data & History ---
+async function initApp() {
     const userRef = doc(db, "users", userId);
-    const snap = await getDoc(userRef);
-    
-    if (!snap.exists()) {
-        userData = { name: tgUser.first_name, balance: 0, uid: userId };
-        await setDoc(userRef, userData);
-    } else {
-        userData = snap.data();
-    }
-    updateBalanceUI();
+    onSnapshot(userRef, (snap) => {
+        if (snap.exists()) {
+            currentBalance = snap.data().balance;
+            document.getElementById('bal-text').innerText = `₱${currentBalance.toFixed(4)}`;
+        } else {
+            setDoc(userRef, { name: userName, balance: 0 });
+        }
+    });
+
+    // Withdrawal History for User
+    const qHistory = query(collection(db, "withdrawals"), where("uid", "==", userId), orderBy("timestamp", "desc"));
+    onSnapshot(qHistory, (snap) => {
+        const container = document.getElementById('user-history');
+        container.innerHTML = "";
+        snap.forEach(doc => {
+            const w = doc.data();
+            container.innerHTML += `
+                <div class="list-item status-${w.status}">
+                    <b>₱${w.amount.toFixed(2)} via ${w.method}</b><br>
+                    <small>${w.account}</small><br>
+                    <small>Status: ${w.status.toUpperCase()}</small>
+                </div>`;
+        });
+    });
 }
 
-function updateBalanceUI() {
-    document.getElementById('balance-display').innerText = `₱${userData.balance.toFixed(4)}`;
-}
-
-// --- Monetag Ad Integration ---
-window.showRewardedAd = function() {
-    // Calling the Reward Popup as per Monetag instructions
+// --- Monetag Ad Logic ---
+window.triggerAd = function() {
     show_10276123('pop').then(() => {
-        giveReward();
-    }).catch(e => {
-        // If popup fails, try interstitial
-        show_10276123().then(() => giveReward());
+        processReward();
+    }).catch(() => {
+        show_10276123().then(() => processReward());
     });
 };
 
-async function giveReward() {
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, {
-        balance: increment(0.01)
-    });
-    userData.balance += 0.01;
-    updateBalanceUI();
-    alert("Reward Claimed: ₱0.01");
+async function processReward() {
+    await updateDoc(doc(db, "users", userId), { balance: increment(0.01) });
+    tg.showAlert("Success! +₱0.01 earned.");
 }
 
-// --- Withdrawal Logic ---
-window.requestWithdrawal = async function() {
+// --- Cashout Submission ---
+window.submitCashout = async function() {
     const method = document.getElementById('w-method').value;
-    const account = document.getElementById('w-account').value;
+    const account = document.getElementById('w-acc').value;
 
-    if (userData.balance < 0.02) return alert("Minimum withdrawal is ₱0.02");
-    if (account.length < 5) return alert("Enter valid account details");
+    if (currentBalance < 0.02) return alert("Min. withdraw is ₱0.02");
+    if (!account) return alert("Enter account details");
 
-    await addDoc(collection(db, "withdrawals"), {        uid: userId,
-        name: userData.name,
-        amount: userData.balance,
+    await addDoc(collection(db, "withdrawals"), {
+        uid: userId,
+        name: userName,
+        amount: currentBalance,
         method: method,
         account: account,
         status: "pending",
         timestamp: serverTimestamp()
     });
 
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, { balance: 0 });
-    userData.balance = 0;
-    updateBalanceUI();
-    alert("Withdrawal request submitted!");
+    await updateDoc(doc(db, "users", userId), { balance: 0 });
+    alert("Withdrawal Pending Admin Approval!");
 };
 
-// --- Chat Logic ---
-window.sendChatMessage = async function() {
+// --- Admin Logic ---
+window.promptAdmin = () => {
+    const p = prompt("Enter Admin Password:");
+    if (p === "Propetas12") {
+        document.getElementById('admin-panel').style.display = 'block';
+        loadAdminRequests();
+    } else {
+        alert("Wrong password!");
+    }
+};
+
+window.closeAdmin = () => document.getElementById('admin-panel').style.display = 'none';
+
+function loadAdminRequests() {
+    const q = query(collection(db, "withdrawals"), where("status", "==", "pending"));
+    onSnapshot(q, (snap) => {
+        const container = document.getElementById('admin-requests');
+        container.innerHTML = "<h4>Pending Payouts</h4>";
+        snap.forEach(docSnap => {
+            const w = docSnap.data();
+            const id = docSnap.id;
+            container.innerHTML += `
+                <div class="admin-card">
+                    <b>User: ${w.name}</b> | Amount: ₱${w.amount.toFixed(2)}<br>
+                    Method: ${w.method} | Acc: ${w.account}<br>
+                    <button onclick="approveW('${id}')" style="background:green; color:white; border:none; padding:5px; margin-top:5px; border-radius:3px;">Approve</button>
+                </div>`;
+        });
+    });
+}
+
+window.approveW = async (id) => {
+    if (confirm("Confirm Payout?")) {
+        await updateDoc(doc(db, "withdrawals", id), { status: "approved" });
+        alert("Marked as Paid!");
+    }
+};
+
+// --- Chat & Leaderboard ---
+window.sendChat = async () => {
     const input = document.getElementById('chat-input');
     if (!input.value) return;
-
-    await addDoc(collection(db, "chat"), {
-        name: userData.name,
-        text: input.value,
-        timestamp: serverTimestamp()
-    });
+    await addDoc(collection(db, "chat"), { name: userName, text: input.value, timestamp: serverTimestamp() });
     input.value = "";
 };
 
-const qChat = query(collection(db, "chat"), orderBy("timestamp", "desc"), limit(20));
-onSnapshot(qChat, (snap) => {
+onSnapshot(query(collection(db, "chat"), orderBy("timestamp", "desc"), limit(15)), (snap) => {
     const box = document.getElementById('chat-box');
     box.innerHTML = "";
-    snap.forEach(doc => {
-        const m = doc.data();
+    snap.forEach(d => {
+        const m = d.data();
         box.innerHTML += `<div class="msg"><b>${m.name}:</b> ${m.text}</div>`;
     });
 });
 
-// --- Leaderboard Logic ---
-const qLeader = query(collection(db, "users"), orderBy("balance", "desc"), limit(10));
-onSnapshot(qLeader, (snap) => {
+onSnapshot(query(collection(db, "users"), orderBy("balance", "desc"), limit(10)), (snap) => {
     const list = document.getElementById('leader-list');
     list.innerHTML = "";
-    snap.forEach((doc, index) => {
-        const u = doc.data();
-        list.innerHTML += `
-            <div class="leader-row">
-                <span>${index + 1}. ${u.name}</span>
-                <span style="color:var(--primary)">₱${(u.balance || 0).toFixed(2)}</span>
-            </div>`;
+    snap.forEach((d, i) => {
+        const u = d.data();
+        list.innerHTML += `<div class="list-item">#${i+1} ${u.name} - ₱${u.balance.toFixed(2)}</div>`;
     });
 });
 
-// --- Admin Logic ---
-window.openAdmin = () => document.getElementById('admin-overlay').style.display = 'block';
-window.closeAdmin = () => document.getElementById('admin-overlay').style.display = 'none';
-window.verifyAdmin = async function() {
-    const pass = document.getElementById('admin-pass').value;
-    if (pass === "Propetas12") {
-        const listDiv = document.getElementById('withdrawal-list');
-        listDiv.innerHTML = "Loading requests...";
-        const q = query(collection(db, "withdrawals"), limit(20));
-        const snap = await getDoc(q); // Simplified for check
-        alert("Access Granted. View withdrawals in your Firebase Console for full security.");
-    } else {
-        alert("Incorrect Password");
-    }
-};
-
-// --- UI Navigation ---
-window.switchPage = function(pageId, el) {
+// Navigation UI
+window.showPage = (id, btn) => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.getElementById(pageId).classList.add('active');
-    el.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
 };
 
-// --- Auto-Run Ads (In-App Interstitial) ---
-show_10276123({
-    type: 'inApp',
-    inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false }
-});
-
-initUser();
+initApp();

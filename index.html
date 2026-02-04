@@ -3,132 +3,130 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
-  <style>
-    :root{--bg:#0f1724;--card:#0b1220;--accent:#ffd24d;--muted:#9aa4b2;--good:#2ee6a0;}
-    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;color:#e6eef8;background:linear-gradient(180deg,#071124 0%,#081827 100%);margin:0;padding:20px;}
-    .container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 360px;gap:18px;}
-    header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;}
-    h1{margin:0;font-size:18px;}
-    .card{background:rgba(255,255,255,0.02);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03);}
-    .main{padding:12px;}
-    .balance{font-size:22px;color:var(--accent);font-weight:700;}
-    .btn{background:linear-gradient(90deg,#ffd24d,#ffb347);border:none;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;}
-    .btn:disabled{opacity:0.5;cursor:not-allowed;}
-    .small{font-size:13px;color:var(--muted);}
-    .chat{height:360px;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:8px;}
-    .msg{padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);font-size:13px;}
-    .leader{display:flex;flex-direction:column;gap:8px;}
-    .user-row{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.01);}
-    form .row{display:flex;gap:8px;margin-top:8px;}
-    input,select{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#e6eef8;}
-    .admin-panel{display:none;flex-direction:column;gap:8px;}
-    .log{max-height:200px;overflow:auto;padding:6px;background:rgba(0,0,0,0.2);border-radius:8px;}
-    footer{grid-column:1/-1;padding-top:12px;color:var(--muted);font-size:13px;}
-    .top-line{display:flex;gap:12px;align-items:center;}
-  </style>
-  <!-- Monetag script (Rewarded / interstitial) -->
+
+  <!-- Tailwind (CDN for quick prototype) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Monetag / libtl -->
   <script src="//libtl.com/sdk.js" data-zone="10276123" data-sdk="show_10276123"></script>
+
+  <!-- Firebase SDK (modular) -->
+  <script type="module" src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
-<body>
-  <div class="container">
-    <header>
-      <div class="top-line">
-        <h1>🎖🤑PAPERHOUSE INC ADS🤑🎖</h1>
-        <div class="small">Monetag ID: 3136495 &nbsp;|&nbsp; Zone: 10276123</div>
-      </div>
-      <div>
-        <button id="adminBtn" class="btn">Admin</button>
-      </div>
-    </header>
+<body class="bg-gray-100 min-h-screen">
 
-    <main class="card main">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-        <div>
-          <div class="small">Your balance</div>
-          <div class="balance" id="balance">₱0.00</div>
-          <div class="small" id="balanceSub">Clicks: 0</div>
+  <div class="max-w-6xl mx-auto p-4">
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="text-2xl font-extrabold">🎖🤑PAPERHOUSE INC ADS🤑🎖</h1>
+      <div class="space-x-2">
+        <button id="btn-profile" class="px-3 py-1 bg-indigo-600 text-white rounded">Profile</button>
+        <button id="btn-admin" class="px-3 py-1 bg-yellow-500 text-black rounded">Admin</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Left: Ads & Withdraw -->
+      <div class="col-span-1 space-y-4">
+        <div class="p-4 bg-white rounded shadow">
+          <h2 class="font-semibold mb-2">Watch Ad (Max reward per ad: 0.01 PHP)</h2>
+          <p class="text-sm text-gray-600 mb-3">Click "Watch Ad" to open a rewarded ad. After completing, you'll receive 0.01 PHP.</p>
+          <button id="btn-watch-ad" class="w-full bg-green-500 text-white py-3 rounded-lg font-bold">Watch Ad Now</button>
+          <div id="ad-status" class="mt-3 text-sm text-gray-700"></div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <button id="watchAd" class="btn">Watch Ad (Get ₱0.01)</button>
-          <div class="small">Cooldown: <span id="cooldown">0</span>s</div>
-        </div>
-      </div>
 
-      <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
+        <div class="p-4 bg-white rounded shadow">
+          <h2 class="font-semibold mb-2">Balance & Withdraw</h2>
+          <div class="mb-2">Your Balance: <span id="balance">0.00</span> PHP</div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div>
-          <div class="small">Withdraw</div>
-          <form id="withdrawForm">
-            <input type="number" step="0.01" min="0.02" id="withdrawAmount" placeholder="Amount in ₱ (min 0.02)" required />
-            <select id="withdrawMethod">
+          <div class="mb-3">
+            <label class="block text-sm text-gray-700">Withdraw Method</label>
+            <select id="withdraw-method" class="w-full border rounded p-2">
               <option value="gcash">GCash</option>
               <option value="paypal">PayPal</option>
               <option value="faucetpay">FaucetPay</option>
             </select>
-            <input id="withdrawAccount" placeholder="Account / Email / Wallet" required />
-            <div class="row">
-              <button type="submit" class="btn">Request Withdraw</button>
-              <button type="button" id="refreshBtn" class="btn">Refresh</button>
-            </div>
-            <div class="small" style="margin-top:8px;">Min withdraw: ₱0.02 — requests will be processed by admin.</div>
-          </form>
+          </div>
+
+          <div class="mb-3">
+
+            <label class="block text-sm text-gray-700">Account / Email</label>
+            <input id="withdraw-account" class="w-full border rounded p-2" placeholder="Enter account or email"/>
+          </div>
+
+          <div class="mb-3">
+            <label class="block text-sm text-gray-700">Amount (min 0.02 PHP)</label>
+            <input id="withdraw-amount" type="number" step="0.01" min="0.02" class="w-full border rounded p-2" />
+          </div>
+
+          <button id="btn-withdraw" class="w-full bg-blue-600 text-white py-2 rounded">Request Withdraw</button>
+          <div id="withdraw-status" class="mt-2 text-sm"></div>
         </div>
 
-        <div>
-          <div class="small">Leaderboard (Top balances)</div>
-          <div id="leaderboard" class="leader" style="margin-top:8px;"></div>
+        <div class="p-4 bg-white rounded shadow">
+          <h2 class="font-semibold mb-2">Quick Actions</h2>
+          <button id="btn-open-chat" class="w-full mb-2 bg-gray-200 p-2 rounded">Open Chat Room</button>
+          <button id="btn-refresh" class="w-full bg-gray-200 p-2 rounded">Refresh Leaderboard</button>
         </div>
       </div>
 
-      <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
+      <!-- Middle: Chat -->
+      <div class="col-span-1 md:col-span-2">
+        <div id="chat-box" class="p-4 bg-white rounded shadow h-96 overflow-hidden flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-semibold">Chat Room</h2>
+            <div class="text-sm text-gray-500">Realtime messages</div>
+          </div>
+          <div id="messages" class="flex-1 overflow-auto space-y-3 mb-3 p-2 bg-gray-50 rounded"></div>
 
-      <div>
-        <div class="small">Chat Room</div>
-        <div class="chat card" id="chatWindow"></div>
-        <form id="chatForm" style="display:flex;gap:8px;margin-top:8px;">
-          <input id="chatInput" placeholder="Say hello..." required />
-          <button class="btn" type="submit">Send</button>
-        </form>
-      </div>
-    </main>
+          <div class="flex space-x-2">
+            <input id="msg-input" class="flex-1 border rounded p-2" placeholder="Say something..." maxlength="500"/>
+            <button id="btn-send" class="bg-indigo-600 text-white px-4 rounded">Send</button>
+          </div>
+        </div>
 
-    <aside class="card">
-      <div class="small">Quick Info</div>
-      <div style="margin-top:8px;" class="small">Reward per ad: ₱0.01 (max per ad). Minimum withdraw: ₱0.02. Ads shown via Monetag.</div>
-
-      <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
-
-      <div class="small">Activity Log</div>
-      <div id="activityLog" class="log" style="margin-top:8px;"></div>
-    </aside>
-
-    <div id="adminPanel" class="card admin-panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div class="small">Admin Panel</div>
-        <button id="closeAdmin" class="btn">Close</button>
-      </div>
-
-      <div style="margin-top:8px;">
-        <div class="small">Pending Withdrawals</div>
-        <div id="pendingList" class="log" style="margin-top:8px;"></div>
-      </div>
-
-      <div style="margin-top:8px;">
-        <div class="small">Manual Credit User</div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <input id="manualUid" placeholder="User UID" />
-          <input id="manualAmount" type="number" step="0.01" placeholder="Amount ₱" />
-          <button id="manualCredit" class="btn">Credit</button>
+        <div class="mt-4 p-4 bg-white rounded shadow">
+          <h2 class="font-semibold mb-2">Leaderboard (Top users)</h2>
+          <div id="leaderboard" class="space-y-2"></div>
         </div>
       </div>
     </div>
 
-    <footer>
-      <div>Monetag code integrated. Firebase Realtime Database used for state. UI is single-page SPA.</div>
-    </footer>
+    <!-- Admin Modal -->
+    <div id="admin-modal" class="hidden fixed inset-0 bg-black/40 items-center justify-center z-50">
+      <div class="bg-white p-4 rounded max-w-3xl w-full">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold">Admin Dashboard</h3>
+          <button id="admin-close" class="text-gray-500">Close</button>
+        </div>
+
+        <div id="admin-login-area">
+          <p class="text-sm mb-2">Enter admin password</p>
+          <input id="admin-password" type="password" class="w-full border p-2 rounded" />
+          <div class="mt-2 flex space-x-2">
+            <button id="admin-login" class="bg-yellow-500 px-4 py-2 rounded">Login</button>
+            <button id="admin-logout" class="bg-gray-200 px-4 py-2 rounded hidden">Logout</button>
+          </div>
+          <div id="admin-msg" class="mt-2 text-sm"></div>
+        </div>
+
+        <div id="admin-panel" class="hidden mt-4 space-y-4">
+          <div>
+            <h4 class="font-semibold">Pending Withdraw Requests</h4>
+            <div id="withdraw-requests" class="space-y-2 mt-2"></div>
+          </div>
+
+          <div>
+            <h4 class="font-semibold">All Users (balanced list)</h4>
+            <div id="admin-users" class="space-y-2 mt-2 max-h-64 overflow-auto"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script type="module" src="app.js"></script>

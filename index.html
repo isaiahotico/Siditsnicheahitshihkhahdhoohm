@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,106 +6,121 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <!-- Telegram SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Monetag SDK -->
     <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
     
     <style>
-        :root { --primary: #f1c40f; --secondary: #2ecc71; --bg: #0f0f0f; --card: #1e1e1e; --text: #ffffff; }
-        body { font-family: 'Arial', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+        :root { --primary: #f1c40f; --secondary: #2ecc71; --bg: #0b0e11; --card: #161a1e; --text: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; }
         
-        .header { background: linear-gradient(to bottom, #2c3e50, #000); padding: 20px; text-align: center; border-bottom: 2px solid var(--primary); }
-        .balance-box { background: var(--card); margin: 20px; padding: 25px; border-radius: 15px; text-align: center; border: 1px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .balance-box h1 { color: var(--primary); font-size: 2.5rem; margin: 10px 0; }
+        /* Header */
+        .header { background: #1c2127; padding: 15px; text-align: center; border-bottom: 2px solid var(--primary); sticky; top: 0; z-index: 100; }
+        .user-info { font-size: 0.9rem; color: var(--primary); margin-top: 5px; }
 
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #000; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid var(--primary); }
-        .nav-item { color: #888; text-decoration: none; font-size: 0.7rem; text-align: center; cursor: pointer; }
+        /* Balance Card */
+        .balance-box { background: linear-gradient(135deg, #1e262f, #111); margin: 15px; padding: 20px; border-radius: 15px; text-align: center; border: 1px solid #333; }
+        .balance-box h1 { color: var(--secondary); font-size: 2.5rem; margin: 10px 0; }
+
+        /* Navigation */
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #1c2127; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #333; }
+        .nav-item { color: #888; font-size: 0.7rem; text-align: center; cursor: pointer; border: none; background: none; }
         .nav-item.active { color: var(--primary); }
-        .nav-item i { font-size: 1.5rem; display: block; margin-bottom: 3px; }
+        .nav-item i { font-size: 1.4rem; display: block; margin-bottom: 2px; }
 
-        .page { display: none; padding: 20px; padding-bottom: 100px; animation: fadeIn 0.3s; }
+        /* Pages */
+        .page { display: none; padding: 15px; padding-bottom: 80px; }
         .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .btn { background: var(--secondary); color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 10px; transition: 0.3s; }
-        .btn:active { transform: scale(0.95); opacity: 0.8; }
+        /* Buttons & Inputs */
+        .btn { background: var(--secondary); color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; background: #1c2127; color: #fff; box-sizing: border-box; }
+
+        /* History & Lists */
+
+        .list-item { background: var(--card); padding: 12px; margin-bottom: 8px; border-radius: 8px; border-left: 4px solid #444; font-size: 0.85rem; }
+        .status-pending { border-color: #f1c40f; color: #f1c40f; }
+        .status-approved { border-color: #2ecc71; color: #2ecc71; }
         
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; box-sizing: border-box; }
+        /* Chat */
+        .chat-area { height: 250px; background: #000; overflow-y: auto; border-radius: 10px; padding: 10px; border: 1px solid #333; }
+        .msg { margin-bottom: 5px; }
+        .msg b { color: var(--primary); }
 
-        .chat-area { height: 300px; background: #111; overflow-y: auto; border-radius: 10px; padding: 10px; margin-bottom: 10px; border: 1px solid #333; }
-        .msg { margin-bottom: 8px; padding: 8px; border-radius: 5px; background: #222; font-size: 0.9rem; }        .msg b { color: var(--primary); }
-
-        .leader-row { display: flex; justify-content: space-between; padding: 12px; background: var(--card); margin-bottom: 5px; border-radius: 8px; }
-
-        #admin-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; padding: 20px; box-sizing: border-box; }
+        /* Admin Dashboard */
+        #admin-panel { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 1000; padding: 15px; overflow-y: auto; box-sizing: border-box; }
+        .admin-card { background: #1c2127; padding: 10px; margin-bottom: 10px; border-radius: 8px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div style="font-weight: bold; color: var(--primary); letter-spacing: 1px;">🎖🤑PAPERHOUSE INC ADS🤑🎖</div>
+        <div style="font-weight: bold; letter-spacing: 1px;">🎖 PAPERHOUSE INC ADS 🎖</div>
+        <div class="user-info" id="top-username">Loading...</div>
     </div>
 
     <!-- Home Page -->
-    <div id="home" class="page active">
+    <section id="home" class="page active">
         <div class="balance-box">
-            <p>TOTAL BALANCE</p>
-            <h1 id="balance-display">₱0.00</h1>
-            <p style="color: #888;">Min. Withdraw: ₱0.02</p>
+            <p style="margin:0; opacity:0.7;">TOTAL BALANCE</p>
+            <h1 id="bal-text">₱0.0000</h1>
+            <button class="btn" onclick="triggerAd()"><i class="fas fa-play"></i> WATCH AD (₱0.01)</button>
         </div>
-        <button class="btn" onclick="showRewardedAd()"><i class="fas fa-play-circle"></i> WATCH AD (₱0.01)</button>
-        <p style="text-align: center; font-size: 0.7rem; color: #555; margin-top: 20px;">Powered by Monetag Ads</p>
-    </div>
+        <div style="padding: 10px; background: #1c2127; border-radius: 10px; font-size: 0.8rem;">
+            <b>Instructions:</b> Earn ₱0.01 per ad. Reach ₱0.02 to cash out.
+        </div>
+    </section>
 
-    <!-- Withdraw Page -->
-    <div id="withdraw" class="page">
-        <h3>Withdraw Funds</h3>
-        <label>Method</label>
+    <!-- Wallet & History -->
+    <section id="wallet" class="page">
+        <h3>Cashout</h3>
         <select id="w-method">
             <option value="GCash">GCash</option>
             <option value="PayPal">PayPal</option>
             <option value="FaucetPay">FaucetPay</option>
         </select>
-        <label>Account Number / Email</label>
-        <input type="text" id="w-account" placeholder="Enter details here">
-        <button class="btn" style="background: var(--primary); color: #000;" onclick="requestWithdrawal()">CONFIRM WITHDRAW</button>
-    </div>
+        <input type="text" id="w-acc" placeholder="Account Number / Email">
+        <button class="btn" style="background:var(--primary); color:#000" onclick="submitCashout()">WITHDRAW NOW</button>
+        
+        <h4 style="margin-top:20px;">Withdrawal History</h4>
+        <div id="user-history"></div>
+    </section>
 
-    <!-- Chat Page -->
-    <div id="chat" class="page">
-        <h3>Chat Room</h3>
+    <!-- Chat -->
+    <section id="chat" class="page">
+        <h3>Global Chat</h3>
         <div id="chat-box" class="chat-area"></div>
-        <div style="display: flex; gap: 5px;">
-            <input type="text" id="chat-input" placeholder="Say something...">
-            <button class="btn" style="width: 80px; margin: 0;" onclick="sendChatMessage()">Send</button>
+        <div style="display: flex; gap: 5px; margin-top: 10px;">
+            <input type="text" id="chat-input" placeholder="Type message...">
+            <button class="btn" style="width: 80px;" onclick="sendChat()">Send</button>
         </div>
-    </div>
+    </section>
 
-    <!-- Leaderboard Page -->
-    <div id="leaderboard" class="page">
-        <h3>Leaderboard (Top 10)</h3>
+    <!-- Leaderboard -->
+    <section id="leaderboard" class="page">
+        <h3>Top 10 Earners</h3>
         <div id="leader-list"></div>
+    </section>
+
+    <!-- Admin Panel -->
+    <div id="admin-panel">
+        <div style="display:flex; justify-content: space-between; align-items: center;">
+            <h2>Admin Panel</h2>
+            <button onclick="closeAdmin()" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px;">Close</button>
+        </div>
+        <div id="admin-requests"></div>
     </div>
 
-    <!-- Admin Overlay -->
-    <div id="admin-overlay">
-        <h3>Admin Access</h3>
-        <input type="password" id="admin-pass" placeholder="Enter Password">
-        <button class="btn" onclick="verifyAdmin()">Login</button>
-        <button class="btn" style="background: #444;" onclick="closeAdmin()">Close</button>
-        <div id="withdrawal-list" style="margin-top: 20px; max-height: 300px; overflow-y: auto;"></div>
-    </div>
-
-    <!-- Navigation -->
     <nav class="nav-bar">
-        <div class="nav-item active" onclick="switchPage('home', this)"><i class="fas fa-coins"></i>Earn</div>
-        <div class="nav-item" onclick="switchPage('withdraw', this)"><i class="fas fa-wallet"></i>Wallet</div>
-        <div class="nav-item" onclick="switchPage('chat', this)"><i class="fas fa-comments"></i>Chat</div>
-        <div class="nav-item" onclick="switchPage('leaderboard', this)"><i class="fas fa-trophy"></i>Top</div>
-        <div class="nav-item" onclick="openAdmin()"><i class="fas fa-user-shield"></i>Admin</div>
+        <div class="nav-item active" onclick="showPage('home', this)"><i class="fas fa-hand-holding-usd"></i>Earn</div>
+        <div class="nav-item" onclick="showPage('wallet', this)"><i class="fas fa-wallet"></i>Wallet</div>
+        <div class="nav-item" onclick="showPage('chat', this)"><i class="fas fa-comments"></i>Chat</div>
+        <div class="nav-item" onclick="showPage('leaderboard', this)"><i class="fas fa-trophy"></i>Top</div>
+        <div class="nav-item" onclick="promptAdmin()"><i class="fas fa-user-shield"></i>Admin</div>
     </nav>
 
-    <!-- App Logic -->
     <script type="module" src="app.js"></script>
 </body>
 </html>

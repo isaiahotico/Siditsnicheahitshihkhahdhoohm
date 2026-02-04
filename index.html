@@ -3,136 +3,211 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎖 PAPERHOUSE INC ADS 🎖</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Streamer | Advanced YT Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --primary: #00f2fe; --secondary: #4facfe; --bg: #0b0e14; --card: #1a1f29; --accent: #00ff88; --gold: #ffd700; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: white; margin: 0; padding: 0; overflow-x: hidden; }
-        
-        .header { padding: 15px; text-align: center; background: linear-gradient(to bottom, #1a1f29, transparent); }
-        .status-bar { display: flex; justify-content: space-around; background: var(--card); margin: 0 15px 15px; padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
-        .bar-item { text-align: center; }
-        .bar-item small { font-size: 0.6rem; color: #8b949e; display: block; text-transform: uppercase; }
-        .bar-item b { font-size: 1.1rem; color: var(--primary); }
-
-        /* Referral Advanced Box */
-        .ref-container { background: linear-gradient(135deg, #1a1f29, #111); margin: 0 15px 15px; padding: 15px; border-radius: 20px; border: 1px solid var(--primary); }
-        .ref-stats { display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.8rem; border-top: 1px solid #333; padding-top: 10px; }
-        
-        /* Game Section */
-        #game-canvas { background: #000; display: block; margin: 0 auto; border-radius: 15px; border: 2px solid #333; width: 100%; max-width: 320px; height: 150px; }
-
-        .page { display: none; padding: 10px 15px 130px 15px; animation: fadeIn 0.4s ease; }
-        .active-page { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .btn-main { background: linear-gradient(135deg, var(--secondary), var(--primary)); border: none; color: #000; padding: 16px; width: 100%; border-radius: 15px; font-weight: 800; margin-bottom: 10px; cursor: pointer; }
-        .btn-game { background: var(--gold); color: black; }
-
-        .history-card { background: var(--card); padding: 12px; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--secondary); }
-        .status-paid { color: var(--accent); font-weight: bold; }
-        .status-pending { color: #ffcc00; font-weight: bold; }
-
-        .nav-bar { position: fixed; bottom: 45px; width: 100%; max-width: 500px; left: 50%; transform: translateX(-50%); background: rgba(26, 31, 41, 0.95); display: flex; justify-content: space-around; padding: 15px 0; backdrop-filter: blur(10px); border-top: 1px solid #333; }
-        .nav-item { color: #666; text-align: center; font-size: 0.7rem; cursor: pointer; }
-        .nav-item.active { color: var(--primary); }
-        .nav-item i { font-size: 1.3rem; display: block; }
-
-        .footer { position: fixed; bottom: 0; width: 100%; background: #000; font-size: 0.65rem; text-align: center; padding: 8px 0; color: #555; }
-        input { width: 100%; background: #0d1117; border: 1px solid #30363d; color: white; padding: 12px; border-radius: 10px; box-sizing: border-box; margin-bottom: 10px; }
+        body { background: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; }
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
-<body>
+<body class="p-4 lg:p-8">
 
-    <div class="header">
-        <h3 style="margin:0;">🎖 PAPERHOUSE INC ADS 🎖</h3>
-        <span id="online-count" style="font-size:0.7rem; color:var(--accent);">● 1 Online</span>
-    </div>
-
-    <div class="status-bar">
-        <div class="bar-item"><small>Wallet</small><b id="u-bal">₱0.00</b></div>
-        <div class="bar-item"><small>Withdrawn</small><b id="u-withdrawn">₱0.00</b></div>
-        <div class="bar-item"><small>Barriers</small><b id="u-barriers" style="color:var(--gold)">0</b></div>
-    </div>
-
-    <!-- HOME PAGE -->
-    <div id="p-home" class="page active-page">
-        <div class="ref-container">
-            <small style="color:var(--secondary)">ADVANCED REFERRAL SYSTEM</small>
-            <div style="display:flex; gap:10px; margin-top:5px;">
-                <input type="text" id="ref-input" placeholder="Enter Invite Code" style="margin:0;">
-                <button onclick="applyRef()" style="background:var(--primary); border:none; border-radius:10px; padding:0 15px;">Apply</button>
-            </div>
-            <div class="ref-stats">
-                <span>Friends: <b id="u-friends">0</b></span>
-                <span>Earned: <b id="u-ref-earn">₱0.00</b></span>
-                <span>Your Code: <b id="u-mycode" style="color:var(--primary)">...</b></span>
-            </div>
-        </div>
-
-        <button class="btn-main" onclick="watchAd('reward')">📺 WATCH AD (+₱0.01)</button>
-        <button class="btn-main" style="background:#222; color:white;" onclick="watchAd('pop')">💎 POPUP AD (+₱0.01)</button>
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
         
-        <div style="background:var(--card); padding:15px; border-radius:20px;">
-            <input type="number" id="gcash-num" placeholder="GCash Number (09...)">
-            <button class="btn-main" style="background:var(--accent); color:black; margin:0;" onclick="withdraw()">WITHDRAW NOW</button>
+        <!-- Sidebar: Profile & Telegram -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="glass p-6 rounded-2xl">
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-user-circle text-blue-400"></i> Profile Listing
+                </h2>
+                <div id="profileDisplay" class="flex items-center gap-4 p-3 bg-slate-800/50 rounded-xl mb-4">
+                    <img id="userAvatar" src="https://ui-avatars.com/api/?name=User&background=random" class="w-12 h-12 rounded-full border-2 border-blue-500">
+                    <div>
+                        <p id="tgNameDisplay" class="font-bold text-blue-300">@Guest</p>
+                        <p class="text-xs text-slate-400">Verified Streamer</p>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <input type="text" id="tgInput" placeholder="Enter Telegram Username" class="w-full bg-slate-900 border border-slate-700 p-2 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-all">
+                    <button onclick="updateProfile()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg transition-all text-sm">
+                        Update Identity
+                    </button>
+                </div>
+            </div>
+
+            <div class="glass p-6 rounded-2xl">
+
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-list-ul text-purple-400"></i> Auto-List
+                </h2>
+                <div id="playlist" class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                    <!-- Dynamic Playlist Items -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Player Section -->
+        <div class="lg:col-span-3 space-y-6">
+            <!-- Controls -->
+            <div class="glass p-4 rounded-2xl flex flex-wrap gap-4 items-center">
+                <div class="flex-1 min-w-[200px] relative">
+                    <input type="text" id="videoUrl" placeholder="Paste YouTube Link Here..." class="w-full bg-slate-900/50 border border-slate-700 p-3 pl-4 pr-24 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                    <button onclick="pasteAndPlay()" class="absolute right-2 top-1.5 bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-all">
+                        <i class="fa-solid fa-paste mr-1"></i> SMART PASTE
+                    </button>
+                </div>
+                <button onclick="loadVideo()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:scale-105 px-6 py-3 rounded-xl font-bold transition-all shadow-lg">
+                    PLAY NOW
+                </button>
+            </div>
+
+            <!-- YouTube API Player -->
+            <div class="glass p-2 rounded-2xl shadow-2xl">
+                <div class="video-container">
+                    <div id="player"></div>
+                </div>
+                <div class="p-4">
+                    <h1 id="nowPlayingTitle" class="text-xl font-bold text-white truncate text-center">Ready to Stream</h1>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- GAME PAGE -->
-    <div id="p-game" class="page">
-        <h3 style="text-align:center; color:var(--gold);">🕹 DASHJAM MINI</h3>
-        <p style="font-size:0.7rem; text-align:center; margin-top:-10px;">2,000 Barriers = ₱1.00</p>
-        <canvas id="game-canvas"></canvas>
-        <button class="btn-main btn-game" style="margin-top:15px;" onclick="startGame()">TAP TO START / JUMP</button>
-    </div>
+    <script>
+        let player;
+        let playlist = JSON.parse(localStorage.getItem('yt_playlist')) || [];
 
-    <!-- HISTORY PAGE -->
-    <div id="p-history" class="page">
-        <h3>📊 Activity History</h3>
-        <div id="history-list">Loading records...</div>
-    </div>
+        // 1. YouTube API Initialization
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-    <!-- CH
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '100%',
+                width: '100%',
+                videoId: 'dQw4w9WgXcQ', // Default video
+                playerVars: {
+                    'autoplay': 1,
+                    'modestbranding': 1,
+                    'rel': 0
+                },
+                events: {
+                    'onReady': onPlayerReady
+                }
+            });
+        }
 
-AT PAGE -->
-    <div id="p-chat" class="page">
-        <div id="chat-box" style="height:300px; overflow-y:auto; background:#0d1117; border-radius:15px; padding:15px; margin-bottom:10px;"></div>
-        <div style="display:flex; gap:10px;">
-            <input type="text" id="chat-in" placeholder="Say something..." style="margin:0;">
-            <button onclick="sendMsg()" style="background:var(--primary); border:none; border-radius:10px; padding:0 20px;"><i class="fas fa-paper-plane"></i></button>
-        </div>
-    </div>
+        function onPlayerReady(event) {
+            updatePlaylistUI();
+            loadProfile();
+        }
 
-    <!-- ADMIN PAGE -->
-    <div id="p-admin" class="page">
-        <div id="admin-login">
-            <input type="password" id="admin-pass" placeholder="Admin Password">
-            <button class="btn-main" onclick="checkAdmin()">LOGIN</button>
-        </div>
-        <div id="admin-content" style="display:none;">
-            <h3>Pending Cashouts</h3>
-            <div id="admin-list"></div>
-        </div>
-    </div>
+        // 2. Auto-Paste & URL Logic
+        async function pasteAndPlay() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('videoUrl').value = text;
+                loadVideo();
+            } catch (err) {
+                alert("Please allow clipboard access or paste manually.");
+            }
+        }
 
-    <div class="nav-bar">
-        <div class="nav-item active" onclick="nav('home', this)"><i class="fas fa-home"></i>Home</div>
-        <div class="nav-item" onclick="nav('game', this)"><i class="fas fa-gamepad"></i>Game</div>
-        <div class="nav-item" onclick="nav('history', this)"><i class="fas fa-history"></i>History</div>
-        <div class="nav-item" onclick="nav('chat', this)"><i class="fas fa-comments"></i>Chat</div>
-        <div class="nav-item" onclick="nav('admin', this)"><i class="fas fa-user-shield"></i>Admin</div>
-    </div>
+        function extractVideoId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
 
-    <div class="footer">
-        <span id="f-date"></span> | <span id="f-time"></span> | <b>PAPERHOUSE INC ADS Update</b>
-    </div>
+        function loadVideo() {
+            const url = document.getElementById('videoUrl').value;
+            const id = extractVideoId(url);
+            
+            if (id) {
+                player.loa
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    <script src="app.js"></script>
+dVideoById(id);
+                addToPlaylist(id);
+                document.getElementById('videoUrl').value = '';
+            } else {
+                alert("Invalid YouTube URL");
+            }
+        }
+
+        // 3. Profile & Telegram Logic
+        function updateProfile() {
+            let tgHandle = document.getElementById('tgInput').value.trim();
+            if(!tgHandle) return;
+            
+            // Format handle
+            tgHandle = tgHandle.startsWith('@') ? tgHandle : '@' + tgHandle;
+            
+            localStorage.setItem('tg_username', tgHandle);
+            displayTG(tgHandle);
+        }
+
+        function displayTG(handle) {
+            const display = document.getElementById('tgNameDisplay');
+            const avatar = document.getElementById('userAvatar');
+            
+            display.innerText = handle;
+            display.classList.add('animate-pulse');
+            setTimeout(() => display.classList.remove('animate-pulse'), 1000);
+            
+            // Instant Profile Avatar update
+            avatar.src = `https://ui-avatars.com/api/?name=${handle.replace('@','')}&background=0D8ABC&color=fff`;
+        }
+
+        function loadProfile() {
+            const saved = localStorage.getItem('tg_username');
+            if(saved) {
+                document.getElementById('tgInput').value = saved;
+                displayTG(saved);
+            }
+        }
+
+        // 4. Advanced Playlist Logic
+        function addToPlaylist(id) {
+            // Prevent duplicates
+            if (playlist.some(item => item.id === id)) return;
+
+            const videoData = {
+                id: id,
+                thumb: `https://img.youtube.com/vi/${id}/mqdefault.jpg`,
+                time: new Date().toLocaleTimeString()
+            };
+
+            playlist.unshift(videoData);
+            if (playlist.length > 10) playlist.pop(); // Keep last 10
+            
+            localStorage.setItem('yt_playlist', JSON.stringify(playlist));
+            updatePlaylistUI();
+        }
+
+        function updatePlaylistUI() {
+            const container = document.getElementById('playlist');
+            container.innerHTML = playlist.map(item => `
+                <div onclick="playFromList('${item.id}')" class="flex items-center gap-3 p-2 hover:bg-slate-700/50 rounded-xl cursor-pointer transition-all border border-transparent hover:border-slate-600 group">
+                    <img src="${item.thumb}" class="w-16 h-10 rounded-lg object-cover">
+                    <div class="overflow-hidden">
+                        <p class="text-xs font-medium truncate text-slate-300 group-hover:text-white">ID: ${item.id}</p>
+                        <p class="text-[10px] text-slate-500">${item.time}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function playFromList(id) {
+            player.loadVideoById(id);
+        }
+    </script>
 </body>
 </html>

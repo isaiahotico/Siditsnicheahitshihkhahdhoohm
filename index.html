@@ -1,213 +1,136 @@
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Streamer | Advanced YT Player</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body { background: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
-        .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; }
-        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#ffd24d;--muted:#9aa4b2;--good:#2ee6a0;}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;color:#e6eef8;background:linear-gradient(180deg,#071124 0%,#081827 100%);margin:0;padding:20px;}
+    .container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 360px;gap:18px;}
+    header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;}
+    h1{margin:0;font-size:18px;}
+    .card{background:rgba(255,255,255,0.02);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03);}
+    .main{padding:12px;}
+    .balance{font-size:22px;color:var(--accent);font-weight:700;}
+    .btn{background:linear-gradient(90deg,#ffd24d,#ffb347);border:none;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;}
+    .btn:disabled{opacity:0.5;cursor:not-allowed;}
+    .small{font-size:13px;color:var(--muted);}
+    .chat{height:360px;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:8px;}
+    .msg{padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);font-size:13px;}
+    .leader{display:flex;flex-direction:column;gap:8px;}
+    .user-row{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.01);}
+    form .row{display:flex;gap:8px;margin-top:8px;}
+    input,select{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#e6eef8;}
+    .admin-panel{display:none;flex-direction:column;gap:8px;}
+    .log{max-height:200px;overflow:auto;padding:6px;background:rgba(0,0,0,0.2);border-radius:8px;}
+    footer{grid-column:1/-1;padding-top:12px;color:var(--muted);font-size:13px;}
+    .top-line{display:flex;gap:12px;align-items:center;}
+  </style>
+  <!-- Monetag script (Rewarded / interstitial) -->
+  <script src="//libtl.com/sdk.js" data-zone="10276123" data-sdk="show_10276123"></script>
 </head>
-<body class="p-4 lg:p-8">
+<body>
+  <div class="container">
+    <header>
+      <div class="top-line">
+        <h1>🎖🤑PAPERHOUSE INC ADS🤑🎖</h1>
+        <div class="small">Monetag ID: 3136495 &nbsp;|&nbsp; Zone: 10276123</div>
+      </div>
+      <div>
+        <button id="adminBtn" class="btn">Admin</button>
+      </div>
+    </header>
 
-    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
-        
-        <!-- Sidebar: Profile & Telegram -->
-        <div class="lg:col-span-1 space-y-6">
-            <div class="glass p-6 rounded-2xl">
-                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-user-circle text-blue-400"></i> Profile Listing
-                </h2>
-                <div id="profileDisplay" class="flex items-center gap-4 p-3 bg-slate-800/50 rounded-xl mb-4">
-                    <img id="userAvatar" src="https://ui-avatars.com/api/?name=User&background=random" class="w-12 h-12 rounded-full border-2 border-blue-500">
-                    <div>
-                        <p id="tgNameDisplay" class="font-bold text-blue-300">@Guest</p>
-                        <p class="text-xs text-slate-400">Verified Streamer</p>
-                    </div>
-                </div>
-                <div class="space-y-3">
-                    <input type="text" id="tgInput" placeholder="Enter Telegram Username" class="w-full bg-slate-900 border border-slate-700 p-2 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-all">
-                    <button onclick="updateProfile()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg transition-all text-sm">
-                        Update Identity
-                    </button>
-                </div>
+    <main class="card main">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <div>
+          <div class="small">Your balance</div>
+          <div class="balance" id="balance">₱0.00</div>
+          <div class="small" id="balanceSub">Clicks: 0</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button id="watchAd" class="btn">Watch Ad (Get ₱0.01)</button>
+          <div class="small">Cooldown: <span id="cooldown">0</span>s</div>
+        </div>
+      </div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <div class="small">Withdraw</div>
+          <form id="withdrawForm">
+            <input type="number" step="0.01" min="0.02" id="withdrawAmount" placeholder="Amount in ₱ (min 0.02)" required />
+            <select id="withdrawMethod">
+              <option value="gcash">GCash</option>
+              <option value="paypal">PayPal</option>
+              <option value="faucetpay">FaucetPay</option>
+            </select>
+            <input id="withdrawAccount" placeholder="Account / Email / Wallet" required />
+            <div class="row">
+              <button type="submit" class="btn">Request Withdraw</button>
+              <button type="button" id="refreshBtn" class="btn">Refresh</button>
             </div>
-
-            <div class="glass p-6 rounded-2xl">
-
-                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-list-ul text-purple-400"></i> Auto-List
-                </h2>
-                <div id="playlist" class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                    <!-- Dynamic Playlist Items -->
-                </div>
-            </div>
+            <div class="small" style="margin-top:8px;">Min withdraw: ₱0.02 — requests will be processed by admin.</div>
+          </form>
         </div>
 
-        <!-- Main Player Section -->
-        <div class="lg:col-span-3 space-y-6">
-            <!-- Controls -->
-            <div class="glass p-4 rounded-2xl flex flex-wrap gap-4 items-center">
-                <div class="flex-1 min-w-[200px] relative">
-                    <input type="text" id="videoUrl" placeholder="Paste YouTube Link Here..." class="w-full bg-slate-900/50 border border-slate-700 p-3 pl-4 pr-24 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-                    <button onclick="pasteAndPlay()" class="absolute right-2 top-1.5 bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-all">
-                        <i class="fa-solid fa-paste mr-1"></i> SMART PASTE
-                    </button>
-                </div>
-                <button onclick="loadVideo()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:scale-105 px-6 py-3 rounded-xl font-bold transition-all shadow-lg">
-                    PLAY NOW
-                </button>
-            </div>
-
-            <!-- YouTube API Player -->
-            <div class="glass p-2 rounded-2xl shadow-2xl">
-                <div class="video-container">
-                    <div id="player"></div>
-                </div>
-                <div class="p-4">
-                    <h1 id="nowPlayingTitle" class="text-xl font-bold text-white truncate text-center">Ready to Stream</h1>
-                </div>
-            </div>
+        <div>
+          <div class="small">Leaderboard (Top balances)</div>
+          <div id="leaderboard" class="leader" style="margin-top:8px;"></div>
         </div>
+      </div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
+
+      <div>
+        <div class="small">Chat Room</div>
+        <div class="chat card" id="chatWindow"></div>
+        <form id="chatForm" style="display:flex;gap:8px;margin-top:8px;">
+          <input id="chatInput" placeholder="Say hello..." required />
+          <button class="btn" type="submit">Send</button>
+        </form>
+      </div>
+    </main>
+
+    <aside class="card">
+      <div class="small">Quick Info</div>
+      <div style="margin-top:8px;" class="small">Reward per ad: ₱0.01 (max per ad). Minimum withdraw: ₱0.02. Ads shown via Monetag.</div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
+
+      <div class="small">Activity Log</div>
+      <div id="activityLog" class="log" style="margin-top:8px;"></div>
+    </aside>
+
+    <div id="adminPanel" class="card admin-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="small">Admin Panel</div>
+        <button id="closeAdmin" class="btn">Close</button>
+      </div>
+
+      <div style="margin-top:8px;">
+        <div class="small">Pending Withdrawals</div>
+        <div id="pendingList" class="log" style="margin-top:8px;"></div>
+      </div>
+
+      <div style="margin-top:8px;">
+        <div class="small">Manual Credit User</div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <input id="manualUid" placeholder="User UID" />
+          <input id="manualAmount" type="number" step="0.01" placeholder="Amount ₱" />
+          <button id="manualCredit" class="btn">Credit</button>
+        </div>
+      </div>
     </div>
 
-    <script>
-        let player;
-        let playlist = JSON.parse(localStorage.getItem('yt_playlist')) || [];
+    <footer>
+      <div>Monetag code integrated. Firebase Realtime Database used for state. UI is single-page SPA.</div>
+    </footer>
+  </div>
 
-        // 1. YouTube API Initialization
-        const tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        const firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-        function onYouTubeIframeAPIReady() {
-            player = new YT.Player('player', {
-                height: '100%',
-                width: '100%',
-                videoId: 'dQw4w9WgXcQ', // Default video
-                playerVars: {
-                    'autoplay': 1,
-                    'modestbranding': 1,
-                    'rel': 0
-                },
-                events: {
-                    'onReady': onPlayerReady
-                }
-            });
-        }
-
-        function onPlayerReady(event) {
-            updatePlaylistUI();
-            loadProfile();
-        }
-
-        // 2. Auto-Paste & URL Logic
-        async function pasteAndPlay() {
-            try {
-                const text = await navigator.clipboard.readText();
-                document.getElementById('videoUrl').value = text;
-                loadVideo();
-            } catch (err) {
-                alert("Please allow clipboard access or paste manually.");
-            }
-        }
-
-        function extractVideoId(url) {
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = url.match(regExp);
-            return (match && match[2].length === 11) ? match[2] : null;
-        }
-
-        function loadVideo() {
-            const url = document.getElementById('videoUrl').value;
-            const id = extractVideoId(url);
-            
-            if (id) {
-                player.loa
-
-dVideoById(id);
-                addToPlaylist(id);
-                document.getElementById('videoUrl').value = '';
-            } else {
-                alert("Invalid YouTube URL");
-            }
-        }
-
-        // 3. Profile & Telegram Logic
-        function updateProfile() {
-            let tgHandle = document.getElementById('tgInput').value.trim();
-            if(!tgHandle) return;
-            
-            // Format handle
-            tgHandle = tgHandle.startsWith('@') ? tgHandle : '@' + tgHandle;
-            
-            localStorage.setItem('tg_username', tgHandle);
-            displayTG(tgHandle);
-        }
-
-        function displayTG(handle) {
-            const display = document.getElementById('tgNameDisplay');
-            const avatar = document.getElementById('userAvatar');
-            
-            display.innerText = handle;
-            display.classList.add('animate-pulse');
-            setTimeout(() => display.classList.remove('animate-pulse'), 1000);
-            
-            // Instant Profile Avatar update
-            avatar.src = `https://ui-avatars.com/api/?name=${handle.replace('@','')}&background=0D8ABC&color=fff`;
-        }
-
-        function loadProfile() {
-            const saved = localStorage.getItem('tg_username');
-            if(saved) {
-                document.getElementById('tgInput').value = saved;
-                displayTG(saved);
-            }
-        }
-
-        // 4. Advanced Playlist Logic
-        function addToPlaylist(id) {
-            // Prevent duplicates
-            if (playlist.some(item => item.id === id)) return;
-
-            const videoData = {
-                id: id,
-                thumb: `https://img.youtube.com/vi/${id}/mqdefault.jpg`,
-                time: new Date().toLocaleTimeString()
-            };
-
-            playlist.unshift(videoData);
-            if (playlist.length > 10) playlist.pop(); // Keep last 10
-            
-            localStorage.setItem('yt_playlist', JSON.stringify(playlist));
-            updatePlaylistUI();
-        }
-
-        function updatePlaylistUI() {
-            const container = document.getElementById('playlist');
-            container.innerHTML = playlist.map(item => `
-                <div onclick="playFromList('${item.id}')" class="flex items-center gap-3 p-2 hover:bg-slate-700/50 rounded-xl cursor-pointer transition-all border border-transparent hover:border-slate-600 group">
-                    <img src="${item.thumb}" class="w-16 h-10 rounded-lg object-cover">
-                    <div class="overflow-hidden">
-                        <p class="text-xs font-medium truncate text-slate-300 group-hover:text-white">ID: ${item.id}</p>
-                        <p class="text-[10px] text-slate-500">${item.time}</p>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function playFromList(id) {
-            player.loadVideoById(id);
-        }
-    </script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

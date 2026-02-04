@@ -1,56 +1,191 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎖🤑Watch & Earn YouTube🤑🎖</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/3.3.3/tailwind.min.css">
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
-  <script src="app.js" defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Monetag SDK -->
+    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --bg: #0b0e11;
+            --card: #151921;
+            --text: #ffffff;
+            --accent: #00ff88;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0; padding: 0;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        .app-container { max-width: 500px; margin: 0 auto; min-height: 100vh; position: relative; }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            padding: 25px 15px;
+            text-align: center;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        /* Balance Section */
+        .balance-box {
+            background: var(--card);
+            margin: -25px 20px 20px;
+            padding: 20px;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .balance-box h2 { font-size: 2.5rem; margin: 5px 0; color: var(--accent); }
+
+        /* Pages */
+        .page { display: none; padding: 20px; padding-bottom: 120px; animation: slideUp 0.3s ease-out; }
+        .active-page { display: block; }
+
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Buttons */
+        .ad-btn {
+            background: linear-gradient(90deg, #ff8c00, #ff0080);
+            border: none; color: white;
+            padding: 18px; width: 100%;
+            border-radius: 15px; font-weight: bold;
+            font-size: 1.1rem; margin-bottom: 15px;
+
+            cursor: pointer; transition: 0.3s;
+        }
+        .ad-btn:active { transform: scale(0.95); }
+
+        /* Chat Room */
+        .chat-area {
+            background: var(--card); height: 350px;
+            border-radius: 15px; overflow-y: auto;
+            padding: 15px; margin-bottom: 10px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .msg { background: #232a35; padding: 10px; border-radius: 10px; max-width: 85%; }
+        .msg b { color: var(--primary); font-size: 0.8rem; }
+
+        /* Navigation */
+        .nav-bar {
+            position: fixed; bottom: 40px; width: 100%; max-width: 500px;
+            background: rgba(21, 25, 33, 0.95);
+            display: flex; justify-content: space-around;
+            padding: 15px 0; border-top: 1px solid #333;
+            backdrop-filter: blur(10px);
+        }
+        .nav-item { color: #666; font-size: 1.2rem; cursor: pointer; text-align: center; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item span { display: block; font-size: 0.7rem; }
+
+        /* Footer */
+        .footer {
+            position: fixed; bottom: 0; width: 100%; max-width: 500px;
+            background: #000; color: #555;
+            font-size: 0.7rem; text-align: center;
+            padding: 5px 0; border-top: 1px solid #222;
+        }
+
+        /* Admin Dashboard */
+        .admin-panel { background: #1a1a1a; padding: 15px; border-radius: 15px; }
+        input { 
+            width: 100%; padding: 12px; margin: 10px 0; 
+            border-radius: 10px; border: 1px solid #333;
+            background: #222; color: #fff; box-sizing: border-box;
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-r from-blue-400 to-green-400 min-h-screen flex flex-col items-center justify-start p-4 font-sans">
+<body>
 
-  <h1 class="text-3xl font-bold mb-4 text-white text-center">🎖🤑 Watch & Earn YouTube 🤑🎖</h1>
-
-  <div class="w-full max-w-xl bg-white rounded-2xl shadow-lg p-6 flex flex-col gap-4">
-    <div class="flex flex-col">
-      <label class="font-semibold mb-1">Paste Your YouTube URL</label>
-      <input type="text" id="videoUrl" class="border rounded-lg p-2" placeholder="https://www.youtube.com/watch?v=..." />
-      <button id="addVideo" class="bg-blue-500 text-white rounded-lg py-2 mt-2 hover:bg-blue-600">Add Video</button>
+<div class="app-container">
+    <div class="header">
+        <h3 style="margin:0; letter-spacing: 1px;">🎖🤑PAPERHOUSE INC ADS🤑🎖</h3>
     </div>
 
-    <div class="flex justify-between">
-      <span>Coins: <span id="coins">0</span></span>
-      <span>Videos Added: <span id="videoCount">0</span>/5 Free</span>
+    <div class="balance-box">
+        <p style="margin:0; font-size: 0.8rem; color: #aaa;">CURRENT BALANCE</p>
+        <h2 id="balance-display">₱ 0.00</h2>
+        <small style="color: #666;">Minimum Withdraw: ₱ 0.02</small>
     </div>
 
-    <div class="flex flex-col gap-4 mt-4">
-      <div id="playerContainer" class="w-full aspect-video bg-black rounded-lg flex items-center justify-center">
-        <p class="text-white">Your video will appear here</p>
-      </div>
+    <!-- Home Page -->
+    <div id="page-home" class="page active-page">
+        <button class="ad-btn" onclick="triggerAd('reward')">
+            <i class="fas fa-play-circle"></i> WATCH VIDEO (+₱0.01)
+        </button>
+        <button class="ad-btn" style="background: linear-gradient(90deg, #4facfe, #00f2fe);" onclick="triggerAd('pop')">
+            <i class="fas fa-ad"></i> POPUP AD (+₱0.01)
+        </button>
 
-      <div class="flex justify-between">
-        <button id="playVideo" class="bg-green-500 text-white rounded-lg py-2 px-4 hover:bg-green-600">Play</button>
-        <button id="nextVideo" class="bg-yellow-500 text-white rounded-lg py-2 px-4 hover:bg-yellow-600">Next</button>
-      </div>
+        <div style="margin-top:20px; background: var(--card); padding: 15px; border-radius: 15px;">
+            <h4><i class="fas fa-wallet" style="color:var(--accent)"></i> GCash Withdrawal</h4>
+            <input type="number" id="gcash-number" placeholder="Enter GCash Number (09...)">
+            <button class="ad-btn" style="background: #00ff88; color: #000;" onclick="handleWithdraw()">REQUEST CASH OUT</button>
+        </div>
     </div>
-  </div>
 
-  <!-- Popunder ad scripts -->
-  <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
-  <script>
-    atOptions = {
-      'key' : 'fe70943384c0314737bd62c05e3d520a',
-      'format' : 'iframe',
-      'height' : 300,
-      'width' : 160,
-      'params' : {}
-    };
-  </script>
-  <script src="https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js"></script>
-  <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
+    <!-- Chat Page -->
+    <div id="page-chat" class="page">
+        <h3><i class="fas fa-comments"></i> Global Chat</h3>
+        <div class="chat-area" id="chat-messages"></div>
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="chat-input" placeholder="Type a message...">
+            <button onclick="sendMessage()" style="background:var(--primary); border:none; border-radius:10px; padding:0 15px;"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
 
+    <!-- Leaderboard Page -->
+    <div id="page-rank" class="page">
+        <h3><i class="fas fa-crown" style="color:gold"></i> Top Earners</h3>
+        <div id="leaderboard-list"></div>
+    </div>
+
+    <!-- Admin Page -->
+    <div id="page-admin" class="page">
+
+<h3><i class="fas fa-user-shield"></i> Admin Panel</h3>
+        <div id="admin-login-ui">
+            <input type="password" id="admin-pass" placeholder="Enter Admin Password">
+            <button class="ad-btn" onclick="accessAdmin()">LOGIN</button>
+        </div>
+        <div id="admin-main-ui" style="display:none;">
+            <h4>Pending Withdrawals</h4>
+            <div id="withdrawal-list"></div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="nav('home', this)"><i class="fas fa-home"></i><span>Home</span></div>
+        <div class="nav-item" onclick="nav('chat', this)"><i class="fas fa-comments"></i><span>Chat</span></div>
+        <div class="nav-item" onclick="nav('rank', this)"><i class="fas fa-trophy"></i><span>Rank</span></div>
+        <div class="nav-item" onclick="nav('admin', this)"><i class="fas fa-lock"></i><span>Admin</span></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <span id="footer-date"></span> | <span id="footer-time"></span> | <b>PAPERHOUSE INC Update</b>
+    </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

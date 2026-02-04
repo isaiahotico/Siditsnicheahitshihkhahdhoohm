@@ -13,186 +13,161 @@ const db = firebase.firestore();
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-const user = tg.initDataUnsafe?.user || { id: 12345, first_name: "Local_User" };
-const UID = `ID_${user.id}`;
-let userData = {};
+const user = tg.initDataUnsafe?.user || { id: 8888, first_name: "User" };
+const UID = `U_${user.id}`;
 
-// 1. INITIALIZE USER & REFERRAL CODE
-async function initUser() {
-    const doc = await db.collection('users').doc(UID).get();
-    if (!doc.exists) {
-        // Generate 6-letter referral code
-        const refCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        const initialData = {
+// 1. AUTO-LOAD USER & HISTORY
+async function init() {
+    const userDoc = await db.collection('users').doc(UID).get();
+    
+    if (!userDoc.exists) {
+        const myCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        await db.collection('users').doc(UID).set({
             name: user.first_name,
             balance: 0,
-            totalEarned: 0,
             totalWithdrawn: 0,
-            refCode: refCode,
-            referredBy: "", 
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        await db.collection('users').doc(UID).set(initialData);
-        userData = initialData;
-        // Prompt for referral code on first join
-        const inviter = prompt("Enter Referral Code (Optional):");
-        if (inviter && inviter.length === 6) {
-            const inviterSnap = await db.collection('users').where('refCode', '==', inviter).get();
-            if (!inviterSnap.empty) {
-                await db.collection('users').doc(UID).update({ referredBy: inviterSnap.docs[0].id });
-            }
+            refCode: myCode,
+            referredBy: "",
+            lastSeen: Date.now()
+        });
+        const ref = prompt("Enter Referral Code (Optional):");
+        if (ref) {
+            const refSnap = await db.collection('users').where('refCode', '==', ref).get();
+            if (!refSnap.empty) await db.collection('users').doc(UID).update({ referredBy: refSnap.docs[0].id });
         }
-    } else {
-        userData = doc.data();
     }
-    document.getElementById('my-ref-code').innerText = userData.refCode;
-    listenData();
-}
 
-// 2. REAL-TIME DATA LISTENERS
-function listenData() {
+    // Immediate Real-time Listeners
     db.collection('users').doc(UID).onSnapshot(doc => {
         const d = doc.data();
-        document.getElementById('bal').innerText = `₱${d.balance.toFixed(2)}`;
-        document.getElementById('total-w').innerText = `₱${d.totalWithdrawn.toFixed(2)}`;
+        document.getElementById('user-bal').innerText = `₱${d.balance.toFixed(2)}`;
+        document.getElementById('user-withdrawn').innerText = `₱${d.totalWithdrawn.toFixed(2)}`;
+        document.getElementById('ref-id').innerText = d.refCode;
     });
 
     db.collection('withdrawals').where('uid', '==', UID).orderBy('timestamp', 'desc').onSnapshot(snap => {
-        const box = document.getElementById('history-list');
-        box.innerHTML = snap.empty ? "No records." : "";
+        const cont = document.getElementById('history-container');
+        cont.innerHTML = "";
         snap.forEach(doc => {
             const w = doc.data();
-            box.innerHTML += `<div class="history-item">
-                <b>₱${w.amount.toFixed(2)}</b> - ${w.status.toUpperCase()}<br>
-                <small>${w.timestamp?.toDate().toLocaleString() || 'Pending...'}</small>
-            </div>`;
+            cont.innerHTML += `
+                <div class="history-card">
+                    <div><b>₱${w.amount.toFixed(2)}</b><br><small>${w.gcash}</small></div>
+                    <span class="status-badge ${w.status}">${w.status}</span>
+                </div>`;
         });
+    });
+
+    // Heartbeat for Online System
+    setInterval(() => {
+        db.collection('online_status').doc(UID).set({ lastActive: Date.now(), name: user.first_name });
+    }, 10000);
+
+    // Online Count Listener
+    db.collection('online_status').onSnapshot(snap => {
+        const now = Date.now();
+        let count = 0;
+        snap.forEach(doc => { if (now - doc.data().lastActive < 30000) count++; });
+        document.getElementById('online-count').innerText = count;
     });
 }
 
-// 3. MONETAG AD SYSTEM & COMMISSION
-async function showAd(type) {
+// 2. MONETAG AD LOGIC
+async function playAd(type) {
     try {
-        if (type === 'reward') {
-            await show_10276123();
-            processReward(0.01);
-        } else {
-            await show_10276123('pop');
-            processReward(0.01);
-        }
-    } catch (e) { tg.showAlert("Ad failed to load."); }
+        if (type === 'reward') await show_10276123(); else await show_10276123('pop');
+        reward(0.01);
+    } catch(e) { tg.showAlert("Ad not ready."); }
 }
 
-async function processReward(amt) {
+async function reward(amt) {
     const batch = db.batch();
     const uRef = db.collection('users').doc(UID);
-    
-    batch.update(uRef, {
-        balance: firebase.firestore.FieldValue.increment(amt),
-        totalEarned: firebase.firestore.FieldValue.increment(amt)
-    });
+    batch.update(uRef, { balance: firebase.firestore.FieldValue.increment(amt) });
 
-    // Referral Commission Logic (8%)
-    if (userData.referredBy) {
-        const refOwnerRef = db.collection('users').doc(userData.referredBy);
-        batch.update(refOwnerRef, {
-            balance: firebase.firestore.FieldValue.increment(amt * 0.08)
-        });
+    // 8% Referral Commission
+    const d = (await uRef.get()).data();
+    if (d.referredBy) {
+        batch.update(db.collection('users').doc(d.referredBy), { balance: firebase.firestore.FieldValue.increment(amt * 0.08) });
     }
     await batch.commit();
-    tg.showAlert("Success! +₱0.01");
 }
 
-// 4. WITHDRAWAL
-async function withdraw() {
-    const num = document.getElementById('gcash-num').value;
-    const currentBal = (await db.collection('users').doc(UID).get()).data().balance;
+// 3. WITHDRAWAL
+function requestWithdraw() {
+    const num = document.getElementById('gcash-box').value;
+    const bal = parseFloat(document.getElementById('user-bal').innerText.replace('₱',''));
+    
+    if (num.length < 10) return tg.showAlert("Invalid GCash Number");
+    if (bal < 0.02) return tg.showAlert("Min withdrawal ₱0.02");
 
-    if (num.length < 10) return tg.showAlert("Enter GCash Number");
-    if (currentBal < 0.02) return tg.showAlert("Min withdrawal ₱0.02");
-
-    await db.collection('withdrawals').add({
-        uid: UID,
-        name: user.first_name,
-        amount: currentBal,
-        gcash: num,
-        status: 'pending',
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    db.collection('withdrawals').add({
+        uid: UID, name: user.first_name, amount: bal, gcash: num, status: 'pending', timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
-
-    await db.collection('users').doc(UID).update({ balance: 0 });
-    tg.showAlert("Withdrawal submitted!");
+    db.collection('users').doc(UID).update({ balance: 0 });
 }
 
-// 5. ADMIN LOGIC
-function authAdmin() {
-    if (document.getElementById('admin-pass').value === "Propetas12") {
-        document.getElementById('admin-login').style.display = "none";
-        document.getElementById('admin-content').style.display = "block";
-        loadAdmin();
-    } else { alert("Access Denied"); }
-}
-
-function loadAdmin() {
-    db.collection('withdrawals').where('status', '==', 'pending').onSnapshot(snap => {
-        const div = document.getElementById('admin-pending');
-        div.innerHTML = "";
-        snap.forEach(doc => {
-            const w = doc.data();
-            div.innerHTML += `<div class="history-item">
-                ${w.name} (${w.gcash}) - ₱${w.amount.toFixed(2)}
-                <button onclick="approve('${doc.id}', '${w.uid}', ${w.amount})" style="float:right">Approve</button>
-            </div>`;
+// 4. ADMIN DASHBOARD
+function verifyAdmin() {
+    if (document.getElementById('admin-key').value === "Propetas12") {
+        document.getElementById('admin-lock').style.display = "none";
+        document.getElementById('admin-area').style.display = "block";
+        db.collection('withdrawals').where('status', '==', 'pending').onSnapshot(snap => {
+            const cont = document.getElementById('admin-history');
+            cont.innerHTML = "";
+            snap.forEach(doc => {
+                const w = doc.data();
+                cont.innerHTML += `
+                    <div class="history-card">
+                        <div><b>₱${w.amount.toFixed(2)}</b><br>${w.name} (${w.gcash})</div>
+                        <button onclick="approve('${doc.id}', '${w.uid}', ${w.amount})" style="background:var(--accent); border:none; border-radius:8px; padding:10px;">PAID</button>
+                    </div>`;
+            });
         });
-    });
+    }
 }
 
-async function approve(docId, userId, amount) {
+async function approve(did, uid, amt) {
     const batch = db.batch();
-    batch.update(db.collection('withdrawals').doc(docId), { status: 'paid' });
-    batch.update(db.collection('users').doc(userId), { 
-        totalWithdrawn: firebase.firestore.FieldValue.increment(amount) 
-    });
+    batch.update(db.collection('withdrawals').doc(did), { status: 'paid' });
+    batch.update(db.collection('users').doc(uid), { totalWithdrawn: firebase.firestore.FieldValue.increment(amt) });
     await batch.commit();
 }
 
-// 6. CHAT & UI
-function sendMsg() {
-    const text = document.getElementById('chat-msg').value;
+// 5. CHAT & UI UTILS
+function sendChat() {
+    const text = document.getElementById('msg-input').value;
     if (!text) return;
-    db.collection('messages').add({
-        name: user.first_name, text, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    document.getElementById('chat-msg').value = "";
+    db.collection('messages').add({ name: user.first_name, text, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+    document.getElementById('msg-input').value = "";
 }
 
-db.collection('messages').orderBy('timestamp', 'desc').limit(20).onSnapshot(snap => {
-    const box = document.getElementById('chat-box');
-    box.innerHTML = "";
+db.collection('messages').orderBy('timestamp', 'desc').limit(15).onSnapshot(snap => {
+    const cont = document.getElementById('chat-msgs');
+    cont.innerHTML = "";
     snap.docs.reverse().forEach(d => {
-        box.innerHTML += `<div><b>${d.data().name}:</b> ${d.data().text}</div>`;
+        cont.innerHTML += `<div class="msg-bubble"><b>${d.data().name}</b><br>${d.data().text}</div>`;
     });
-    box.scrollTop = box.scrollHeight;
+    cont.scrollTop = cont.scrollHeight;
 });
 
-function nav(page, el) {
+function nav(id, el) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.getElementById(`p-${page}`).classList.add('active-page');
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    document.getElementById(`page-${id}`).classList.add('active-page');
     el.classList.add('active');
 }
 
-function updateFooter() {
+setInterval(() => {
     const n = new Date();
-    document.getElementById('f-date').innerText = n.toLocaleDateString();
-    document.getElementById('f-time').innerText = n.toLocaleTimeString();
-}
+    document.getElementById('foot-date').innerText = n.toLocaleDateString();
+    document.getElementById('foot-time').innerText = n.toLocaleTimeString();
+}, 1000);
 
-setInterval(updateFooter, 1000);
-initUser();
+init();
 
-// High CPM Monetag Auto-Ad Init
+// High CPM Monetag Autopilot
 show_10276123({
     type: 'inApp',
-    inAppSettings: { frequency: 3, capping: 0.05, interval: 20, timeout: 5, everyPage: false }
+    inAppSettings: { frequency: 4, capping: 0.05, interval: 25, timeout: 5, everyPage: false }
 });

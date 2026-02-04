@@ -13,115 +13,152 @@ const db = firebase.firestore();
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-const user = tg.initDataUnsafe?.user || { id: 8888, first_name: "User" };
+const user = tg.initDataUnsafe?.user || { id: 1001, first_name: "TestUser" };
 const UID = `U_${user.id}`;
+let localData = {};
 
-// 1. AUTO-LOAD USER & HISTORY
-async function init() {
-    const userDoc = await db.collection('users').doc(UID).get();
-    
-    if (!userDoc.exists) {
+// 1. INITIALIZE & SYNC
+async function initApp() {
+    const doc = await db.collection('users').doc(UID).get();
+    if (!doc.exists) {
         const myCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        await db.collection('users').doc(UID).set({
-            name: user.first_name,
-            balance: 0,
-            totalWithdrawn: 0,
-            refCode: myCode,
-            referredBy: "",
-            lastSeen: Date.now()
-        });
-        const ref = prompt("Enter Referral Code (Optional):");
-        if (ref) {
-            const refSnap = await db.collection('users').where('refCode', '==', ref).get();
-            if (!refSnap.empty) await db.collection('users').doc(UID).update({ referredBy: refSnap.docs[0].id });
-        }
+        const newUser = {
+            name: user.first_name, balance: 0, totalWithdrawn: 0,
+            barriers: 0, refCode: myCode, referredBy: "",
+            friendsCount: 0, refEarnings: 0
+        };
+        await db.collection('users').doc(UID).set(newUser);
     }
 
-    // Immediate Real-time Listeners
-    db.collection('users').doc(UID).onSnapshot(doc => {
-        const d = doc.data();
-        document.getElementById('user-bal').innerText = `₱${d.balance.toFixed(2)}`;
-        document.getElementById('user-withdrawn').innerText = `₱${d.totalWithdrawn.toFixed(2)}`;
-        document.getElementById('ref-id').innerText = d.refCode;
+    // Real-time Sync
+    db.collection('users').doc(UID).onSnapshot(s => {
+        localData = s.data();
+        document.getElementById('u-bal').innerText = `₱${localData.balance.toFixed(2)}`;
+        document.getElementById('u-withdrawn').innerText = `₱${localData.totalWithdrawn.toFixed(2)}`;
+        document.getElementById('u-barriers').innerText = localData.barriers;
+        document.getElementById('u-friends').innerText = localData.friendsCount;
+        document.getElementById('u-ref-earn').innerText = `₱${localData.refEarnings.toFixed(4)}`;
+        document.getElementById('u-mycode').innerText = localData.refCode;
     });
 
+    // Immediate Withdrawal Sync
     db.collection('withdrawals').where('uid', '==', UID).orderBy('timestamp', 'desc').onSnapshot(snap => {
-        const cont = document.getElementById('history-container');
-        cont.innerHTML = "";
-        snap.forEach(doc => {
-            const w = doc.data();
-            cont.innerHTML += `
+        const list = document.getElementById('history-list');
+        list.innerHTML = "";
+        snap.forEach(d => {
+            const w = d.data();
+            list.innerHTML += `
                 <div class="history-card">
-                    <div><b>₱${w.amount.toFixed(2)}</b><br><small>${w.gcash}</small></div>
-                    <span class="status-badge ${w.status}">${w.status}</span>
+                    <div>₱${w.amount.toFixed(2)}<br><small>${w.gcash}</small></div>
+                    <span class="status-${w.status}">${w.status.toUpperCase()}</span>
                 </div>`;
         });
     });
 
-    // Heartbeat for Online System
-    setInterval(() => {
-        db.collection('online_status').doc(UID).set({ lastActive: Date.now(), name: user.first_name });
-    }, 10000);
-
-    // Online Count Listener
+    // Online Status
+    setInterval(() => db.collection('online_status').doc(UID).set({ t: Date.now() }), 10000);
     db.collection('online_status').onSnapshot(snap => {
-        const now = Date.now();
-        let count = 0;
-        snap.forEach(doc => { if (now - doc.data().lastActive < 30000) count++; });
-        document.getElementById('online-count').innerText = count;
+        let count = 0; const now = Date.now();
+        snap.forEach(d => { if (now - d.data().t < 30000) count++; });
+        document.getElementById('online-count').innerText = `● ${count} Online`;
     });
 }
 
-// 2. MONETAG AD LOGIC
-async function playAd(type) {
-    try {
-        if (type === 'reward') await show_10276123(); else await show_10276123('pop');
-        reward(0.01);
-    } catch(e) { tg.showAlert("Ad not ready."); }
+// 2. REFERRAL LOGIC
+async function applyRef() {
+    const code = document.getElementById('ref-input').value.toUpperCase();
+    if (code === localData.refCode) return alert("Cannot use own code");
+    
+    const refSnap = await db.collection('users').where('refCode', '==', code).get();
+    if (!refSnap.empty) {
+        const inviterId = refSnap.docs[0].id;
+        await db.collection('users').doc(UID).update({ referredBy: inviterId });
+        await db.collection('users').doc(inviterId).update({ 
+            friendsCount: firebase.firestore.FieldValue.increment(1) 
+        });
+        alert("Referral Applied!");
+    } else { alert("Invalid Code"); }
 }
 
-async function reward(amt) {
-    const batch = db.batch();
-    const uRef = db.collection('users').doc(UID);
-    batch.update(uRef, { balance: firebase.firestore.FieldValue.increment(amt) });
+// 3. ADS & REWARD (8% Ref Commission)
+function watchAd(type) {
+    const adAction = type === 'reward' ? show_10276123() : show_10276123('pop');
+    adAction.then(() => processReward(0.01)).catch(() => alert("Ad not ready"));
+}
 
-    // 8% Referral Commission
-    const d = (await uRef.get()).data();
-    if (d.referredBy) {
-        batch.update(db.collection('users').doc(d.referredBy), { balance: firebase.firestore.FieldValue.increment(amt * 0.08) });
+async function processReward(amt) {
+    const batch = db.batch();
+    batch.update(db.collection('users').doc(UID), { 
+        balance: firebase.firestore.FieldValue.increment(amt) 
+    });
+    if (localData.referredBy) {
+        const commission = amt * 0.08;
+        batch.update(db.collection('users').doc(localData.referredBy), {
+            balance: firebase.firestore.FieldValue.increment(commission),
+            refEarnings: firebase.firestore.FieldValue.increment(commission)
+        });
     }
     await batch.commit();
 }
 
-// 3. WITHDRAWAL
-function requestWithdraw() {
-    const num = document.getElementById('gcash-box').value;
-    const bal = parseFloat(document.getElementById('user-bal').innerText.replace('₱',''));
-    
-    if (num.length < 10) return tg.showAlert("Invalid GCash Number");
-    if (bal < 0.02) return tg.showAlert("Min withdrawal ₱0.02");
+// 4. DASHJAM GAME (2000 barriers = ₱1.00)
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+let gameActive = false, score = 0, birdY = 75;
 
+function startGame() {
+    if (!gameActive) { gameActive = true; score = 0; birdY = 75; gameLoop(); }
+    else { birdY -= 30; } // Jump
+}
+
+function gameLoop() {
+    if (!gameActive) return;
+    ctx.clearRect(0,0,320,150);
+    birdY += 2; // Gravity
+    ctx.fillStyle = "#00f2fe";
+    ctx.fillRect(50, birdY, 15, 15); // Player
+    score++;
+    document.getElementById('u-barriers').innerText = localData.barriers + score;
+    
+    if (birdY > 150 || birdY < 0) { 
+        gameActive = false; 
+        saveScore(score); 
+    } else { requestAnimationFrame(gameLoop); }
+}
+
+async function saveScore(s) {
+    const barrierReward = (s / 2000);
+    await db.collection('users').doc(UID).update({
+        barriers: firebase.firestore.FieldValue.increment(s),
+        balance: firebase.firestore.FieldValue.increment(barrierReward)
+    });
+    tg.showAlert(`Game Over! Barriers: ${s} (Reward: ₱${barrierReward.toFixed(4)})`);
+}
+
+// 5. WITHDRAWAL & ADMIN
+function withdraw() {
+    const num = document.getElementById('gcash-num').value;
+    if (num.length < 10 || localData.balance < 0.02) return alert("Invalid data");
     db.collection('withdrawals').add({
-        uid: UID, name: user.first_name, amount: bal, gcash: num, status: 'pending', timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        uid: UID, name: user.first_name, amount: localData.balance,
+        gcash: num, status: 'pending', timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
     db.collection('users').doc(UID).update({ balance: 0 });
 }
 
-// 4. ADMIN DASHBOARD
-function verifyAdmin() {
-    if (document.getElementById('admin-key').value === "Propetas12") {
-        document.getElementById('admin-lock').style.display = "none";
-        document.getElementById('admin-area').style.display = "block";
+function checkAdmin() {
+    if (document.getElementById('admin-pass').value === "Propetas12") {
+        document.getElementById('admin-login').style.display = "none";
+        document.getElementById('admin-content').style.display = "block";
         db.collection('withdrawals').where('status', '==', 'pending').onSnapshot(snap => {
-            const cont = document.getElementById('admin-history');
-            cont.innerHTML = "";
-            snap.forEach(doc => {
-                const w = doc.data();
-                cont.innerHTML += `
-                    <div class="history-card">
-                        <div><b>₱${w.amount.toFixed(2)}</b><br>${w.name} (${w.gcash})</div>
-                        <button onclick="approve('${doc.id}', '${w.uid}', ${w.amount})" style="background:var(--accent); border:none; border-radius:8px; padding:10px;">PAID</button>
-                    </div>`;
+            const list = document.getElementById('admin-list');
+            list.innerHTML = "";
+            snap.forEach(d => {
+                const w = d.data();
+                list.innerHTML += `<div class="history-card">
+                    ${w.name} - ₱${w.amount.toFixed(2)} (${w.gcash})
+                    <button onclick="approve('${d.id}','${w.uid}',${w.amount})">PAID</button>
+                </div>`;
             });
         });
     }
@@ -134,40 +171,35 @@ async function approve(did, uid, amt) {
     await batch.commit();
 }
 
-// 5. CHAT & UI UTILS
-function sendChat() {
-    const text = document.getElementById('msg-input').value;
-    if (!text) return;
-    db.collection('messages').add({ name: user.first_name, text, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-    document.getElementById('msg-input').value = "";
-}
-
-db.collection('messages').orderBy('timestamp', 'desc').limit(15).onSnapshot(snap => {
-    const cont = document.getElementById('chat-msgs');
-    cont.innerHTML = "";
-    snap.docs.reverse().forEach(d => {
-        cont.innerHTML += `<div class="msg-bubble"><b>${d.data().name}</b><br>${d.data().text}</div>`;
-    });
-    cont.scrollTop = cont.scrollHeight;
-});
-
-function nav(id, el) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
-    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-    document.getElementById(`page-${id}`).classList.add('active-page');
+// UI HELPERS
+function nav(p, el) {
+    document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
+    document.querySelectorAll('.nav-item').forEach(nv => nv.classList.remove('active'));
+    document.getElementById(`p-${p}`).classList.add('active-page');
     el.classList.add('active');
 }
 
+function sendMsg() {
+    const text = document.getElementById('chat-in').value;
+    if (text) {
+        db.collection('messages').add({ name: user.first_name, text, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+        document.getElementById('chat-in').value = "";
+    }
+}
+
+db.collection('messages').orderBy('timestamp', 'desc').limit(15).onSnapshot(snap => {
+    const box = document.getElementById('chat-box'); box.innerHTML = "";
+    snap.docs.reverse().forEach(d => {
+        box.innerHTML += `<div><small style="color:var(--secondary)">${d.data().name}:</small> ${d.data().text}</div>`;
+    });
+    box.scrollTop = box.scrollHeight;
+});
+
 setInterval(() => {
-    const n = new Date();
-    document.getElementById('foot-date').innerText = n.toLocaleDateString();
-    document.getElementById('foot-time').innerText = n.toLocaleTimeString();
+    const d = new Date();
+    document.getElementById('f-date').innerText = d.toLocaleDateString();
+    document.getElementById('f-time').innerText = d.toLocaleTimeString();
 }, 1000);
 
-init();
-
-// High CPM Monetag Autopilot
-show_10276123({
-    type: 'inApp',
-    inAppSettings: { frequency: 4, capping: 0.05, interval: 25, timeout: 5, everyPage: false }
-});
+initApp();
+show_10276123({ type: 'inApp', inAppSettings: { frequency: 4, capping: 0.1, interval: 30, timeout: 5 } });

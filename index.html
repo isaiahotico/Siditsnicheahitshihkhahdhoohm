@@ -1,185 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Adsgram + Backup Ad (Telegram)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Adsgram SDK -->
-  <script src="https://sad.adsgram.ai/js/adsgram.js"></script>
-
-  <!-- Telegram WebApp SDK -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <style>
-    body{
-      font-family:Arial,Helvetica,sans-serif;
-      background:#0f2027;
-      background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-      color:#fff;
-      text-align:center;
-      padding:20px;
-    }
-    .card{
-      background:rgba(255,255,255,0.1);
-      border-radius:12px;
-      padding:20px;
-      margin:15px auto;
-      max-width:420px;
-    }
-    button{
-      background:#00e0ff;
-      color:#000;
-      border:none;
-      padding:14px 20px;
-      font-size:16px;
-      border-radius:10px;
-      cursor:pointer;
-      width:100%;
-      font-weight:bold;
-    }
-    button:disabled{
-      opacity:0.6;
-      cursor:not-allowed;
-    }
-    #timerBox{display:none;margin-top:10px;font-size:18px;}
-    #status{margin-top:10px;font-size:14px;}
-    .username{font-weight:bold;color:#00ffae;}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdsGram Random Ad Demo</title>
+    <!-- AdsGram SDK -->
+    <script src="https://ads.gram/sdk.js"></script> <!-- Replace with your actual SDK URL -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: #eef2f7;
+        }
+        button {
+            padding: 14px 24px;
+            margin: 15px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #006ae6;
+        }
+    </style>
 </head>
 <body>
+    <h2>AdsGram Random Ad Demo</h2>
+    <button id="rollAdButton">Roll Ad</button>
 
-  <div class="card">
-    <h3>👤 Telegram User</h3>
-    <div id="userBox">Loading…</div>
-  </div>
+    <script>
+        // Function to show AdsGram Task 21469
+        function showAdsTask21469() {
+            if (typeof AdsGram !== "undefined" && AdsGram.showTask) {
+                AdsGram.showTask(21469);
+                console.log("AdsGram Task 21469 displayed");
+            } else {
+                console.warn("AdsGram SDK not loaded or showTask function missing");
+            }
+        }
 
-  <div class="card">
-    <button id="adsBtn" onclick="startAdFlow()">▶ Watch Ad & Earn</button>
-    <div id="timerBox">⏱ Time left: <span id="timer">30</span>s</div>
-    <div id="status"></div>
-  </div>
+        // Function to show Interstitial Ad 21422
+        function showInterstitial21422() {
+            if (typeof AdsGram !== "undefined" && AdsGram.showInterstitial) {
+                AdsGram.showInterstitial(21422);
+                console.log("Interstitial Ad 21422 displayed");
+            } else {
+                console.warn("AdsGram SDK not loaded or showInterstitial function missing");
+            }
+        }
 
-<script>
-/******** TELEGRAM USER DISPLAY ********/
-let tg = window.Telegram.WebApp;
-tg.ready();
+        // Function to randomly choose which ad to show
+        function rollAd() {
+            const random = Math.random(); // 0 to 1
+            if (random < 0.5) {
+                showAdsTask21469();       // 50% chance
+            } else {
+                showInterstitial21422();  // 50% chance
+            }
+        }
 
-const userBox = document.getElementById('userBox');
-if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-  const u = tg.initDataUnsafe.user;
-  const name = u.username ? '@' + u.username : (u.first_name || 'Unknown');
-  userBox.innerHTML = 'Hello <span class="username">' + name + '</span>';
-} else {
-  userBox.innerHTML = 'Not opened inside Telegram';
-}
-
-/******** ADS + BACKUP LOGIC + FREQUENCY CAP + ROTATION + SEPARATE REWARDS ********/
-let timeLeft = 30;
-let timerInt = null;
-let focused = true;
-let taskAdDone = false;
-let interstitialAdDone = false;
-const INTERSTITIAL_COOLDOWN = 60 * 1000; // 1 min cooldown
-let lastInterstitial = parseInt(localStorage.getItem('lastInterstitial') || '0');
-
-const interstitialAds = ['int-21422','int-21423','int-21424']; // multiple interstitials
-let lastInterstitialIndex = parseInt(localStorage.getItem('lastInterstitialIndex') || '0');
-
-document.addEventListener('visibilitychange',()=>{
-   focused = !document.hidden;
-});
-
-function startAdFlow(){
-  const btn = document.getElementById('adsBtn');
-  const timerBox = document.getElementById('timerBox');
-  const timerTxt = document.getElementById('timer');
-  const status = document.getElementById('status');
-
-  btn.disabled = true;
-  taskAdDone = false;
-  interstitialAdDone = false;
-  timeLeft = 30;
-  timerTxt.innerText = timeLeft;
-  timerBox.style.display = 'block';
-  status.innerHTML = 'Loading ads…';
-
-  const now = Date.now();
-  const canShowInterstitial = (now - lastInterstitial) >= INTERSTITIAL_COOLDOWN;
-
-  let interstitialPromise = Promise.resolve();
-  if(canShowInterstitial){
-    // Rotate interstitial
-    const adId = interstitialAds[lastInterstitialIndex];
-    lastInterstitialIndex = (lastInterstitialIndex + 1) % interstitialAds.length;
-    localStorage.setItem('lastInterstitialIndex', lastInterstitialIndex);
-
-    interstitialPromise = Adsgram.show({ blockId: adId })
-      .then(()=>{
-        interstitialAdDone = true;
-        lastInterstitial = Date.now();
-        localStorage.setItem('lastInterstitial', lastInterstitial);
-        status.innerHTML = '✅ Interstitial ad completed. Loading task ad…';
-      })
-      .catch(()=>{
-        status.innerHTML = '⚠ Interstitial failed, continuing to task ad…';
-      });
-  } else {
-    status.innerHTML = '⏳ Interstitial cooldown active. Loading task ad…';
-  }
-
-  interstitialPromise.then(()=>{
-    try {
-      Adsgram.show({ blockId:'task-21469' })
-        .then(()=>{
-          taskAdDone = true;
-          status.innerHTML = '✅ Task ad completed, finish timer…';
-        })
-        .catch(()=>{
-          showBackupAd();
-        });
-    } catch(e){
-      showBackupAd();
-    }
-  });
-
-  timerInt = setInterval(()=>{
-    if(!focused) return;
-    timeLeft--;
-    timerTxt.innerText = timeLeft;
-
-    if(timeLeft <= 0){
-      clearInterval(timerInt);
-      reward();
-    }
-  },1000);
-}
-
-function showBackupAd(){
-  document.getElementById('status').innerHTML = '⚠ Adsgram unavailable. Backup ad opened.';
-  window.open('https://www.effectivegatecpm.com','_blank');
-  taskAdDone = true;
-}
-
-function reward(){
-  let bal = parseFloat(localStorage.getItem('balance') || 0);
-  let interstitialReward = interstitialAdDone ? 0.0025 : 0; // separate reward
-  let taskReward = taskAdDone ? 0.0095 : 0;
-  bal += interstitialReward + taskReward;
-  localStorage.setItem('balance', bal.toFixed(4));
-
-  document.getElementById('status').innerHTML =
-    `🎉 Rewards credited<br>💰 Interstitial: ${interstitialReward.toFixed(4)}<br>💰 Task: ${taskReward.toFixed(4)}<br>💰 Total Balance: ${bal.toFixed(4)}`;
-  document.getElementById('adsBtn').disabled = false;
-}
-
-function reset(msg){
-  clearInterval(timerInt);
-  document.getElementById('status').innerHTML = msg;
-  document.getElementById('timerBox').style.display = 'none';
-  document.getElementById('adsBtn').disabled = false;
-}
-</script>
-
+        // Add event listener to the Roll Ad button
+        document.getElementById("rollAdButton").addEventListener("click", rollAd);
+    </script>
 </body>
 </html>

@@ -1,110 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎖🤑PAPERHOUSE INC ADS🤑🎖</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Monetag SDK -->
-    <script src='//libtl.com/sdk.js' data-zone='10276123' data-sdk='show_10276123'></script>
-    
-    <style>
-        :root { --primary: #f1c40f; --secondary: #2ecc71; --bg: #0b0e11; --card: #161a1e; --text: #ffffff; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
-        
-        .header { background: #1c2127; padding: 15px; text-align: center; border-bottom: 2px solid var(--primary); position: sticky; top: 0; z-index: 100; }
-        .balance-box { background: linear-gradient(135deg, #1e262f, #111); margin: 15px; padding: 20px; border-radius: 15px; text-align: center; border: 1px solid #333; }
-        .balance-box h1 { color: var(--secondary); font-size: 2.5rem; margin: 10px 0; }
+  <meta charset="UTF-8">
+  <title>Adsgram + Backup Ad (Telegram)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #1c2127; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #333; }
-        .nav-item { color: #888; font-size: 0.7rem; text-align: center; cursor: pointer; border: none; background: none; flex: 1; }
-        .nav-item.active { color: var(--primary); }
-        .nav-item i { font-size: 1.4rem; display: block; margin-bottom: 2px; }
+  <!-- Adsgram SDK -->
+  <script src="https://sad.adsgram.ai/js/adsgram.js"></script>
 
-        .page { display: none; padding: 15px; padding-bottom: 100px; }
-        .page.active { display: block; }
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-        .btn { background: var(--secondary); color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        .btn:disabled { background: #444; cursor: not-allowed; }
-        
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; background: #1c2127; color: #fff; box-sizing: border-box; }
-
-        .chat-area { height: 250px; background: #000; overflow-y: auto; border-radius: 10px; padding: 10px; border: 1px solid #333; display: flex; flex-direction: column-reverse; }
-        .msg { margin-bottom: 5px; font-size: 0.9rem; border-bottom: 1px solid #222; padding-bottom: 4px; }
-        .msg b { color: var(--primary); }        .history-item { background: #1c2127; padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #444; }
-        .status-pending { border-left-color: #f1c40f; }
-        .status-approved { border-left-color: #2ecc71; }
-
-        #admin-panel { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 1000; padding: 15px; overflow-y: auto; box-sizing: border-box; }
-    </style>
+  <style>
+    body{
+      font-family:Arial,Helvetica,sans-serif;
+      background:#0f2027;
+      background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+      color:#fff;
+      text-align:center;
+      padding:20px;
+    }
+    .card{
+      background:rgba(255,255,255,0.1);
+      border-radius:12px;
+      padding:20px;
+      margin:15px auto;
+      max-width:420px;
+    }
+    button{
+      background:#00e0ff;
+      color:#000;
+      border:none;
+      padding:14px 20px;
+      font-size:16px;
+      border-radius:10px;
+      cursor:pointer;
+      width:100%;
+      font-weight:bold;
+    }
+    button:disabled{
+      opacity:0.6;
+      cursor:not-allowed;
+    }
+    #timerBox{display:none;margin-top:10px;font-size:18px;}
+    #status{margin-top:10px;font-size:14px;}
+    .username{font-weight:bold;color:#00ffae;}
+  </style>
 </head>
 <body>
 
-    <div class="header">
-        <div id="username-display" style="font-weight: bold; color: var(--primary);">Loading...</div>
-    </div>
+  <div class="card">
+    <h3>👤 Telegram User</h3>
+    <div id="userBox">Loading…</div>
+  </div>
 
-    <!-- Home -->
-    <section id="home" class="page active">
-        <div class="balance-box">
-            <p style="margin:0; opacity:0.7;">TOTAL PESO</p>
-            <h1 id="user-balance">₱0.0000</h1>
-            <button id="ad-btn" class="btn" onclick="handleAdClick()">
-                <i class="fas fa-play"></i> WATCH AD (₱0.01)
-            </button>
-            <p id="cooldown-timer" style="font-size: 0.8rem; margin-top: 10px; color: #f1c40f;"></p>
-        </div>
-    </section>
+  <div class="card">
+    <button id="adsBtn" onclick="startAdFlow()">▶ Watch Ad & Earn</button>
+    <div id="timerBox">⏱ Time left: <span id="timer">30</span>s</div>
+    <div id="status"></div>
+  </div>
 
-    <!-- Wallet -->
-    <section id="wallet" class="page">
-        <h3>Withdrawal</h3>
-        <select id="w-method">
-            <option value="GCash">GCash</option>
-            <option value="PayPal">PayPal</option>
-            <option value="FaucetPay">FaucetPay</option>
-        </select>
-        <input type="text" id="w-account" placeholder="Enter Wallet Info">
-        <button class="btn" style="background:var(--primary); color:black;" onclick="requestPayout()">SUBMIT REQUEST</button>
-        
-        <h4 style="margin-top:20px;">My Payout History</h4>
-        <div id="payout-history"></div>
-    </section>
+<script>
+/******** TELEGRAM USER DISPLAY ********/
+let tg = window.Telegram.WebApp;
+tg.ready();
 
-    <!-- Chat -->
-    <section id="chat" class="page">
-        <h3>Global Group</h3>
-        <div id="chat-box" class="chat-area"></div>
-        <div style="display: flex; gap: 5px; margin-top: 10px;">
-            <input type="text" id="chat-msg" placeholder="Type a message...">
-            <button class="btn" style="width: 80px;" onclick="sendChat()">Send</button>
-        </div>
-    </section>
+const userBox = document.getElementById('userBox');
+if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+  const u = tg.initDataUnsafe.user;
+  const name = u.username ? '@' + u.username : (u.first_name || 'Unknown');
+  userBox.innerHTML = 'Hello <span class="username">' + name + '</span>';
+} else {
+  userBox.innerHTML = 'Not opened inside Telegram';
+}
 
-    <!-- Leaderboard -->
-    <section id="leaderboard" class="page">
-        <h3>Top Earners</h3>
-        <div id="leader-list"></div>
-    </section>
+/******** ADS + BACKUP LOGIC ********/
+let timeLeft = 30;
+let timerInt = null;
+let focused = true;
+let adDone = false;
 
-    <!-- Admin Dash -->
-    <div id="admin-panel">
-        <div style="display:flex; justify-content: space-between;">
-            <h2>Admin Requests</h2>
-            <button onclick="closeAdmin()" style="background:red; border:none; color:white; padding:5px 10px; border-radius:5px;">X</button>
-        </div>
-        <div id="admin-list"></div>
-    </div>
+// pause timer on tab switch
+ document.addEventListener('visibilitychange',()=>{
+   focused = !document.hidden;
+ });
 
-    <nav class="nav-bar">
-        <div class="nav-item active" onclick="tab('home', this)"><i class="fas fa-home"></i>Earn</div>
-        <div class="nav-item" onclick="tab('wallet', this)"><i class="fas fa-wallet"></i>Wallet</div>
-        <div class="nav-item" onclick="tab('chat', this)"><i class="fas fa-comments"></i>Chat</div>
-        <div class="nav-item" onclick="tab('leaderboard', this)"><i class="fas fa-trophy"></i>Top</div>
-        <div class="nav-item" onclick="openAdmin()"><i class="fas fa-lock"></i>Admin</div>
-    </nav>
+function startAdFlow(){
+  const btn = document.getElementById('adsBtn');
+  const timerBox = document.getElementById('timerBox');
+  const timerTxt = document.getElementById('timer');
+  const status = document.getElementById('status');
 
-    <script type="module" src="app.js"></script>
+  btn.disabled = true;
+  adDone = false;
+  timeLeft = 30;
+  timerTxt.innerText = timeLeft;
+  timerBox.style.display = 'block';
+  status.innerHTML = 'Loading ad…';
+
+  // Try Adsgram first
+  try {
+    Adsgram.show({ blockId:'task-21469' })
+      .then(()=>{
+        adDone = true;
+        status.innerHTML = '✅ Ad completed, finish timer…';
+      })
+      .catch(()=>{
+        showBackupAd();
+      });
+  } catch(e){
+    showBackupAd();
+  }
+
+  timerInt = setInterval(()=>{
+    if(!focused) return;
+    timeLeft--;
+    timerTxt.innerText = timeLeft;
+
+    if(timeLeft <= 0){
+      clearInterval(timerInt);
+      if(adDone){
+        reward();
+      } else {
+        reset('❌ Ad not completed');
+      }
+    }
+  },1000);
+}
+
+/******** BACKUP AD (DIRECT LINK) ********/
+function showBackupAd(){
+  document.getElementById('status').innerHTML = '⚠ Adsgram unavailable. Backup ad opened.';
+  window.open('https://www.effectivegatecpm.com','_blank');
+  adDone = true; // treat backup as valid
+}
+
+/******** REWARD ********/
+function reward(){
+  let bal = parseFloat(localStorage.getItem('balance') || 0);
+  bal += 0.0095;
+  localStorage.setItem('balance', bal.toFixed(4));
+
+  document.getElementById('status').innerHTML =
+    '🎉 Reward credited<br>💰 Balance: ' + bal.toFixed(4);
+  document.getElementById('adsBtn').disabled = false;
+}
+
+function reset(msg){
+  clearInterval(timerInt);
+  document.getElementById('status').innerHTML = msg;
+  document.getElementById('timerBox').style.display = 'none';
+  document.getElementById('adsBtn').disabled = false;
+}
+</script>
+
 </body>
 </html>

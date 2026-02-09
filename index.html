@@ -74,16 +74,21 @@ if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
   userBox.innerHTML = 'Not opened inside Telegram';
 }
 
-/******** ADS + BACKUP LOGIC ********/
+/******** ADS + BACKUP LOGIC + FREQUENCY CAP + ROTATION + SEPARATE REWARDS ********/
 let timeLeft = 30;
 let timerInt = null;
 let focused = true;
-let adDone = false;
+let taskAdDone = false;
+let interstitialAdDone = false;
+const INTERSTITIAL_COOLDOWN = 60 * 1000; // 1 min cooldown
+let lastInterstitial = parseInt(localStorage.getItem('lastInterstitial') || '0');
 
-// pause timer on tab switch
- document.addEventListener('visibilitychange',()=>{
+const interstitialAds = ['int-21422','int-21423','int-21424']; // multiple interstitials
+let lastInterstitialIndex = parseInt(localStorage.getItem('lastInterstitialIndex') || '0');
+
+document.addEventListener('visibilitychange',()=>{
    focused = !document.hidden;
- });
+});
 
 function startAdFlow(){
   const btn = document.getElementById('adsBtn');
@@ -92,25 +97,51 @@ function startAdFlow(){
   const status = document.getElementById('status');
 
   btn.disabled = true;
-  adDone = false;
+  taskAdDone = false;
+  interstitialAdDone = false;
   timeLeft = 30;
   timerTxt.innerText = timeLeft;
   timerBox.style.display = 'block';
-  status.innerHTML = 'Loading ad…';
+  status.innerHTML = 'Loading ads…';
 
-  // Try Adsgram first
-  try {
-    Adsgram.show({ blockId:'task-21469' })
+  const now = Date.now();
+  const canShowInterstitial = (now - lastInterstitial) >= INTERSTITIAL_COOLDOWN;
+
+  let interstitialPromise = Promise.resolve();
+  if(canShowInterstitial){
+    // Rotate interstitial
+    const adId = interstitialAds[lastInterstitialIndex];
+    lastInterstitialIndex = (lastInterstitialIndex + 1) % interstitialAds.length;
+    localStorage.setItem('lastInterstitialIndex', lastInterstitialIndex);
+
+    interstitialPromise = Adsgram.show({ blockId: adId })
       .then(()=>{
-        adDone = true;
-        status.innerHTML = '✅ Ad completed, finish timer…';
+        interstitialAdDone = true;
+        lastInterstitial = Date.now();
+        localStorage.setItem('lastInterstitial', lastInterstitial);
+        status.innerHTML = '✅ Interstitial ad completed. Loading task ad…';
       })
       .catch(()=>{
-        showBackupAd();
+        status.innerHTML = '⚠ Interstitial failed, continuing to task ad…';
       });
-  } catch(e){
-    showBackupAd();
+  } else {
+    status.innerHTML = '⏳ Interstitial cooldown active. Loading task ad…';
   }
+
+  interstitialPromise.then(()=>{
+    try {
+      Adsgram.show({ blockId:'task-21469' })
+        .then(()=>{
+          taskAdDone = true;
+          status.innerHTML = '✅ Task ad completed, finish timer…';
+        })
+        .catch(()=>{
+          showBackupAd();
+        });
+    } catch(e){
+      showBackupAd();
+    }
+  });
 
   timerInt = setInterval(()=>{
     if(!focused) return;
@@ -119,30 +150,26 @@ function startAdFlow(){
 
     if(timeLeft <= 0){
       clearInterval(timerInt);
-      if(adDone){
-        reward();
-      } else {
-        reset('❌ Ad not completed');
-      }
+      reward();
     }
   },1000);
 }
 
-/******** BACKUP AD (DIRECT LINK) ********/
 function showBackupAd(){
   document.getElementById('status').innerHTML = '⚠ Adsgram unavailable. Backup ad opened.';
   window.open('https://www.effectivegatecpm.com','_blank');
-  adDone = true; // treat backup as valid
+  taskAdDone = true;
 }
 
-/******** REWARD ********/
 function reward(){
   let bal = parseFloat(localStorage.getItem('balance') || 0);
-  bal += 0.0095;
+  let interstitialReward = interstitialAdDone ? 0.0025 : 0; // separate reward
+  let taskReward = taskAdDone ? 0.0095 : 0;
+  bal += interstitialReward + taskReward;
   localStorage.setItem('balance', bal.toFixed(4));
 
   document.getElementById('status').innerHTML =
-    '🎉 Reward credited<br>💰 Balance: ' + bal.toFixed(4);
+    `🎉 Rewards credited<br>💰 Interstitial: ${interstitialReward.toFixed(4)}<br>💰 Task: ${taskReward.toFixed(4)}<br>💰 Total Balance: ${bal.toFixed(4)}`;
   document.getElementById('adsBtn').disabled = false;
 }
 

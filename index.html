@@ -1,85 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AdsGram Web App - int-21422</title>
-  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background: #f0f8ff;
-    }
-    #status {
-      margin-top: 20px;
-      font-size: 16px;
-      color: #333;
-    }
-    #showAd {
-      padding: 10px 20px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      background-color: #0078d7;
-      color: white;
-      cursor: pointer;
-    }
-    #showAd:disabled {
-      background-color: #aaa;
-      cursor: not-allowed;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enhanced AdsGram Rotator</title>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background: #f0f8ff;
+  }
+  #status {
+    margin-top: 20px;
+    font-size: 16px;
+    color: #333;
+  }
+  #popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #4caf50;
+    color: white;
+    padding: 20px 30px;
+    border-radius: 12px;
+    display: none;
+    font-size: 18px;
+    text-align: center;
+    z-index: 9999;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+</style>
 </head>
 <body>
-  <h2>AdsGram Rewarded/Interstitial Ad</h2>
-  <button id="showAd">Show Ad</button>
-  <div id="status">Waiting for ad...</div>
+<h2>Enhanced AdsGram Ad Rotator</h2>
+<div id="status">Preparing ads...</div>
+<div id="popup">🎉 Thank you for helping people!</div>
 
-  <script>
-    const showAdBtn = document.getElementById('showAd');
-    const statusDiv = document.getElementById('status');
+<script>
+const statusDiv = document.getElementById('status');
+const popupDiv = document.getElementById('popup');
 
-    // Function to trigger AdsGram ad
-    async function triggerAd() {
-      statusDiv.textContent = "Loading ad...";
-      showAdBtn.disabled = true;
+// Configuration
+const adIds = ['int-21422', 'int-21423', 'int-21424']; // Replace with your AdsGram IDs
+const frequencyCapMs = 60 * 1000; // 1 ad per minute
+let lastAdTime = 0;
+let currentAdIndex = 0;
+let adQueueActive = true; // To pause rotation when tab is inactive
 
-      try {
-        const result = await AdController.show();
-        console.log("Ad result:", result);
+// Show “thank you” popup for 2 seconds
+function showThankYouPopup() {
+  popupDiv.style.display = 'block';
+  setTimeout(() => popupDiv.style.display = 'none', 2000);
+}
 
-        if (result.type === "rewarded") {
-          // User watched rewarded ad
-          statusDiv.textContent = "🎉 Ad finished! You earned your reward!";
-          // TODO: Call your backend API to grant real reward
-          // fetch('/reward?userId=123&amount=0.01');
-        } else {
-          // Interstitial ad (not rewarded)
-          statusDiv.textContent = "Ad closed!";
-        }
-      } catch (err) {
-        console.error("Ad error:", err);
-        statusDiv.textContent = "⚠️ Ad failed to load or play.";
-      } finally {
-        showAdBtn.disabled = false;
-      }
+// Show next ad
+async function showNextAd() {
+  if (!adQueueActive) return;
+
+  const now = Date.now();
+  if (now - lastAdTime < frequencyCapMs) {
+    statusDiv.textContent = "⏳ Frequency cap active. Please wait...";
+    return;
+  }
+
+  const adId = adIds[currentAdIndex];
+  statusDiv.textContent = `Loading ad ${currentAdIndex + 1} of ${adIds.length}...`;
+
+  try {
+    const result = await AdController.show(adId);
+    console.log("Ad result:", result);
+
+    if (result.type === "rewarded") {
+      statusDiv.textContent = "🎉 Rewarded ad finished!";
+      showThankYouPopup();
+      // TODO: call backend API to give real reward
+      // fetch(`/reward?userId=123&amount=0.01`);
+    } else {
+      statusDiv.textContent = "Interstitial ad closed.";
     }
 
-    // Auto show ad when page loads
-    window.addEventListener('load', () => {
-      triggerAd();
-    });
+    lastAdTime = Date.now();
+  } catch (err) {
+    console.error("Ad failed to play:", err);
+    statusDiv.textContent = "⚠️ Ad failed to load/play.";
+  }
 
-    // Optional: allow manual trigger
-    showAdBtn.addEventListener('click', () => {
-      triggerAd();
-    });
-  </script>
+  // Move to next ad
+  currentAdIndex = (currentAdIndex + 1) % adIds.length;
+}
+
+// Auto-rotate ads every 1 minute
+setInterval(showNextAd, frequencyCapMs);
+
+// Show first ad immediately on page load
+window.addEventListener('load', () => {
+  showNextAd();
+});
+
+// Pause ad rotation when tab is inactive
+document.addEventListener('visibilitychange', () => {
+  adQueueActive = !document.hidden;
+});
+
+// Optional: allow manual trigger
+statusDiv.addEventListener('click', () => showNextAd());
+</script>
 </body>
 </html>

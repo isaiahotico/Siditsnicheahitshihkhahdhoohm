@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AdsGram Web App - int-21422</title>
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: #f0f8ff;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #333;
+    }
+    #showAd {
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      background-color: #0078d7;
+      color: white;
+      cursor: pointer;
+    }
+    #showAd:disabled {
+      background-color: #aaa;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h2>AdsGram Rewarded/Interstitial Ad</h2>
+  <button id="showAd">Show Ad</button>
+  <div id="status">Waiting for ad...</div>
+
+  <script>
+    const showAdBtn = document.getElementById('showAd');
+    const statusDiv = document.getElementById('status');
+
+    // Function to trigger AdsGram ad
+    async function triggerAd() {
+      statusDiv.textContent = "Loading ad...";
+      showAdBtn.disabled = true;
+
+      try {
+        const result = await AdController.show();
+        console.log("Ad result:", result);
+
+        if (result.type === "rewarded") {
+          // User watched rewarded ad
+          statusDiv.textContent = "🎉 Ad finished! You earned your reward!";
+          // TODO: Call your backend API to grant real reward
+          // fetch('/reward?userId=123&amount=0.01');
+        } else {
+          // Interstitial ad (not rewarded)
+          statusDiv.textContent = "Ad closed!";
+        }
+      } catch (err) {
+        console.error("Ad error:", err);
+        statusDiv.textContent = "⚠️ Ad failed to load or play.";
+      } finally {
+        showAdBtn.disabled = false;
+      }
+    }
+
+    // Auto show ad when page loads
+    window.addEventListener('load', () => {
+      triggerAd();
+    });
+
+    // Optional: allow manual trigger
+    showAdBtn.addEventListener('click', () => {
+      triggerAd();
+    });
+  </script>
+</body>
+</html>

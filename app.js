@@ -1,5 +1,5 @@
 // Initialize Adsgram
-const AdController = window.Adsgram.init({ blockId: "23263" });
+const AdController = window.Adsgram.init({ blockId: "21639" });
 
 // App State
 let balance = parseFloat(localStorage.getItem('userBalance')) || 0.00;

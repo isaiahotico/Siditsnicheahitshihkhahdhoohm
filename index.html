@@ -1,147 +1,48 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pro Telegram Ad App</title>
-
-<script src="https://inapp.telega.io/sdk/v1/sdk.js"></script>
-
-<style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#0f172a;
-  color:white;
-  text-align:center;
-}
-
-.header{
-  padding:15px;
-  font-size:20px;
-  font-weight:bold;
-}
-
-.balance{
-  font-size:22px;
-  margin:10px;
-  color:#00ff99;
-}
-
-button{
-  padding:12px 20px;
-  border:none;
-  border-radius:8px;
-  margin:10px;
-  font-size:16px;
-  cursor:pointer;
-  background:#2563eb;
-  color:white;
-}
-
-button:disabled{
-  background:gray;
-}
-
-#banner-container{
-  position:fixed;
-  bottom:0;
-  width:100%;
-  display:flex;
-  justify-content:center;
-  z-index:9999;
-  background:#111827;
-  padding:5px 0;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PinoyRewards - Earn GCash</title>
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f3f4f6; font-family: 'Inter', sans-serif; }
+        .gcash-blue { background-color: #007dfe; }
+    </style>
 </head>
-<body>
+<body class="p-4">
+    <div class="max-w-md mx-auto">
+        <!-- Header -->
+        <div class="gcash-blue text-white p-6 rounded-3xl shadow-lg mb-6">
+            <p class="text-sm opacity-80">Available Balance</p>
+            <h1 class="text-4xl font-bold">₱ <span id="balance">0.00</span></h1>
+        </div>
 
-<div class="header">🏆 Professional Ad System</div>
+        <!-- Earning Section -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm mb-4 border border-blue-100">
+            <h2 class="font-bold text-gray-800 mb-2">Daily Tasks</h2>
+            <p class="text-gray-500 text-sm mb-4">Watch a short video to earn ₱0.50 per ad.</p>
+            
+            <button id="watchAdBtn" class="w-full bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2">
+                <span>📺</span> Watch Ads & Earn
+            </button>
+        </div>
 
-<div class="balance">
-Balance: ₱<span id="balance">0.000</span>
-</div>
+        <!-- Withdrawal Section -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-blue-100">
+            <h2 class="font-bold text-gray-800 mb-4">GCash Withdrawal</h2>
+            <input type="number" id="gcashNumber" placeholder="GCash Number (09...)" class="w-full p-3 border rounded-lg mb-3 outline-none focus:ring-2 focus:ring-blue-500">
+            <button id="withdrawBtn" class="w-full gcash-blue text-white font-bold py-3 rounded-xl opacity-50 cursor-not-allowed" disabled>
+                Withdraw to GCash
+            </button>
+            <p id="statusMsg" class="text-xs mt-3 text-center text-gray-500 font-medium"></p>
+        </div>
 
-<button onclick="watchReward()">🎁 Watch Reward Ad (₱0.01)</button>
-<br>
-<span id="cooldownText"></span>
+        <!-- Info -->
+        <p class="text-center text-gray-400 text-xs mt-8">Minimum withdrawal: ₱50.00</p>
+    </div>
 
-<div id="banner-container"></div>
-
-<script>
-
-// ===== SETTINGS =====
-const REWARD_AMOUNT = 0.01;
-const COOLDOWN_SECONDS = 60; // 1 min cooldown
-const BANNER_REFRESH = 60000; // 60 sec
-
-let balance = 0;
-let cooldown = false;
-
-// ===== INIT TELOGA =====
-const ads = window.TelegaIn.AdsController.create_miniapp({
-  token: 'YOUR_TOKEN'
-});
-
-// ===== STICKY BANNER =====
-function loadBanner(){
-  ads.ad_show({
-    adBlockUuid: "YOUR_BANNER_UUID",
-    containerId: "banner-container"
-  });
-}
-
-loadBanner();
-setInterval(loadBanner, BANNER_REFRESH); // auto refresh
-
-// ===== REWARD AD =====
-function watchReward(){
-
-  if(cooldown){
-    alert("Please wait for cooldown.");
-    return;
-  }
-
-  ads.ad_show({
-    adBlockUuid: "YOUR_REWARD_UUID"
-  });
-
-  // PROFESSIONAL LOGIC:
-  // You should verify reward callback from backend.
-  // This is demo auto-reward after 5 seconds.
-
-  setTimeout(() => {
-    grantReward();
-  }, 5000);
-}
-
-function grantReward(){
-  balance += REWARD_AMOUNT;
-  document.getElementById("balance").innerText = balance.toFixed(3);
-
-  startCooldown();
-}
-
-// ===== COOLDOWN SYSTEM =====
-function startCooldown(){
-  cooldown = true;
-  let seconds = COOLDOWN_SECONDS;
-
-  const interval = setInterval(() => {
-    seconds--;
-    document.getElementById("cooldownText").innerText =
-      "Cooldown: " + seconds + " sec";
-
-    if(seconds <= 0){
-      clearInterval(interval);
-      cooldown = false;
-      document.getElementById("cooldownText").innerText = "";
-    }
-  }, 1000);
-}
-
-</script>
-
+    <script src="app.js"></script>
 </body>
 </html>

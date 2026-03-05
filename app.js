@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, set, push, onValue, update, get, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
@@ -15,163 +14,134 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const tg = window.Telegram.WebApp;
 
-let currentUser = JSON.parse(localStorage.getItem('tg_user')) || null;
-let ytPlayer = null;
-let timer = 30;
-let timerInterval = null;
-let activeVideoData = null;
+// 1. AUTO-LOGIN VIA TELEGRAM WEBAPP
+tg.expand(); // Full screen
+const user = tg.initDataUnsafe?.user || { id: "guest", username: "GuestUser" };
 
-// --- TELEGRAM AUTH HANDLER ---
-window.onTelegramAuth = function(user) {
-    // This is called immediately by the Telegram Widget
-    currentUser = user;
-    localStorage.setItem('tg_user', JSON.stringify(user));
-    initUser();
-};
+const tgUserDisplay = document.getElementById('tgUserDisplay');
+const userBalance = document.getElementById('userBalance');
+const slotStatus = document.getElementById('slotStatus');
+const videoQueue = document.getElementById('videoQueue');
 
-function initUser() {
-    if (!currentUser) return;
-    
-    // UI Updates
-    document.getElementById('tgLoginWrap').classList.add('hidden');
-    document.getElementById('profileBox').classList.remove('hidden');
-    document.getElementById('tgUsername').innerText = `@${currentUser.username}`;
-    document.getElementById('userPhoto').innerHTML = `<img src="${currentUser.photo_url || ''}" class="w-full h-full object-cover">`;
+tgUserDisplay.innerText = `@${user.username}`;
 
-    // Sync with Firebase
-    const userRef = ref(db, 'users/' + currentUser.id);
-    onValue(userRef, (snapshot) => {
-        const data = snapshot.val() || { balance: 0, freeLinksUsed: 0 };
-        if (!snapshot.exists()) {
-            set(userRef, { 
-                username: currentUser.username, 
-                balance: 0, 
-                freeLinksUsed: 0,
-                id: currentUser.id 
-            });
-        }
-        document.getElementById('userBalance').innerText = (data.balance || 0).toFixed(2);
-        document.getElementById('freeLinkBadge').innerText = `${5 - (data.freeLinksUsed || 0)} Free Slots Left`;
+// Initialize/Sync User Data
+const userRef = ref(db, 'users/' + user.id);
+onValue(userRef, (snapshot) => {
+    const data = snapshot.val();
+    if (!data) {
+        set(userRef, { username: user.username, balance: 0, freeLinksUsed: 0 });
+    } else {
+        userBalance.innerText = (data.balance || 0).toFixed(2);
+        slotStatus.innerText = `${5 - (data.freeLinksUsed || 0)} Free Slots Left`;
+    }
+});
+
+// 2. QUEUE RENDERER
+onValue(ref(db, 'queue'), (snapshot) => {
+    videoQueue.innerHTML = "";
+    snapshot.forEach(child => {
+        const item = child.val();
+        if (item.viewsRemaining <= 0) return;
+
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border border-slate-800 p-3 rounded-2xl flex items-center gap-4 hover:border-red-500/50 transition-all";
+        card.innerHTML = `
+            <img src="https://img.youtube.com/vi/${item.vid}/mqdefault.jpg" class="w-24 h-16 rounded-xl object-cover">
+            <div class="flex-grow">
+                <p class="text-[10px] text-blue-400 font-bold uppercase">by @${item.owner}</p>
+                <p class="text-xs font-bold text-slate-500">${item.viewsRemaining} views left</p>
+            </div>            <button onclick="watchAd('${child.key}', '${item.vid}')" class="bg-red-600 text-[10px] font-black px-4 py-2 rounded-xl">WATCH</button>
+        `;
+        videoQueue.appendChild(card);
     });
+});
 
-    listenToQueue();
-}
+// 3. ADD LINK LOGIC
+document.getElementById('submitBtn').onclick = async () => {
+    const url = document.getElementById('ytInput').value;
+    const vid = extractID(url);
+    if (!vid) return alert("Invalid YouTube Link!");
 
-// --- QUEUE LOGIC ---
-const addLinkBtn = document.getElementById('addLinkBtn');
-addLinkBtn.onclick = async () => {
-    if (!currentUser) return alert("Please login with Telegram first!");
-    
-    const url = document.getElementById('ytLinkInput').value;
-    const vid = extractVideoId(url);
-    if (!vid) return alert("Invalid YouTube URL");
-
-    const userSnap = await get(ref(db, 'users/' + currentUser.id));
-    const userData = userSnap.val();
+    const snap = await get(userRef);
+    const userData = snap.val();
     
     let cost = 0;
     let views = 100;
     let isFree = true;
 
     if (userData.freeLinksUsed >= 5) {
-        if (userData.balance < 5) return alert("Insufficient Balance! You need ₱5.00 for more links.");
+        if (userData.balance < 5) return alert("Insufficient Balance (₱5.00 needed)");
         cost = 5;
         views = 550;
         isFree = false;
     }
 
-    const newLink = {
+    await push(ref(db, 'queue'), {
         vid: vid,
-        ownerName: currentUser.username,
-        ownerId: currentUser.id,
+        owner: user.username,
+        ownerId: user.id,
         viewsRemaining: views,
         timestamp: Date.now()
-    };
+    });
 
-    await push(ref(db, 'queue'), newLink);
-    await update(ref(db, 'users/' + currentUser.id), {
+    await update(userRef, {
         balance: increment(-cost),
         freeLinksUsed: increment(isFree ? 1 : 0)
     });
 
-    document.getElementById('ytLinkInput').value = "";
-    alert("Video added successfully!");
+    document.getElementById('ytInput').value = "";
+    tg.MainButton.setText("VIDEO ADDED!").show();
+    setTimeout(() => tg.MainButton.hide(), 2000);
 };
 
-function listenToQueue() {
-    onValue(ref(db, 'queue'), (snapshot) => {
-        const queueEl = document.getElementById('videoQueue');
-        queueEl.innerHTML = "";
-        
-        snapshot.forEach((child) => {
-            const data = child.val();
-            if (data.viewsRemaining <= 0) return;
+// 4. PLAYER & REWARD LOGIC
+let activeAd = null;
+let timerCount = 30;
+let timerInt = null;
+let player = null;
 
-            const div = document.createElement('div');
-            div.className = "bg-slate-900 border border-slate-800 p-3 rounded-2xl flex flex-col gap-3 hover:border-red-500/50 transition-colors";
-            div.innerHTML = `
-                <div class="relative">
-                    <img src="https://img.youtube.com/vi/${data.vid}/mqdefault.jpg" class="w-full rounded-xl">
-                    <span class="absolute bottom-2 right-2 bg-black/80 px-2 py-1 rounded text-[10px] font-bold">30 SECS</span>
-                </div>
-                <div class="flex justify-between items-center px-1">
-                    <div>
-                        <p class="text-xs text-slate-400 italic">@${data.ownerName}</p>
-                        <p class="text-sm font-bold text-green-500">${data.viewsRemaining} views left</p>
-                    </div>
-                    <button onclick="watchVideo('${child.key}', '${data.vid}')" class="bg-white text-black text-xs font-black px-4 py-2 rounded-lg hover:bg-red-500 hover:text-white transition-all">
-                        WATCH
-                    </button>
-                </div>
-            `;
-            queueEl.appendChild(div);
-        });
-    });
-}
-
-// --- WATCH & REWARD LOGIC ---
-window.watchVideo = (key, vid) => {
-    activeVideoData = { key, vid };
-    timer = 30;
-    document.getElementById('videoModal').classList.remove('hidden');
-    document.getElementById('timerDisplay').innerText = "30s";
-
-    if (!ytPlayer) {
-        ytPlayer = new YT.Player('player', {
-            height: '100%', width: '100%', videoId: vid,
+window.watchAd = (key, vid) => {
+    activeAd = { key, vid };
+    timerCount = 30;
+    document.getElementById('watchModal').classList.remove('hidden');
+    
+    if (!player) {
+        player = new YT.Player('player', {
+            videoId: vid,
             playerVars: { autoplay: 1, controls: 0, disablekb: 1 },
-            events: { onStateChange: handleYTState }
+            events: { onStateChange: (e) => {
+                if (e.data == 1) startTimer(); else stopTimer();
+            }}
         });
     } else {
-        ytPlayer.loadVideoById(vid);
+        player.loadVideoById(vid);
     }
 };
 
-function handleYTState(e) {
-    if (e.data == 1) { // Playing
-        if (!timerInterval) {
-            timerInterval = setInterval(() => {
-                timer--;
-                document.getElementById('timerDisplay').innerText = timer + "s";
-                if (timer <= 0) finalizeWatch();
-            }, 1000);
-        }
-    } else {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
+function startTimer() {
+    if (timerInt) return;
+    timerInt = setInterval(() => {
+        timerCount--;
+        document.getElementById('timer').innerText = timerCount + "s";
+        if (timerCount <= 0) claimReward();
+    }, 1000);
 }
 
-async function finalizeWatch() {
-    clearInterval(timerInterval);
-    timerInterval = null;
+function stopTimer() {
+    clearInterval(timerInt);
+    timerInt = null;
+}
 
-    // 1. Reward user
-    await update(ref(db, 'users/' + currentUser.id), { balance: increment(0.01) });
-
-    // 2. Deduct view
-    const linkRef = ref(db, 'queue/' + activeVideoData.key);
+async function claimReward() {
+    stopTimer();
+    // Credit User
+    await update(userRef, { balance: increment(0.01) });
+    
+    // Update Queue
+    const linkRef = ref(db, 'queue/' + activeAd.key);
     const snap = await get(linkRef);
     if (snap.exists()) {
         const remaining = snap.val().viewsRemaining - 1;
@@ -179,15 +149,13 @@ async function finalizeWatch() {
         else await update(linkRef, { viewsRemaining: remaining });
     }
 
-    // 3. Redirect
-    window.location.href = `https://www.youtube.com/watch?v=${activeVideoData.vid}`;
+    // Redirect
+    tg.openLink(`https://www.youtube.com/watch?v=${activeAd.vid}`);
+    document.getElementById('watchModal').classList.add('hidden');
 }
 
-function extractVideoId(url) {
+function extractID(url) {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length == 11) ? match[2] : false;
 }
-
-// Persistent Login Check
-if (currentUser) initUser();

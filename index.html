@@ -3,87 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FreeGcashads - Watch & Earn</title>
+    <title>FreeGcashads - Instant Earn</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
 
     <!-- Navbar -->
-    <nav class="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-40 shadow-xl">
-        <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-black text-red-500 tracking-tighter">FREEGCASH<span class="text-white">ADS</span></h1>
-            
-            <div id="authContainer" class="flex items-center gap-3">
-                <!-- Telegram Widget will appear here if not logged in -->
-                <div id="tgLoginWrap">
-                    <script async src="https://telegram.org/js/telegram-widget.js?22" 
-                        data-telegram-login="YOUR_BOT_USERNAME" 
-                        data-size="medium" 
-                        data-onauth="onTelegramAuth(user)" 
-                        data-request-access="write"></script>
-                </div>
-
-                <!-- Profile Info (Hidden by default) -->
-                <div id="profileBox" class="hidden flex items-center gap-3 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
-                    <div class="text-right">
-                        <p id="tgUsername" class="text-blue-400 font-bold text-sm leading-none">@loading</p>
-                        <p class="text-green-400 font-mono text-xs font-bold">₱<span id="userBalance">0.00</span></p>
-                    </div>
-                    <div id="userPhoto" class="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 overflow-hidden"></div>
-                </div>
+    <nav class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 p-4 sticky top-0 z-40">
+        <div class="max-w-xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-black text-red-500 italic">FREEGCASH<span class="text-white">ADS</span></h1>
+                <p id="tgUserDisplay" class="text-blue-400 text-xs font-bold leading-none">@Fetching...</p>
+            </div>
+            <div class="bg-slate-800 px-4 py-2 rounded-2xl border border-slate-700 text-right">
+                <p class="text-[10px] text-slate-400 uppercase font-bold">Balance</p>
+                <p class="text-green-400 font-mono font-black">₱<span id="userBalance">0.00</span></p>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-4xl mx-auto p-4 space-y-6">
+    <main class="max-w-xl mx-auto p-4 space-y-6 pb-20">
         
-        <!-- Submit Link Card -->
-        <section class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-bold">Promote Your Video</h2>
-                <span id="freeLinkBadge" class="text-[10px] uppercase font-bold bg-green-500/10 text-green-500 px-2 py-1 rounded">5 Free Slots Left</span>
+        <!-- Add Link Section -->
+        <div class="bg-slate-900 p-5 rounded-3xl border border-slate-800 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-slate-300">Promote Video</h2>
+                <span id="slotStatus" class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full font-bold">...</span>
             </div>
             
-            <div class="space-y-4">                <input id="ytLinkInput" type="text" placeholder="https://www.youtube.com/watch?v=..." 
-                    class="w-full bg-slate-950 border border-slate-700 p-4 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all">
-                
-                <div class="grid grid-cols-2 gap-4 text-center">
-                    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
-                        <p class="text-xs text-slate-400">First 5 Links</p>
-                        <p class="font-bold text-white">FREE <span class="text-[10px] text-slate-500">(100 views)</span></p>
-                    </div>
-                    <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
-                        <p class="text-xs text-slate-400">Next Links</p>
-                        <p class="font-bold text-white">₱5.00 <span class="text-[10px] text-slate-500">(550 views)</span></p>
-                    </div>
+            <input id="ytInput" type="text" placeholder="Paste YouTube Link Here" 
+                class="w-full bg-slate-950 border border-slate-700 p-4 rounded-2xl mb-4 focus:ring-2 focus:ring-red-500 outline-none">
+            
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-slate-800/40 p-3 rounded-2xl border border-slate-700/50 text-center">
+                    <p class="text-[10px] text-slate-500 uppercase">First 5 Links</p>
+                    <p class="text-sm font-bold">FREE <span class="text-xs text-slate-500">(100v)</span></p>
                 </div>
-
-                <button id="addLinkBtn" class="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl transition-transform active:scale-95 shadow-lg shadow-red-900/20">
-                    ADD TO QUEUE
-                </button>
+                <div class="bg-slate-800/40 p-3 rounded-2xl border border-slate-700/50 text-center">                    <p class="text-[10px] text-slate-500 uppercase">Premium</p>
+                    <p class="text-sm font-bold">₱5.00 <span class="text-xs text-slate-500">(550v)</span></p>
+                </div>
             </div>
-        </section>
+
+            <button id="submitBtn" class="w-full bg-white text-black font-black py-4 rounded-2xl active:scale-95 transition-all shadow-lg">
+                ADD TO QUEUE
+            </button>
+        </div>
 
         <!-- Queue Section -->
-        <section>
-            <div class="flex items-center gap-2 mb-4">
-                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <h2 class="text-xl font-bold italic">LIVE VIDEO QUEUE</h2>
+        <div>
+            <h2 class="text-lg font-black mb-4 flex items-center gap-2">
+                <span class="w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                ACTIVE QUEUE
+            </h2>
+            <div id="videoQueue" class="space-y-3">
+                <!-- Links injected here -->
+                <div class="animate-pulse bg-slate-900 h-24 rounded-2xl"></div>
             </div>
-            <div id="videoQueue" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <!-- Dynamic Content -->
-            </div>
-        </section>
+        </div>
     </main>
 
-    <!-- Ad Modal -->
-    <div id="videoModal" class="fixed inset-0 bg-black/95 z-50 hidden flex-col items-center justify-center p-4">
-        <div id="timerDisplay" class="mb-4 text-4xl font-mono font-black text-red-500">30s</div>
-        <div class="w-full max-w-3xl aspect-video bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
-            <div id="player"></div>
+    <!-- Fullscreen Player Modal -->
+    <div id="watchModal" class="fixed inset-0 bg-black z-50 hidden flex flex-col">
+        <div class="p-4 flex justify-between items-center bg-slate-900">
+            <span id="timer" class="text-2xl font-black text-red-500">30s</span>
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Watching Ad...</span>
         </div>
-        <p class="mt-4 text-slate-500 animate-bounce">Do not close! Rewarding ₱0.01 after 30s...</p>
+        <div class="flex-grow flex items-center justify-center">
+            <div id="player" class="w-full aspect-video"></div>
+        </div>
+        <div class="p-6 bg-slate-900 text-center">
+            <p class="text-sm text-slate-400">Reward: ₱0.01 + Redirect to YouTube</p>
+        </div>
     </div>
 
     <script type="module" src="app.js"></script>

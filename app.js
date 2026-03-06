@@ -142,7 +142,26 @@ document.getElementById('submitBtn').onclick = async () => {
     document.getElementById('ytInput').value = "";
     alert("Success! Your link is now live.");
 };
+// Initial Random In-App Interstitial Ad (3 minute cooldown)
+function showInitialAd() {
+    const now = Date.now();
+    if (now - lastInitialAd < INITIAL_AD_COOLDOWN_MS) {
+        return; // Still in cooldown
+    }
 
+    const adFunction = getRandomAdZone();
+    
+    try {
+        adFunction({
+            type: 'inApp',
+            inAppSettings: {
+                frequency: 5, 
+                capping: 0.1,
+                interval: 45,
+                timeout: 5,
+                everyPage: false
+            }
+        });
 // --- 5. PLAYER & REWARD ---
 let activeTask = null;
 let timerCount = 30;

@@ -162,6 +162,14 @@ function showInitialAd() {
                 everyPage: false
             }
         });
+        // Update the last shown time
+        lastInitialAd = now;
+        update(userRef, { lastInitialAd: now });
+
+    } catch(e) {
+        console.error("Initial ad failed:", e);
+    }
+}
 // --- 5. PLAYER & REWARD ---
 let activeTask = null;
 let timerCount = 30;

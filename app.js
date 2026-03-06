@@ -67,10 +67,10 @@ function updateUI() {
     
     pricingInfo.innerHTML = isWatch ? `
         <div class="bg-slate-800 p-2 rounded-lg border border-slate-700">FREE: 100 views</div>
-        <div class="bg-slate-800 p-2 rounded-lg border border-slate-700">PAID (₱5): 550 views</div>
+        <div class="bg-slate-800 p-2 rounded-lg border border-slate-700">PAID (₱1): 120 views</div>
     ` : `
         <div class="bg-slate-800 p-2 rounded-lg border border-slate-700">FREE: 50 subs</div>
-        <div class="bg-slate-800 p-2 rounded-lg border border-slate-700">PAID (₱7): 260 subs</div>
+        <div class="bg-slate-800 p-2 rounded-lg border border-slate-700">PAID (₱1.50): 65 subs</div>
     `;
 
     renderQueue();
@@ -120,8 +120,8 @@ document.getElementById('submitBtn').onclick = async () => {
         cost = 0;
         limit = isWatch ? 100 : 50;
     } else {
-        cost = isWatch ? 5 : 7;
-        limit = isWatch ? 550 : 260;
+        cost = isWatch ? 1 : 1.50;
+        limit = isWatch ? 120 : 65;
         if (userData.balance < cost) return alert(`Insufficient Balance! You need ₱${cost}.00`);
     }
 
@@ -172,13 +172,13 @@ function showInitialAd() {
 }
 // --- 5. PLAYER & REWARD ---
 let activeTask = null;
-let timerCount = 30;
+let timerCount = 45;
 let timerInt = null;
 let player = null;
 
 window.startTask = (key, vid) => {
     activeTask = { key, vid, type: currentTab };
-    timerCount = 30;
+    timerCount = 45;
     document.getElementById('watchModal').classList.remove('hidden');
     document.getElementById('modalType').innerText = activeTask.type === 'watch' ? 'WATCHING AD...' : 'PREPARING SUB...';
     

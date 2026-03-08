@@ -1,25 +1,26 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PAPERHOUSE INC - PRO</title>
+    <title>PAPERHOUSE INC</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <!-- Ad SDKs -->
+    <!-- Ads -->
     <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     <style>
         .active-tab { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
-        .modal { display: none; background: rgba(5,5,5,0.98); z-index: 9999; backdrop-filter: blur(10px); }
+        /* Fixed Modal Visibility */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; overflow-y: auto; }
         .card-width { width: 92%; margin: 0 auto; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .glass { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
 </head>
-<body class="bg-[#050505] text-white min-h-screen pb-28 font-sans select-none">
+<body class="bg-[#050505] text-white min-h-screen pb-28 font-sans">
 
     <!-- Header -->
     <header class="bg-[#0f0f12] p-4 sticky top-0 z-50 flex justify-between items-center border-b border-white/5">
@@ -33,28 +34,23 @@
         </div>
     </header>
 
-    <!-- Main Dashboard Card -->
-    <div class="card-width bg-gradient-to-br from-blue-700 to-indigo-900 p-6 rounded-[2.5rem] mt-6 shadow-2xl shadow-blue-900/40 relative overflow-hidden">
-        <div class="relative z-10">
-            <p class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Available Balance</p>
-            <h2 class="text-4xl font-black mt-1">₱<span id="balance">0.00</span></h2>
-            
-            <div class="flex justify-between mt-8 items-end">                <div onclick="copyRef()" class="cursor-pointer group">
-                    <p class="text-[8px] font-black text-blue-300 uppercase mb-1">Your Referral Code (20% Comm)</p>
-                    <div class="bg-black/30 px-3 py-2 rounded-xl border border-white/10 flex items-center gap-2">
-                        <span id="myRefCodeDisp" class="text-sm font-mono font-bold tracking-widest text-white">......</span>
-                        <span class="text-[10px]">📋</span>
-                    </div>
-                </div>
-                <div onclick="openAdmin()" class="opacity-10 text-[10px]">ADMIN</div>
+    <!-- Balance Dashboard -->
+    <div class="card-width bg-gradient-to-br from-blue-700 to-indigo-900 p-6 rounded-[2rem] mt-4 shadow-xl">
+        <p class="text-[10px] font-black uppercase opacity-60">Balance</p>
+        <h2 class="text-4xl font-black mt-1">₱<span id="balance">0.00</span></h2>
+        
+        <div class="flex justify-between mt-6 items-end">
+            <div onclick="copyRef()" class="cursor-pointer">
+                <p class="text-[8px] font-black text-blue-300 uppercase mb-1">Referral Code (20% Comm) 📋</p>
+
+                <span id="myRefCodeDisp" class="text-sm font-mono font-bold tracking-widest bg-black/20 px-2 py-1 rounded">......</span>
             </div>
+            <div onclick="openAdmin()" class="opacity-10 text-[9px]">ADMIN</div>
         </div>
-        <!-- Decorative Circle -->
-        <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
     </div>
 
-    <!-- Navigation Tabs -->
-    <nav class="flex overflow-x-auto bg-[#050505] px-4 gap-6 border-b border-white/5 no-scrollbar sticky top-[68px] z-40 mt-4">
+    <!-- Navigation -->
+    <nav class="flex overflow-x-auto bg-[#050505] px-4 gap-6 border-b border-white/5 no-scrollbar sticky top-[68px] z-40 mt-2">
         <button onclick="switchTab('watch')" class="tab-btn py-4 text-[10px] font-black active-tab uppercase" id="tab-watch">📺 Watch</button>
         <button onclick="switchTab('sub')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-sub">🔔 Sub</button>
         <button onclick="switchTab('like')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-like">👍 Like</button>
@@ -62,142 +58,117 @@
         <button onclick="switchTab('site')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-site">🌐 Visit</button>
     </nav>
 
-    <!-- Task Feed -->
-    <main id="linkContainer" class="p-4 space-y-4 min-h-[50vh]"></main>
+    <!-- Task List -->
+    <main id="linkContainer" class="p-4 space-y-4"></main>
 
-    <!-- Footer Support -->
-    <footer class="p-10 text-center glass card-width rounded-[2rem] mt-10 mb-10">
-        <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">Support Developers ☕</p>
-        <div class="grid grid-cols-1 gap-2 text-[9px] font-mono text-gray-400">
-            <p>GCash: 09952533453</p>
-            <p>PayPal: otico.isai2@gmail.com</p>            <p class="text-yellow-600">FaucetPay: TXTQeK9TyqnvUJsD2bqKv2BJTD1S1mChLs</p>
+    <!-- TASK PLAYER (REMOVED LOCK TEXT) -->
+    <div id="timer-overlay" class="modal flex-col items-center justify-center p-4">
+        <div class="card-width bg-[#111114] rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl">
+            <div id="video-container" class="aspect-video bg-black w-full"></div>
+            <div class="p-8 text-center">
+                <div id="countdown-ui">
+                    <h2 id="seconds-left" class="text-7xl font-black mb-2 text-blue-500">0</h2>
+                    <p class="text-gray-500 text-[10px] font-black uppercase tracking-widest">Verifying Task...</p>
+                </div>
+                <div id="claim-ui" class="hidden">
+                    <button onclick="finishTask()" class="w-full bg-green-600 py-4 rounded-2xl font-black text-lg">CLAIM REWARD</button>
+                </div>
+            </div>
         </div>
-    </footer>
+        <button onclick="closeTask()" class="mt-6 text-gray-500 text-xs font-bold uppercase">Cancel Task</button>
+    </div>
 
-    <!-- MODAL: DEPOSIT -->
-    <div id="deposit-modal" class="modal fixed inset-0 p-6 overflow-y-auto">
+    <!-- MODALS (Hidden by default) -->
+    <div id="deposit-modal" class="modal p-6">
         <div class="max-w-md mx-auto bg-[#111114] rounded-[2.5rem] p-8 border border-white/10 mt-10">
-            <h2 class="text-2xl font-black mb-2">Deposit</h2>
-            <p class="text-[10px] text-gray-500 uppercase font-bold mb-6">Funds credited after admin verification</p>
-            
+            <h2 class="text-2xl font-black mb-6">Deposit</h2>
             <div class="space-y-3 mb-6">
-                <div class="p-4 bg-white/5 rounded-2xl border border-white/10">
-                    <p class="text-blue-500 text-[9px] font-black uppercase mb-1">GCash / PayPal</p>
+                <div class="p-4 bg-white/5 rounded-2xl border border-white/5">
+                    <p class="text-blue-500 text-[9px] font-black uppercase">GCash / PayPal</p>
                     <p class="text-xs font-mono">09952533453 / otico.isai2@gmail.com</p>
                 </div>
-                <div onclick="copyAddress()" class="p-4 bg-yellow-600/10 rounded-2xl border border-yellow-600/20 cursor-pointer">
-                    <p class="text-yellow-500 text-[9px] font-black uppercase mb-1">FaucetPay USDT/TRX 📋</p>
-                    <p class="text-[10px] font-mono break-all text-gray-300 uppercase">TXTQeK9TyqnvUJsD2bqKv2BJTD1S1mChLs</p>
+                <div onclick="copyAddress()" class="p-4 bg-yellow-600/10 rounded-2xl border border-yellow-600/20">
+                    <p class="text-yellow-500 text-[9px] font-black uppercase">FaucetPay USDT/TRX 📋</p>
+                    <p class="text-[10px] font-mono break-all">TXTQeK9TyqnvUJsD2bqKv2BJTD1S1mChLs</p>
                 </div>
             </div>
+            <input id="depAmount" type="number" placeholder="Amount (₱)" class="w-full bg-black p-4 rounded-2xl border border-white/5 mb-3 outline-none">
+            <input id="depRef" type="text" placeholder="Transaction Ref ID" class="w-full bg-black p-4 rounded-2xl border border-white/5 mb-6 outline-none">
+            <button onclick="submitDeposit()" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase text-xs">Submit Deposit</b
 
-            <input id="depAmount" type="number" placeholder="Enter Amount (₱)" class="w-full bg-black p-4 rounded-2xl border border-white/5 mb-3 outline-none focus:border-blue-500"><input id="depRef" type="text" placeholder="Transaction Reference ID" class="w-full bg-black p-4 rounded-2xl border border-white/5 mb-6 outline-none focus:border-blue-500">
-            
-            <button onclick="submitDeposit()" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl">Submit for Review</button>
-            <button onclick="toggleModal('deposit-modal')" class="w-full mt-4 text-gray-600 text-[10px] font-black uppercase">Back</button>
+utton>
+            <button onclick="toggleModal('deposit-modal')" class="w-full mt-4 text-gray-600 text-[10px] font-black">CLOSE</button>
         </div>
     </div>
 
-    <!-- MODAL: WITHDRAW -->
-    <div id="withdraw-modal" class="modal fixed inset-0 p-6">
+    <div id="withdraw-modal" class="modal p-6">
         <div class="max-w-md mx-auto bg-[#111114] rounded-[2.5rem] p-8 border border-white/10 mt-10">
-            <h2 class="text-2xl font-black mb-1">Withdraw</h2>
-            <p class="text-[10px] text-red-500 font-black mb-6 uppercase tracking-tighter">Min: ₱100.00 • Admin Processing</p>
-            
-            <select id="witMethod" class="w-full bg-black p-4 rounded-2xl border border-white/10 mb-3 outline-none text-sm">
+            <h2 class="text-2xl font-black mb-6">Withdraw</h2>
+            <select id="witMethod" class="w-full bg-black p-4 rounded-2xl border border-white/10 mb-3 outline-none">
                 <option value="GCash">GCash</option>
                 <option value="PayPal">PayPal</option>
-                <option value="FaucetPay">FaucetPay (TRX/USDT)</option>
+                <option value="FaucetPay">FaucetPay</option>
             </select>
-            <input id="witAmount" type="number" placeholder="Amount to withdraw" class="w-full bg-black p-4 rounded-2xl border border-white/10 mb-3 outline-none">
-            <input id="witAccount" type="text" placeholder="Account Name & Number" class="w-full bg-black p-4 rounded-2xl border border-white/10 mb-6 outline-none">
-            
-            <button onclick="requestWithdraw()" class="w-full bg-green-600 py-4 rounded-2xl font-black uppercase text-xs tracking-widest">Process Withdrawal</button>
-            <button onclick="toggleModal('withdraw-modal')" class="w-full mt-4 text-gray-600 text-[10px] font-black">Close</button>
+            <input id="witAmount" type="number" placeholder="Amount (Min 100)" class="w-full bg-black p-4 rounded-2xl border border-white/10 mb-3 outline-none">
+            <input id="witAccount" type="text" placeholder="Account Info" class="w-full bg-black p-4 rounded-2xl border border-white/10 mb-6 outline-none">
+            <button onclick="requestWithdraw()" class="w-full bg-green-600 py-4 rounded-2xl font-black uppercase text-xs">Submit Request</button>
+            <button onclick="toggleModal('withdraw-modal')" class="w-full mt-4 text-gray-600 text-[10px] font-black">CLOSE</button>
         </div>
     </div>
 
-    <!-- MODAL: SUBMIT LINK -->
-    <div id="submit-modal" class="modal fixed inset-0 p-6 overflow-y-auto">
+    <div id="submit-modal" class="modal p-6">
         <div class="max-w-md mx-auto bg-[#111114] rounded-[2.5rem] p-8 border border-white/10 mt-10">
-            <h2 class="text-2xl font-black mb-1">Promote Link</h2>
-            <p id="promo-cost-info" class="text-[10px] text-blue-400 font-black mb-6 uppercase">Loading Policy...</p>
-            
-            <select id="subType" class="w-full bg-black p-4 rounded-2xl border border-white/10 mb-3 outline-none text-sm">
-                <option value="watch">📺 YouTube Watch</option>
-                <option value="sub">🔔 YouTube Subscribe</option>
-                <option value="like">👍 YouTube Like</option>
+            <h2 class="text-2xl font-black mb-1">Promote</h2>
+            <p id="promo-cost-info" class="text-[10px] text-blue-500 font-black mb-6 uppercase"></p>
+            <select id="subType" class="w-full bg-black p-4 rounded-2xl border border-white/10 mb-3 outline-none">
+                <option value="watch">📺 Watch</option>
+                <option value="sub">🔔 Sub</option>
+                <option value="like">👍 Like</option>
                 <option value="fb_follow">🔵 FB Follow</option>
-                <option value="site">🌐 Website Visit</option>
+                <option value="site">🌐 Site</option>
             </select>
             <input id="subUrl" type="url" placeholder="https://..." class="w-full bg-black p-4 rounded-2xl border border-white/10 mb-3 outline-none">
-            <textarea id="subDesc" maxlength="100" placeholder="Describe your link (Max 100 words)..." class="w-full bg-black p-4 rounded-2xl border border-white/10 mb-6 h-24 text-sm outline-none"></textarea>
-            
-            <button onclick="processLinkSubmission()" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase text-xs">Publish to Feed</button>
-            <button onclick="toggleModal('submit-modal')" class="w-full mt-4 text-gray-600 text-[10px] font-black uppercase">Cancel</button>
+            <textarea id="subDesc" maxlength="100" placeholder="Description (Max 100 words)" class="w-full bg-black p-4 rounded-2xl border border-white/10 mb-6 h-24 text-sm outline-none"></textarea>
+            <button onclick="processLinkSubmission()" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase text-xs">Post Link</button>
+            <button onclick="toggleModal('submit-modal')" class="w-full mt-4 text-gray-600 text-[10px] font-black">CANCEL</button>
         </div>
     </div>
 
-    <!-- MODAL: ADMIN PANEL -->
-    <div id="admin-panel" class="modal fixed inset-0 p-4 overflow-y-auto">
-        <div class="max-w-2xl mx-auto py-10 pb-32">
-            <div class="flex justify-between items-center mb">
-                <h2 class="text-3xl font-black text-red-600 italic">ADMIN DB</h2>
-                <button onclick="toggleModal('admin-panel')" class="text-xs font-black uppercase text-gray-500">Exit</button>
-            </div>
-            
-            <div class="space-y-8">
-                <!-- Deposits -->
-                <section class="bg-[#111114] p-6 rounded-[2rem] border border-white/5 shadow-2xl">
-                    <h3 class="text-xs font-black text-green-500 uppercase mb-4 tracking-widest">Pending Deposits</h3>
-                    <div id="admin-deposits" class="space-y-3"></div>
-                </section>
-                <!-- Withdrawals -->
-                <section class="bg-[#111114] p-6 rounded-[2rem] border border-white/5 shadow-2xl">
-                    <h3 class="text-xs font-black text-yellow-500 uppercase mb-4 tracking-widest">Pending Withdrawals</h3>
-                    <div id="admin-withdrawals" class="space-y-3"></div>
-                </section>
-                <!-- Global Link -->
-                <section class="bg-[#111114] p-6 rounded-[2rem] border border-red-900/20">
-                    <h3 class="text-xs font-black text-red-500 uppercase mb-4">Post Global Admin Link</h3>
-                    <input id="adminGlobalUrl" type="url" placeholder="URL" class="w-full bg-black p-4 rounded-xl mb-2 text-xs border border-white/5">
-                    <input id="adminGlobalDesc" type="text" placeholder="Description" class="w-full bg-black p-4 rounded-xl mb-4 text-xs border border-white/5">
-                    <button onclick="postAdminGlobal()" class="w-full bg-red-600/20 text-red-500 border border-red-600/50 py-3 rounded-xl font-black uppercase text-[10px]">Push 10,000 Clicks @ ₱0.03</button>
-                </section>
-                <!-- Delete Manager -->
-                <section id="admin-links" class="space-y-2 opacity-50"></section>
-            </div>
-        </div>
-    </div>
-
-    <!-- Task Player Overlay -->
-    <div id="timer-overlay" class="modal fixed inset-0 flex flex-col items-center justify-center p-4">
-        <div class="card-width bg-[#111114] rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl relative">
-            <div id="video-container" class="aspect-video bg-black w-full"></div>
-            <div class="p-10 text-center">
-                <div id="countdown-ui">
-                    <h2 id="seconds-left" class="text-8xl font-black mb-4 text-blue-500">0</h2>
-                    <p class="text-gray-500 text-[10px] font-black uppercase tracking-[0.4em]">Engagement Lock</p>
-                </div>
-                <div id="claim-ui" class="hidden animate-pulse">
-                    <button onclick="finishTask()" class="w-full bg-green-600 py-6 rounded-[2rem] font-black text-xl shadow-xl shadow-green-900/40">CLAIM ₱ REWARD</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: MY PROFILE (Link Status) -->
-    <div id="profile-modal" class="modal fixed inset-0 p-6 overflow-y-auto">
+    <div id="profile-modal" class="modal p-6">
         <div class="max-w-md mx-auto bg-[#111114] rounded-[3rem] p-8 border border-white/10 mt-10">
-            <h2 class="text-2xl font-black mb-1">My Promotions</h2>
-            <p class="text-[10px] text-gray-500 font-bold uppercase mb-8">Active Link Tracking</p>
+            <h2 class="text-2xl font-black mb-6">My Activity</h2>
             <div id="my-links-container" class="space-y-4"></div>
-            <button onclick="toggleModal('profile-modal')" class="w-full mt-10 text-gray-600 text-[10px] font-black uppercase">Back to Home</button>
+            <button onclick="toggleModal('profile-modal')" class="w-full mt-10 text-gray-600 text-[10px] font-black uppercase">Back</button>
         </div>
     </div>
 
-    <!-- FAB Create -->
-    <button onclick="toggleModal('submit-modal')" class="fixed bottom-8 right-8 bg-blue-600 w-16 h-16 rounded-[1.5rem] shadow-2xl text-3xl font-black flex items-center justify-center z-40 active:scale-95 transition-transform">+</button>
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="modal p-4">
+        <div class="max-w-2xl mx-auto py-10">
+            <h2 class="text-2xl font-black text-red-500 mb-8 uppercase">Admin Dashboard</h2>
+            <div class="space-y-6">
+                <div class="bg-[#111114] p-6 rounded-3xl border border-white/5">
+                    <h3 class="text-xs font-black text-green-500 uppercase mb-4">Deposits</h3>
+                    <div id="admin-deposits" class="space-y-3"></div>
+                </div>
+                <div
+
+class="bg-[#111114] p-6 rounded-3xl border border-white/5">
+                    <h3 class="text-xs font-black text-yellow-500 uppercase mb-4">Withdrawals</h3>
+                    <div id="admin-withdrawals" class="space-y-3"></div>
+                </div>
+                <button onclick="toggleModal('admin-panel')" class="w-full text-gray-500 py-4 font-bold text-xs">EXIT ADMIN</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Support Footer -->
+    <footer class="p-8 text-center opacity-30 mt-10">
+        <p class="text-[9px] font-black uppercase">Dev Support: GCash 09952533453</p>
+    </footer>
+
+    <!-- FAB -->
+    <button onclick="toggleModal('submit-modal')" class="fixed bottom-8 right-8 bg-blue-600 w-16 h-16 rounded-[1.5rem] shadow-2xl text-2xl font-black z-40">+</button>
 
     <script src="app.js"></script>
 </body>

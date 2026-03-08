@@ -1,107 +1,144 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PAPERHOUSE_YOUTUBE_FREE - Watch & Sub</title>
+    <title>FreeGcashads - Ultimate 2024</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
-    <meta name="popads-verification-3633431" value="fd5f0cfedc71c1eadc0235cd6b1b67ed" />
-      <!-- Adsterra Popunder Script (Place these early in the head or body) -->
-    <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
-    <script>
-      atOptions = {
-        'key' : 'fe70943384c0314737bd62c05e3d520a',
-        'format' : 'iframe',
-        'height' : 300,
-        'width' : 160,
-        'params' : {}
-      };
-    </script>
-    <script src="https://www.highperformanceformat.com/fe70943384c0314737bd62c05e3d520a/invoke.js"></script>
-    <script src="https://pl27853087.effectivegatecpm.com/fa/f9/df/faf9df00762374e3ad9510afe003e978.js"></script>
-    <!-- End Adsterra Popunder -->
-    <script src="https://pl27841028.effectivegatecpm.com/8d/d1/22/8dd12242aa4773e333887cfd8d8a96de.js"></script>
-    <!-- Monetag SDKs -->
-<script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
-<script src='//libtl.com/sdk.js' data-zone='10555746' data-sdk='show_10555746'></script>
-<script src='//libtl.com/sdk.js' data-zone='10555727' data-sdk='show_10555727'></script>
-    </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans pb-10">
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .tab-active { color: #ef4444; border-bottom: 3px solid #ef4444; }
+        .cat-active { background: #ef4444 !important; color: white !important; border-color: #ef4444 !important; }
+        .exec-page { position: fixed; inset: 0; background: #020617; z-index: 1000; display: none; flex-direction: column; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans select-none">
 
     <!-- Header -->
-    <nav class="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-40 shadow-2xl">
+    <nav class="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-50">
         <div class="max-w-xl mx-auto flex justify-between items-center">
             <div>
-                <h1 class="text-xl font-black text-red-500 italic leading-none">PAPERHOUSE INC.<span class="text-white">YOUTUBE PLANS</span></h1>
-                <p id="tgUserDisplay" class="text-blue-400 text-[10px] font-bold mt-1">@Fetching...</p>
+                <h1 class="text-lg font-black italic leading-none text-red-500">FREEGCASH<span class="text-white">ADS</span></h1>
+                <p id="tgUser" class="text-[10px] font-bold text-blue-400">@fetching...</p>
             </div>
             <div class="text-right">
-                <p class="text-[10px] text-slate-500 font-bold uppercase">Balance</p>
-                <p class="text-green-400 font-mono font-black text-lg leading-none">₱<span id="userBalance">0.00</span></p>
+                <p class="text-[8px] text-slate-500 uppercase font-black tracking-widest">Your Balance</p>
+                <p class="text-green-400 font-mono font-black text-sm">₱<span id="userBalance">0.00</span></p>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-xl mx-auto p-4 space-y-6">
-        
-        <!-- Toggle Tabs -->
-        <div class="flex bg-slate-900 p-1 rounded-2xl border border-slate-800">
-            <button id="tabWatch" class="flex-1 py-3 rounded-xl font-bold transition-all bg-red-600 text-white">Watch & Earn Credit</button>
-            <button id="tabSub" class="flex-1 py-3 rounded-xl font-bold transition-all text-slate-400">Sub & Earn Credit</button>
+    <!-- Main Navigation -->
+    <div class="flex max-w-xl mx-auto bg-slate-900 border-b border-slate-800 text-center sticky top-[61px] z-40">
+        <button id="tabTasks" class="flex-1 py-4 text-[10px] font-black tab-active uppercase">Tasks</button>
+        <button id="tabPromote" class="flex-1 py-4 text-[10px] font-black text-slate-500 uppercase">Promote</button>
+        <button id="tabReferral" class="flex-1 py-4 text-[10px] font-black text-slate-500 uppercase">Referral</button>
+        <button id="tabProfile" class="flex-1 py-4 text-[10px] font-black text-slate-500 uppercase">Donate</button>
+    </div>
+
+    <!-- View: Tasks -->
+    <main id="viewTasks" class="max-w-xl mx-auto p-4 space-y-3 pb-24">
+
+        <div id="allTasksContainer" class="space-y-3"></div>
+    </main>
+
+    <!-- View: Promote (Add Links) -->
+    <main id="viewPromote" class="max-w-xl mx-auto p-4 hidden space-y-6 pb-24">
+        <div class="flex gap-2 overflow-x-auto no-scrollbar py-2">
+            <button onclick="setCat('yt_watch')" class="cat-btn cat-active border border-slate-700 px-4 py-2 rounded-xl text-[9px] font-black whitespace-nowrap">YT WATCH</button>
+            <button onclick="setCat('yt_sub')" class="cat-btn border border-slate-700 px-4 py-2 rounded-xl text-[9px] font-black whitespace-nowrap">YT SUB</button>
+            <button onclick="setCat('yt_like')" class="cat-btn border border-slate-700 px-4 py-2 rounded-xl text-[9px] font-black whitespace-nowrap">YT LIKE</button>
+            <button onclick="setCat('yt_comm')" class="cat-btn border border-slate-700 px-4 py-2 rounded-xl text-[9px] font-black whitespace-nowrap">YT COMM</button>
+            <button onclick="setCat('fb_follow')" class="cat-btn border border-slate-700 px-4 py-2 rounded-xl text-[9px] font-black whitespace-nowrap">FB FOLLOW</button>
+            <button onclick="setCat('fb_like')" class="cat-btn border border-slate-700 px-4 py-2 rounded-xl text-[9px] font-black whitespace-nowrap">FB LIKE</button>
+            <button onclick="setCat('fb_comm')" class="cat-btn border border-slate-700 px-4 py-2 rounded-xl text-[9px] font-black whitespace-nowrap">FB COMM</button>
+            <button onclick="setCat('web_visit')" class="cat-btn border border-slate-700 px-4 py-2 rounded-xl text-[9px] font-black whitespace-nowrap">WEBSITE</button>
+            <button onclick="setCat('playstore')" class="cat-btn border border-slate-700 px-4 py-2 rounded-xl text-[9px] font-black whitespace-nowrap">PLAYSTORE</button>
+            <button onclick="promptAdmin()" class="bg-purple-900 border border-purple-500 px-4 py-2 rounded-xl text-[9px] font-black">ADMIN</button>
         </div>
 
-        <!-- Submission Form -->
-        <section class="bg-slate-900 p-5 rounded-3xl border border-slate-800 shadow-xl">
-            <h2 id="formTitle" class="font-bold text-slate-300 mb-4">Promote YouTube Video</h2>
-            <input id="ytInput" type="text" placeholder="Paste YouTube Link Here" 
-                class="w-full bg-slate-950 border border-slate-700 p-4 rounded-2xl mb-4 focus:ring-2 focus:ring-red-500 outline-none">
-            
-            <div id="pricingInfo" class="grid grid-cols-2 gap-3 mb-4 text-[11px]">
-                <!-- Dynamic pricing text -->
-            </div>
-
-            <button id="submitBtn" class="w-full bg-white text-black font-black py-4 rounded-2xl active:scale-95 transition-all shadow-lg uppercase">
-                Add to Queue
-            </button>
-            <p id="slotInfo" class="text-center text-[10px] mt-3 text-slate-500 font-bold tracking-widest"></p>
+        <section class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl">
+            <h2 id="promoTitle" class="text-xs font-black text-red-500 uppercase mb-4">Add Youtube Link</h2>
+            <input id="linkInput" type="text" placeholder="Paste link here..." class="w-full bg-slate-950 border border-slate-800 p-4 rounded-2xl mb-4 text-sm outline-none">
+            <button id="submitPromo" class="w-full bg-white text-black font-black py-4 rounded-2xl active:scale-95 text-xs uppercase">Submit Promotion</button>
+            <p id="limitInfo" class="text-center text-[10px] mt-4 text-slate-500 font-bold uppercase"></p>
         </section>
+        
+        <div id="myLinksContainer" class="space-y-3 mt-10"></div>
+    </main>
 
-        <!-- Task List -->
-        <div>
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-black flex items-center gap-2">
-                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    ACTIVE TASKS
-                </h2>
-                <span id="rewardBadge" class="text-[10px] bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded-lg font-bold">Reward: ₱0.01</span>
+    <!-- View: Referral -->
+    <main id="viewReferral" class="max-w-xl mx-auto p-4 hidden space-y-6 pb-24">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-center">
+            <h2 class="text-xl font-black mb-2 italic">Earn 20% Forever!</h2>
+            <p class="text-xs text-slate-400 mb-6">Refer your friends and get 20% of their total earnings instantly.</p>
+            
+            <div class="bg-slate-950 p-4 rounded-2xl border border-dashed border-slate-700 mb-4">
+                <p class="text-[10px] text-slate-500 uppercase font-black mb-1">Your Referral Code</p>
+                <p id="myRefCode" class="text-2xl font-mono font-black text-red-500">GENERATING...</p>
             </div>
-            <div id="taskList" class="space-y-3">
-                <!-- Tasks injected here -->
+            
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                    <p class="text-[8px] text-slate-500 font-bold uppercase"
+
+>Total Referred</p>
+                    <p id="refCount" class="text-lg font-black">0</p>
+                </div>
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                    <p class="text-[8px] text-slate-500 font-bold uppercase">Total Earned</p>
+                    <p class="text-lg font-black text-green-500">₱<span id="refEarned">0.00</span></p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <input id="inputRefCode" type="text" placeholder="Enter Referral Code" class="w-full bg-slate-950 border border-slate-800 p-4 rounded-2xl text-center text-sm outline-none">
+                <button id="btnClaimRef" class="w-full bg-red-600 text-white font-black py-4 rounded-2xl text-xs uppercase">Claim Referral</button>
             </div>
         </div>
     </main>
 
-    <!-- Player Modal -->
-    <div id="watchModal" class="fixed inset-0 bg-black z-50 hidden flex flex-col">
-        <div class="p-4 flex justify-between items-center bg-slate-900">
-            <span id="timer" class="text-2xl font-black text-red-500">45s</span>
-            <span id="modalType" class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">WATCHING AD...</span>
+    <!-- View: Donate -->
+    <main id="viewProfile" class="max-w-xl mx-auto p-4 hidden space-y-4 pb-24">
+        <h2 class="text-lg font-black italic text-center">Give Admin Some Coffee ☕</h2>
+        <div class="space-y-3">
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
+                <span>PayPal / FaucetPay</span>
+                <span class="text-blue-400 font-bold text-xs">otico.isai2@gmail.com</span>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
+                <span>GCash</span>
+                <span class="text-blue-400 font-bold text-xs">09952533453</span>
+            </div>
         </div>
-        <div class="flex-grow flex items-center justify-center">
-            <div id="player" class="w-full aspect-video"></div>
+    </main>
+
+    <!-- Execution Modal -->
+    <div id="executionPage" class="exec-page">
+        <div class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div id="timerDisplay" class="w-12 h-12 rounded-full border-2 border-red-600 flex items-center justify-center font-black text-white text-xl">30</div>
+                <div>
+                    <p id="taskActionLabel" class="text-[10px] font-black text-slate-500 uppercase">Verifying</p>
+                    <p id="taskRewardLabel" class="text-xs font-bold text-green-500">₱0.00 Reward</p>
+                </div>
+            </div>
+            <p class="text-[9px] text-slate-500 font-black italic">Keep open</p>
         </div>
-        <div class="p-6 bg-slate-900 text-center">
-            <p class="text-sm text-slate-400">Do not close! Redirecting after 45s...</p>
+        <div class="flex-grow bg-black relative">
+            <div id="playerBox" class="w-full h-full hidden"><div id="player"></div></div>
+            <div id="webBox" class="w-full h-full hidden"><iframe id="webFrame" class="w-full h-full border-none"></iframe></div>
+            <div id="socialBox" class="w-full h-full hidden flex items-center justify-center p-10 text-center">
+                <p class="text-sm font-bold">Redirecting to Social App...<br>Please follow/like and stay in this app until the timer finishes.</p>
+            </div>
         </div>
     </div>
 
     <script type="module" src="app.js"></script>
 </body>
 </html>
-
-
-
-
-

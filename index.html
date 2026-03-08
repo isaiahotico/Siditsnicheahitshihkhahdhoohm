@@ -6,29 +6,29 @@
     <title>PAPERHOUSE INC</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-    <!-- Ads SDKs -->
+    <!-- Ads -->
     <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     <style>
         .active-tab { border-bottom: 4px solid #3b82f6; color: #3b82f6; }
-        #timer-overlay, #admin-panel, #deposit-modal, #submit-modal { display: none; background: rgba(0,0,0,0.98); z-index: 9999; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        #timer-overlay, #admin-panel, #deposit-modal, #submit-modal { display: none; background: rgba(5, 5, 5, 0.98); z-index: 9999; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); }
     </style>
 </head>
-<body class="bg-gray-950 text-white min-h-screen pb-24 font-sans select-none">
+<body class="bg-[#0a0a0b] text-white min-h-screen pb-24 font-sans select-none">
 
     <!-- Header -->
-    <header class="bg-gray-900 p-4 sticky top-0 z-50 shadow-xl flex justify-between items-center border-b border-gray-800">
+    <header class="bg-[#111114] p-4 sticky top-0 z-50 flex justify-between items-center border-b border-white/5">
         <div>
             <h1 class="text-xl font-black text-blue-500 tracking-tighter">PAPERHOUSE <span class="text-white">INC</span></h1>
             <p id="displayUsername" class="text-[10px] text-gray-500 font-mono">@loading...</p>
         </div>
         <div class="flex gap-3 items-center">
-            <button onclick="toggleModal('deposit-modal')" class="bg-green-600/20 text-green-400 border border-green-600/50 px-3 py-1 rounded-lg text-[10px] font-bold">+ CASH IN</button>
+            <button onclick="toggleModal('deposit-modal')" class="bg-blue-600 px-3 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase">Add Cash</button>
             <div class="text-right">
                 <p class="text-[10px] text-gray-500 font-bold">BALANCE</p>
                 <p class="text-lg font-black text-green-400">₱<span id="balance">0.00</span></p>
@@ -36,25 +36,33 @@
         </div>
     </header>
 
-    <!-- Referral & Info -->
-    <section class="p-4 m-4 bg-gray-900 border border-gray-800 rounded-3xl">
+    <!-- Referral Dashboard -->
+    <section class="p-5 m-4 glass border border-white/10 rounded-[2rem]">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xs font-black text-gray-500 uppercase tracking-widest">Your Referral System</h2>
-            <button onclick="openAdmin()" class="text-[10px] text-gray-800">Admin</button>
+            <div>
+                <h2 class="text-xs font-black text-blue-400 uppercase">Partner Program</h2>
+                <p class="text-[9px] text-gray-500">Get 20% from everything your friends earn.</p>
+            </div>            <button onclick="openAdmin()" class="text-[10px] text-gray-800">Admin</button>
         </div>
-        <div id="ref-status-area">
+        
+        <div id="ref-status-area" class="space-y-3">
             <!-- JS Inject -->
-
         </div>
-        <div class="mt-4 p-3 bg-blue-600/10 rounded-xl border border-blue-500/20">
-            <p class="text-[10px] text-blue-400 leading-tight">
-                Invite friends and earn <span class="font-bold">20% commission</span> on every task they complete! No limits.
-            </p>
+
+        <div class="grid grid-cols-2 gap-2 mt-4">
+            <div class="bg-white/5 p-3 rounded-2xl border border-white/5">
+                <p class="text-[9px] text-gray-500 uppercase font-bold">Invites</p>
+                <p id="refCount" class="text-lg font-black">0</p>
+            </div>
+            <div class="bg-white/5 p-3 rounded-2xl border border-white/5">
+                <p class="text-[9px] text-gray-500 uppercase font-bold">Earned</p>
+                <p id="refEarned" class="text-lg font-black text-green-400">₱0.00</p>
+            </div>
         </div>
     </section>
 
-    <!-- Nav Tabs -->
-    <nav class="flex overflow-x-auto bg-gray-900 px-4 gap-6 border-b border-gray-800 no-scrollbar sticky top-[68px] z-40">
+    <!-- Task Navigation -->
+    <nav class="flex overflow-x-auto bg-[#111114] px-4 gap-6 border-b border-white/5 no-scrollbar sticky top-[68px] z-40">
         <button onclick="switchTab('watch')" class="tab-btn py-4 text-xs font-black active-tab uppercase" id="tab-watch">Watch</button>
         <button onclick="switchTab('sub')" class="tab-btn py-4 text-xs font-black text-gray-500 uppercase" id="tab-sub">Sub</button>
         <button onclick="switchTab('like')" class="tab-btn py-4 text-xs font-black text-gray-500 uppercase" id="tab-like">Like</button>
@@ -63,95 +71,104 @@
         <button onclick="switchTab('playstore')" class="tab-btn py-4 text-xs font-black text-gray-500 uppercase" id="tab-playstore">Apps</button>
     </nav>
 
-    <!-- List -->
+    <!-- Feed Information -->
+    <div class="px-5 pt-4">
+        <p class="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Available Tasks</p>
+        <p class="text-[9px] text-gray-700 italic">Click "Start" and stay for the timer to earn rewards.</p>
+    </div>
+
+    <!-- Task List -->
     <main id="linkContainer" class="p-4 space-y-3"></main>
 
-    <!-- Deposit Modal -->
-    <div id="deposit-modal" class="fixed inset-0 p-6 overflow-y-auto">
-        <div class="max-w-md mx-auto bg-gray-900 rounded-[40px] p-8 border border-gray-800 mt-10">
-            <h2 class="text-2xl font-black mb-2">Deposit Proof</h2>
-            <p class="text-xs text-gray-500 mb-6">Min ₱50. Upload screenshot for verification.</p>
+    <!-- Deposit Modal (Superfast) -->    <div id="deposit-modal" class="fixed inset-0 p-6 overflow-y-auto">
+        <div class="max-w-md mx-auto bg-[#111114] rounded-[3rem] p-8 border border-white/10 mt-10">
+            <h2 class="text-2xl font-black mb-1">Fast Deposit</h2>
+            <p class="text-xs text-gray-500 mb-6 font-medium">Automatic queueing for admin approval.</p>
             
-            <div class="space-y-3 mb-6 text-[11px] font-mono bg-black/50 p-4 rounded-2xl">
-                <p>GCash: 09952533453</p>
-                <p>PayPal: otico.isai2@gmail.com</p>
-                <p class="break-all">FP(USDT): TXTQeK9TyqnvUJsD2bqKv2BJTD1S1mChLs</p>
+            <div class="grid grid-cols-1 gap-2 mb-6 text-[10px] font-mono">
+                <div class="p-3 bg-blue-600/10 rounded-xl border border-blue-600/20">GCASH: 09952533453</div>
+                <div class="p-3 bg-white/5 rounded-xl border border-white/10">PAYPAL: otico.isai2@gmail.com</div>
             </div>
 
-            <input id="depAmount" type="number" placeholder="Amount (₱)" class="w-full bg-black p-4 rounded-2xl border border-gray-800 mb-3">
-            <input id="depRef" type="text" placeholder="Transaction Reference" class="w-full bg-black p-4 rounded-2xl border border-gray-800 mb-3">
-            <label class="block text-[10px] text-gray-500 mb-1 ml-2 uppercase font-bold">Screenshot</label>
-            <input id="depFile" type="file" accept="image/*" class="w-full bg-black p-4 rounded-2xl border border-gray-800 mb-6 text-xs text-gray-400">
-            
-            <button id="btnSubmitDep" onclick="submitDeposit()" class="w-full bg-blue-600 py-4 rounded-2xl font-black shadow-lg">Submit Proof</button>
-            <button onclick="toggleModal('deposit-modal')" class="w-full mt-4 text-gray-600 text-xs">Back</button>
+            <div class="space-y-4">
+                <input id="depAmount" type="number" placeholder="Enter Amount (₱50 min)" class="w-full bg-black/50 p-4 rounded-2xl border border-white/5">
+                <input id="depRef" type="text" placeholder="Transaction Reference ID" class="w-full bg-black/50 p-4 rounded-2xl border border-white/5">
+                <div class="relative">
+                    <input id="depFile" type="file" accept="image/*" class="hidden">
+                    <button onclick="document.getElementById('depFile').click()" class="w-full bg-white/5 border border-dashed border-white/20 p-4 rounded-2xl text-xs text-gray-400">Select Proof Screenshot</button>
+                    <p id="fileName" class="text-[9px] text-blue-500 mt-1 ml-2"</p>
+                </div>
+                <button id="btnSubmitDep" onclick="submitDeposit()" class="w-full bg-blue-600 py-4 rounded-[1.5rem] font-black uppercase tracking-widest text-sm shadow-xl">Send to Admin</button>
+            </div>
+            <button onclick="toggleModal('deposit-modal')" class="w-full mt-6 text-gray-600 text-xs font-bold uppercase">Back to App</button>
         </div>
     </div>
 
     <!-- Submit Link Modal -->
     <div id="submit-modal" class="fixed inset-0 p-6">
-        <div class="max-w-md mx-auto bg-gray-900 rounded-[40px] p-8 border border-gray-800 mt-10">
+        <div class="max-w-md mx-auto bg-[#111114] rounded-[3rem] p-8 border border-white/10 mt-10 shadow-2xl">
             <h2 class="text-2xl font-black mb-1">Promote Link</h2>
-            <p id="promo-cost-info" class="text-[10px] text-blue-400 uppercase font-bold mb-6">Checking slots...</p>
+            <p id="promo-cost-info" class="text-[10px] text-blue-400 uppercase font-black mb-6 tracking-tighter">Checking slots...</p>
             
-            <select id="subType" class="w-full bg-black p-4 rounded-2xl border border-gray-800 mb-4 text-sm">
+            <select id="subType" class="w-full bg-black p-4 rounded-2xl border border-white/10 mb-4 text-sm outline-none">
                 <option value="watch">YouTube Watch</option>
                 <option value="sub">YouTube Subscribe</option>
                 <option value="like">YouTube Like</option>
-                <option value="fb_follow
-
-">FB Follow</option>
+                <option value="fb_follow">FB Follow</option>
                 <option value="site">Website Visit</option>
                 <option value="playstore">Playstore Link</option>
             </select>
-            <input id="subUrl" type="url" placeholder="Paste URL here..." class="w-full bg-black p-4 rounded-2xl border border-gray-800 mb-6">
+            <input id="subUrl" type="url" placeholder="https://..." class="w-full bg-black p-4 rounded-2xl border border-white/10 mb-6">
             
-            <button onclick="processLinkSubmission()" class="w-full bg-green-600 py-4 rounded-2xl font-black shadow-lg">Post to Feed</button>
-            <button onclick="toggleModal('submit-modal')" class="w-full mt-4 text-gray-600 text-xs">Cancel</button>
+            <button onclick="processLinkSubmission()" class="w-full bg-green-600 py-4 rounded-2xl font-black uppercase text-sm tracking-widest">Post to Feed</button>
+            <button onclick="toggleModal('submit-modal')" class="w-full mt-6 text-gray-600 text-xs font-bold uppercase">Cancel</button>
         </div>
     </div>
 
     <!-- Admin Panel -->
     <div id="admin-panel" class="fixed inset-0 p-4 overflow-y-auto">
         <div class="max-w-2xl mx-auto py-10">
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-black text-red-600">ADMIN DB</h2>
-                <button onclick="toggleModal('admin-panel')" class="bg-gray-800 px-6 py-2 rounded-xl">Exit</button>
-            </div>
-            
-            <div class="space-y-8">
-                <section class="bg-gray-900 p-6 rounded-3xl border border-gray-800">
-                    <h3 class="font-black mb-4 uppercase text-xs text-gray-500">Pending Deposits</h3>
-                    <div id="admin-deposits" class="space-y-4"></div>
-                </section>
-                <section class="bg-gray-900 p-6 rounded-3xl border border-gray-800">
-                    <h3 class="font-black mb-4 uppercase text-xs text-gray-500">Manage Feed</h3>
-                    <div id="admin-links" class="space-y-2 max-h-60 overflow-y-auto pr-2"></div>
-                </section>
-                <button onclick="postAdminLink()" class="w-full bg-red-600/20 text-red-500 border border-red-600/50 py-4 rounded-2xl font-bold uppercase text-xs">Post Admin Global Link (10k clicks)</button>
+            <h2 class="text-3xl font-black text-red-600 mb-8 tracking-tighter uppercase italic">Control Panel</h2>
+            <div class="space-y-6">
+                <div class="bg-[#111114] p-6 rounded-[2rem] border border-white/5">
+                    <h3 class="text-xs font-black text-gray-500 uppercase mb-4">Manual Deposits Queue</h3>
+                    <div id="admin-deposits" class="space-y-3"></div>
+                </div>
+                <button onclick="postAdminLink()" class="w-full bg-red-600/10 text-red-500 border border-red-600/30 py-4 rounded-2xl font-black uppercase text-[10px]">Global Promo (10k clicks)</button>
+                <button onclick="toggleModal('admin-panel')" class="w-full text-gray-500 py-4 font-bold text-xs uppercase">Close Dashboard</button>
             </div>
         </div>
     </div>
 
+    <!-- Developer Coffee Section -->
+    <footer class="p-8 bg-[#0a0a0b] text-center space-y-4 mb-20">
+        <div class="w-12 h-1 px-4 bg-gray-900 mx-auto rounded-full"></div>
+        <p class="text-xs font-black text-gray-500 uppercase tracking-[0.3em]">Developer Coffee ☕</p>
+        <p class="text-[10px] text-gray-600 leading-relaxed px-10">Supporting the developer helps keep this app running smoothly and ad-free for all users.</p>
+        <div class="flex flex-col gap-2 max-w-xs mx-auto text-[10px] font-mono">
+            <div class="bg-white/5 p-3 rounded-xl border border-white/5">GCash: 09952533453</div>
+            <div class="bg-white/5 p-3 rounded-xl border border-white/5">PayPal: otico.isai2@gmail.com</div>
+        </div>
+    </footer>
+
     <!-- Task Player -->
-    <div id="timer-overlay" class="fixed inset-0 flex flex-col items-center justify-center p-4">
-        <div class="bg-gray-900 w-full max-w-md rounded-[40px] overflow-hidden border border-gray-800 shadow-2xl">
+    <div id="timer-overlay" class="fixed inset-0 flex flex-col items-center justify-center p-4"><div class="bg-[#111114] w-full max-w-md rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl relative">
             <div id="video-container" class="aspect-video bg-black w-full"></div>
             <div class="p-10 text-center">
                 <div id="countdown-ui">
-                    <h2 id="seconds-left" class="text-6xl font-black mb-4">0</h2>
-                    <p class="text-gray-500 text-xs font-bold uppercase tracking-widest">Watching for verify...</p>
+                    <h2 id="seconds-left" class="text-7xl font-black mb-4 text-blue-500">0</h2>
+                    <p class="text-gray-500 text-[10px] font-black uppercase tracking-widest">Watching for verify...</p>
                 </div>
-                <div id="claim-ui" class="hidden">
-                    <h2 class="text-2xl font-black text-green-400 mb-6 tracking-tighter">TASK SUCCESSFUL</h2>
-                    <button onclick="finishTask()" class="w-full bg-green-600 py-5 rounded-3xl font-black text-xl shadow-xl shadow-green-900/40">CLAIM ₱ REWARD</button>
+                <div id="claim-ui" class="hidden animate-pulse">
+                    <h2 class="text-2xl font-black text-green-400 mb-6 tracking-tighter italic uppercase">Verification Complete</h2>
+                    <button onclick="finishTask()" class="w-full bg-green-600 py-5 rounded-[1.5rem] font-black text-lg shadow-xl shadow-green-900/40">CLAIM ₱ REWARD</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- FAB -->
-    <button onclick="toggleModal('submit-modal')" class="fixed bottom-6 right-6 bg-blue-600 w-16 h-16 rounded-2xl shadow-2xl text-3xl font-black flex items-center justify-center z-40 active:scale-90 transition-transform">+</button>
+    <button onclick="toggleModal('submit-modal')" class="fixed bottom-8 right-8 bg-blue-600 w-16 h-16 rounded-[1.5rem] shadow-2xl text-3xl font-black flex items-center justify-center z-40 active:scale-90 transition-transform">+</button>
 
     <script src="app.js"></script>
 </body>

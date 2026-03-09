@@ -29,9 +29,9 @@ const TASK_CONFIG = {
     sub:   { reward: 0.03,  time: 45, free: 50,  paid: 60  },
     like:  { reward: 0.01,  time: 30, free: 100, paid: 120 },
     comment: { reward: 0.01, time: 30, free: 100, paid: 120 },
-    fb:    { reward: 0.01,  time: 15, free: 100, paid: 120 }, // FB follows/likes redirect
+    
     site:  { reward: 0.01,  time: 15, free: 100, paid: 120 },
-    play:  { reward: 0.015, time: 20, free: 100, paid: 120 }
+    
 };
 
 // --- CORE INITIALIZATION ---

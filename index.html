@@ -12,37 +12,39 @@
     <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     <style>
-        body { background: #050505; color: white; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body { background: #050505; color: white; -webkit-tap-highlight-color: transparent; user-select: none; overflow-x: hidden;}
         .active-tab { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 10000; overflow-y: auto; }
         .card-90 { width: 92%; margin: 0 auto; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .half-player { height: 45vh; width: 100%; border: none; background: #000; }
         input, textarea, select { background: #111 !important; color: #fff !important; border: 1px solid #222 !important; }
-        .btn-blue { background: #2563eb; color: white; font-weight: 900; text-transform: uppercase; font-size: 10px; border-radius: 12px; }
+        .btn-blue { background: #2563eb; color: white; font-weight: 900; text-transform: uppercase; font-size: 10px; border-radius: 12px; padding: 12px; }
+        .btn-green { background: #10b981; color: white; font-weight: 900; text-transform: uppercase; font-size: 10px; border-radius: 12px; padding: 12px; }
+        .btn-red { background: #ef4444; color: white; font-weight: 900; text-transform: uppercase; font-size: 10px; border-radius: 12px; padding: 12px; }
     </style>
 </head>
 <body>
 
     <!-- Header -->
     <header class="bg-[#0f0f12] p-4 sticky top-0 z-[50] flex justify-between items-center border-b border-white/5">
-        <div onclick="switchTab('profile')">
+        <div onclick="switchTab('profile')" class="cursor-pointer">
             <h1 class="text-lg font-black text-blue-500 italic tracking-tighter">PAPERHOUSE</h1>
             <p id="displayUsername" class="text-[10px] text-gray-500 font-mono">@loading...</p>
         </div>
         <div class="flex gap-2">
-            <button onclick="toggleModal('withdraw-modal')" class="bg-gray-800 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Withdraw</button>
-            <button onclick="toggleModal('deposit-modal')" class="bg-blue-600 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Deposit</button>
+            <button onclick="toggleModal('withdraw-modal')" class="bg-gray-800 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Withdraw</button>            <button onclick="toggleModal('deposit-modal')" class="bg-blue-600 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Deposit</button>
         </div>
     </header>
 
     <!-- Main Dashboard -->
-    <div class="card-90 bg-gradient-to-br from-blue-700 to-indigo-900 p-6 rounded-[2.5rem] mt-6 shadow-2xl relative overflow-hidden">        <p class="text-[10px] font-black uppercase opacity-60">Balance</p>
+    <div class="card-90 bg-gradient-to-br from-blue-700 to-indigo-900 p-6 rounded-[2.5rem] mt-6 shadow-2xl relative overflow-hidden">
+        <p class="text-[10px] font-black uppercase opacity-60">Balance</p>
         <h2 class="text-4xl font-black mt-1">₱<span id="balance">0.00</span></h2>
         
         <div class="mt-6 flex justify-between items-end bg-black/20 p-4 rounded-2xl border border-white/5">
-            <div onclick="copyRef()">
-                <p class="text-[8px] font-black text-blue-300 uppercase mb-1">My Code: <span id="myRefCodeDisp" class="tracking-widest">......</span> 📋</p>
+            <div onclick="copyRef()" class="cursor-pointer">
+                <p class="text-[8px] font-black text-blue-300 uppercase mb-1">Ref Code: <span id="myRefCodeDisp" class="tracking-widest">......</span> 📋</p>
                 <p class="text-[10px] font-bold">Ref: ₱<span id="refEarned">0.00</span> • <span id="refCount">0</span> Users</p>
             </div>
             <button onclick="showLeaderboard()" class="bg-white/10 px-3 py-2 rounded-xl text-[9px] font-black uppercase">Top List</button>
@@ -52,19 +54,20 @@
 
     <!-- Referral Input -->
     <div id="ref-input-box" class="card-90 mt-4 bg-white/5 p-4 rounded-2xl border border-white/5 hidden">
-        <p class="text-[9px] font-black uppercase mb-2 text-gray-500">Have an invite code?</p>
+        <p class="text-[9px] font-black uppercase mb-2 text-gray-500">Enter Inviter's Code</p>
         <div class="flex gap-2">
             <input id="inputRefCode" maxlength="6" type="text" placeholder="6-LETTERS" class="rounded-lg px-3 py-2 text-xs flex-1 uppercase outline-none font-mono">
-            <button onclick="submitReferral()" class="btn-blue px-4 py-2">Submit</button>
+            <button onclick="submitReferral()" class="btn-blue px-4 py-2">Apply</button>
         </div>
     </div>
 
-    <!-- Navigation -->
+    <!-- Navigation Tabs -->
     <nav class="flex overflow-x-auto bg-[#050505] px-4 gap-6 border-b border-white/5 no-scrollbar sticky top-[68px] z-[40] mt-4">
-        <button onclick="switchTab('watch')" class="tab-btn py-4 text-[10px] font-black active-tab uppercase" id="tab-watch">📺 Watch</button>
-        <button onclick="switchTab('sub')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-sub">🔔 Sub</button>
+        <button onclick="switchTab('watch')" class="tab-btn py-4 text-[10px] font-black active-tab uppercase" id="tab-watch">📺 Watch</button>        <button onclick="switchTab('sub')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-sub">🔔 Sub</button>
         <button onclick="switchTab('like')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-like">👍 Like</button>
-        <button onclick="switchTab('fb')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-fb">🔵 FB</button>        <button onclick="switchTab('site')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-site">🌐 Site</button>
+        <button onclick="switchTab('comment')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-comment">💬 Com</button>
+        <button onclick="switchTab('fb')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-fb">🔵 FB</button>
+        <button onclick="switchTab('site')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-site">🌐 Site</button>
         <button onclick="switchTab('play')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-play">📱 App</button>
         <button onclick="switchTab('profile')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-profile">👤 Me</button>
     </nav>
@@ -76,8 +79,7 @@
     <div id="timer-overlay" class="modal flex-col items-center">
         <div id="video-container" class="half-player"></div>
         <div class="flex-1 w-full bg-[#050505] rounded-t-[3rem] -mt-10 p-10 text-center border-t border-white/10 relative z-50">
-            <h2 id="seconds-left" class="text-8xl font-black mb-2 text-blue-500">0</h2>
-            <p class="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-6">Interaction Required</p>
+            <h2 id="seconds-left" class="text-8xl font-black mb-2 text-blue-500">0</h2><p class="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-6">Interaction Required</p>
             <div id="claim-ui" class="hidden">
                 <button onclick="finishTask()" class="w-full bg-green-600 py-6 rounded-3xl font-black text-xl shadow-2xl animate-pulse">CLAIM ₱ REWARD</button>
             </div>
@@ -85,7 +87,8 @@
         </div>
     </div>
 
-    <!-- MODAL: DEPOSIT --><div id="deposit-modal" class="modal p-6">
+    <!-- MODAL: DEPOSIT -->
+    <div id="deposit-modal" class="modal p-6">
         <div class="max-w-md mx-auto bg-[#111114] rounded-[2.5rem] p-8 border border-white/10 mt-10">
             <h2 class="text-2xl font-black mb-6 italic">Deposit Funds</h2>
             <div class="space-y-3 mb-6">
@@ -125,15 +128,17 @@
     <!-- MODAL: ADMIN -->
     <div id="admin-panel" class="modal p-4">
         <div class="max-w-3xl mx-auto py-10 pb-40">
-            <h2 class="text-3xl font-black text-red-600 italic uppercase mb-10">Control Console</h2>
+            <h2 class="text-3xl font-black text-red-600 italic uppercase mb-10">Admin Console</h2>
             <div class="space-y-8">
-                <section class="bg-[#111114] p-6 rounded-3xl border border-white/5">
-                    <h3 class="text-xs font-black text-blue-500 uppercase mb-4">Post Global 10k Task</h3>
+                <!-- Post Global Link -->
+                <section class="bg-[#111114] p-6 rounded-3xl border border-white/5"><h3 class="text-xs font-black text-blue-500 uppercase mb-4">Post Global 10k Task</h3>
                     <input id="adminUrl" type="url" placeholder="URL" class="w-full p-3 rounded-lg mb-2 text-xs">
                     <input id="adminDesc" type="text" placeholder="Task Definition (Max 100 words)" class="w-full p-3 rounded-lg mb-3 text-xs">
-                    <button onclick="postAdminGlobal()" class="w-full bg-red-600 py-3 rounded-lg text-[10px] font-black">INJECT TASK (₱0.03 Reward)</button>
+                    <button onclick="postAdminGlobal()" class="w-full btn-red py-3 text-xs">INJECT 10,000 VIEWS (₱0.03 Reward)</button>
                 </section>
+                <!-- Pending Deposits -->
                 <div id="admin-deposits"></div>
+                <!-- Pending Withdrawals -->
                 <div id="admin-withdrawals"></div>
             </div>
             <button onclick="toggleModal('admin-panel')" class="w-full py-10 text-gray-700 font-bold uppercase text-[10px]">Exit Admin</button>
@@ -159,7 +164,7 @@
         </div>
     </footer>
 
-    <!-- FAB -->
+    <!-- FAB (Floating Action Button) -->
     <button onclick="toggleModal('submit-modal')" class="fixed bottom-8 right-8 bg-blue-600 w-16 h-16 rounded-[1.5rem] shadow-2xl text-2xl font-black z-[100] active:scale-90 transition-transform">+</button>
 
     <script src="app.js"></script>

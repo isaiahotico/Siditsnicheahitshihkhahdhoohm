@@ -66,9 +66,7 @@
         <button onclick="switchTab('watch')" class="tab-btn py-4 text-[10px] font-black active-tab uppercase" id="tab-watch">📺 Watch</button>        <button onclick="switchTab('sub')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-sub">🔔 Sub</button>
         <button onclick="switchTab('like')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-like">👍 Like</button>
         <button onclick="switchTab('comment')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-comment">💬 Com</button>
-        <button onclick="switchTab('fb')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-fb">🔵 FB</button>
         <button onclick="switchTab('site')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-site">🌐 Site</button>
-        <button onclick="switchTab('play')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-play">📱 App</button>
         <button onclick="switchTab('profile')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-profile">👤 Me</button>
     </nav>
 
@@ -134,9 +132,7 @@
                 <option value="sub">🔔 YouTube Subscribe (₱0.03)</option>
                 <option value="like">👍 YouTube Like (₱0.01)</option>
                 <option value="comment">💬 YouTube Comment (₱0.01)</option>
-                <option value="fb">🔵 FB Follow/Like (₱0.01)</option>
                 <option value="site">🌐 Website Visit (₱0.01)</option>
-                <option value="play">📱 PlayStore App Visit (₱0.015)</option>
             </select>
             <input id="subUrl" type="url" placeholder="https://..." class="w-full p-4 rounded-xl mb-3 outline-none">
             <textarea id="subDesc" maxlength="500" placeholder="Task Definition (Max 100 words)..." class="w-full p-4 rounded-xl mb-6 h-28 text-xs outline-none"></textarea>
@@ -170,9 +166,8 @@
                         <option value="sub">🔔 Subscribe</option>
                         <option value="like">👍 Like</option>
                         <option value="comment">💬 Comment</option>
-                        <option value="fb">🔵 Facebook</option>
                         <option value="site">🌐 Website</option>
-                        <option value="play">📱 App</option>
+                        
                     </select>
                     <div id="admin-links-list" class="max-h-60 overflow-y-auto no-scrollbar"></div>
                 </section>
@@ -206,4 +201,5 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 

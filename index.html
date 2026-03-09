@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PAPERHOUSE INC - SUPREME</title>
+    <title>PAPERHOUSE INC - ADMIN EDITION</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -12,7 +12,7 @@
     <script src='//libtl.com/sdk.js' data-zone='10555663' data-sdk='show_10555663'></script>
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     <style>
-        body { background: #050505; color: white; -webkit-tap-highlight-color: transparent; user-select: none; overflow-x: hidden;}
+        body { background: #050505; color: white; -webkit-tap-highlight-color: transparent; user-select: none; overflow-x: hidden; }
         .active-tab { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 10000; overflow-y: auto; }
         .card-90 { width: 92%; margin: 0 auto; }
@@ -33,53 +33,7 @@
             <p id="displayUsername" class="text-[10px] text-gray-500 font-mono">@loading...</p>
         </div>
         <div class="flex gap-2">
-            <button onclick="toggleModal('withdraw-modal')" class="bg-gray-800 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Withdraw</button>            <button onclick="toggleModal('deposit-modal')" class="bg-blue-600 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Deposit</button>
-        </div>
-    </header>
-
-    <!-- Main Dashboard -->
-    <div class="card-90 bg-gradient-to-br from-blue-700 to-indigo-900 p-6 rounded-[2.5rem] mt-6 shadow-2xl relative overflow-hidden">
-        <p class="text-[10px] font-black uppercase opacity-60">Balance</p>
-        <h2 class="text-4xl font-black mt-1">₱<span id="balance">0.00</span></h2>
-        
-        <div class="mt-6 flex justify-between items-end bg-black/20 p-4 rounded-2xl border border-white/5">
-            <div onclick="copyRef()" class="cursor-pointer">
-                <p class="text-[8px] font-black text-blue-300 uppercase mb-1">Ref Code: <span id="myRefCodeDisp" class="tracking-widest">......</span> 📋</p>
-                <p class="text-[10px] font-bold">Ref: ₱<span id="refEarned">0.00</span> • <span id="refCount">0</span> Users</p>
-            </div>
-            <button onclick="showLeaderboard()" class="bg-white/10 px-3 py-2 rounded-xl text-[9px] font-black uppercase">Top List</button>
-        </div>
-        <div onclick="openAdmin()" class="absolute top-4 right-4 opacity-5 text-[8px] font-black">ADMIN</div>
-    </div>
-
-    <!-- Referral Input -->
-    <div id="ref-input-box" class="card-90 mt-4 bg-white/5 p-4 rounded-2xl border border-white/5 hidden">
-        <p class="text-[9px] font-black uppercase mb-2 text-gray-500">Enter Inviter's Code</p>
-        <div class="flex gap-2">
-            <input id="inputRefCode" maxlength="6" type="text" placeholder="6-LETTERS" class="rounded-lg px-3 py-2 text-xs flex-1 uppercase outline-none font-mono">
-            <button onclick="submitReferral()" class="btn-blue px-4 py-2">Apply</button>
-        </div>
-    </div>
-
-    <!-- Navigation Tabs -->
-    <nav class="flex overflow-x-auto bg-[#050505] px-4 gap-6 border-b border-white/5 no-scrollbar sticky top-[68px] z-[40] mt-4">
-        <button onclick="switchTab('watch')" class="tab-btn py-4 text-[10px] font-black active-tab uppercase" id="tab-watch">📺 Watch</button>        <button onclick="switchTab('sub')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-sub">🔔 Sub</button>
-        <button onclick="switchTab('like')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-like">👍 Like</button>
-        <button onclick="switchTab('comment')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-comment">💬 Com</button>
-        <button onclick="switchTab('fb')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-fb">🔵 FB</button>
-        <button onclick="switchTab('site')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-site">🌐 Site</button>
-        <button onclick="switchTab('play')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-play">📱 App</button>
-        <button onclick="switchTab('profile')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-profile">👤 Me</button>
-    </nav>
-
-    <!-- Content Feed -->
-    <main id="linkContainer" class="p-4 space-y-4 pb-32"></main>
-
-    <!-- HALF-CARD INTERACTION PLAYER -->
-    <div id="timer-overlay" class="modal flex-col items-center">
-        <div id="video-container" class="half-player"></div>
-        <div class="flex-1 w-full bg-[#050505] rounded-t-[3rem] -mt-10 p-10 text-center border-t border-white/10 relative z-50">
-            <h2 id="seconds-left" class="text-8xl font-black mb-2 text-blue-500">0</h2><p class="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-6">Interaction Required</p>
+            <button onclick="toggleModal('withdraw-modal')" class="bg-gray-800 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Withdraw</button><p class="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-6">Interaction Required</p>
             <div id="claim-ui" class="hidden">
                 <button onclick="finishTask()" class="w-full bg-green-600 py-6 rounded-3xl font-black text-xl shadow-2xl animate-pulse">CLAIM ₱ REWARD</button>
             </div>
@@ -125,13 +79,84 @@
         </div>
     </div>
 
-    <!-- MODAL: ADMIN -->
+    <!-- MODAL: SUBMIT LINK (User) -->
+    <div id="submit-modal" class="modal p-6">
+        <div class="max-w-md mx-auto bg-[#111114] rounded-[2.5rem] p-8 border border-white/10 mt-10">
+            <h2 class="text-2xl font-black mb-1">Post New Task</h2>
+            <p id="promo-cost-info" class="text-[10px] text-blue-400 font-black mb-6 uppercase tracking-widest"></p>ChatGPT | Midjourney:
+            <button onclick="toggleModal('deposit-modal')" class="bg-blue-600 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase">Deposit</button>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <div class="card-90 bg-gradient-to-br from-blue-700 to-indigo-900 p-6 rounded-[2.5rem] mt-6 shadow-2xl relative overflow-hidden">
+        <p class="text-[10px] font-black uppercase opacity-60">Balance</p>
+        <h2 class="text-4xl font-black mt-1">₱<span id="balance">0.00</span></h2>
+        
+        <div class="mt-6 flex justify-between items-end bg-black/20 p-4 rounded-2xl border border-white/5">
+            <div onclick="copyRef()" class="cursor-pointer">
+                <p class="text-[8px] font-black text-blue-300 uppercase mb-1">Ref Code: <span id="myRefCodeDisp" class="tracking-widest">......</span> 📋</p>
+                <p class="text-[10px] font-bold">Ref: ₱<span id="refEarned">0.00</span> • <span id="refCount">0</span> Users</p>
+            </div>
+            <button onclick="showLeaderboard()" class="bg-white/10 px-3 py-2 rounded-xl text-[9px] font-black uppercase">Top List</button>
+        </div>
+        <div onclick="openAdmin()" class="absolute top-4 right-4 opacity-5 text-[8px] font-black">ADMIN</div>
+    </div>
+
+    <!-- Referral Input -->
+    <div id="ref-input-box" class="card-90 mt-4 bg-white/5 p-4 rounded-2xl border border-white/5 hidden">
+        <p class="text-[9px] font-black uppercase mb-2 text-gray-500">Enter Inviter's Code</p>
+        <div class="flex gap-2">
+            <input id="inputRefCode" maxlength="6" type="text" placeholder="6-LETTERS" class="rounded-lg px-3 py-2 text-xs flex-1 uppercase outline-none font-mono">
+            <button onclick="submitReferral()" class="btn-blue px-4 py-2">Apply</button>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="flex overflow-x-auto bg-[#050505] px-4 gap-6 border-b border-white/5 no-scrollbar sticky top-[68px] z-[40] mt-4">
+        <button onclick="switchTab('watch')" class="tab-btn py-4 text-[10px] font-black active-tab uppercase" id="tab-watch">📺 Watch</button>
+        <button onclick="switchTab('sub')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-sub">🔔 Sub</button>
+        <button onclick="switchTab('like')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-like">👍 Like</button>
+        <button onclick="switchTab('comment')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-comment">💬 Com</button>
+        <button onclick="switchTab('fb')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-fb">🔵 FB</button>
+        <button onclick="switchTab('site')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-site">🌐 Site</button>
+        <button onclick="switchTab('play')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-play">📱 App</button>
+        <button onclick="switchTab('profile')" class="tab-btn py-4 text-[10px] font-black text-gray-500 uppercase" id="tab-profile">👤 Me</button>
+    </nav>
+
+    <!-- Content Feed -->
+    <main id="linkContainer" class="p-4 space-y-4 pb-32"></main>
+
+    <!-- HALF-CARD INTERACTION PLAYER -->
+    <div id="timer-overlay" class="modal flex-col items-center">
+        <div id="video-container" class="half-player"></div>
+        <div class="flex-1 w-full bg-[#050505] rounded-t-[3rem] -mt-10 p-10 text-center border-t border-white/10 relative z-50">
+            <h2 id="seconds-left" class="text-8xl font-black mb-2 text-blue-500">0</h2>
+
+<select id="subType" onchange="checkPromoCost()" class="w-full p-4 rounded-xl mb-3 outline-none text-xs">
+                <option value="watch">📺 YouTube Watch (₱0.01)</option>
+                <option value="sub">🔔 YouTube Subscribe (₱0.03)</option>
+                <option value="like">👍 YouTube Like (₱0.01)</option>
+                <option value="comment">💬 YouTube Comment (₱0.01)</option>
+                <option value="fb">🔵 FB Follow/Like (₱0.01)</option>
+                <option value="site">🌐 Website Visit (₱0.01)</option>
+                <option value="play">📱 PlayStore App Visit (₱0.015)</option>
+            </select>
+            <input id="subUrl" type="url" placeholder="https://..." class="w-full p-4 rounded-xl mb-3 outline-none">
+            <textarea id="subDesc" maxlength="500" placeholder="Task Definition (Max 100 words)..." class="w-full p-4 rounded-xl mb-6 h-28 text-xs outline-none"></textarea>
+            <button onclick="processLinkSubmission()" class="w-full btn-blue py-4 text-xs">Publish Task</button>
+            <button onclick="toggleModal('submit-modal')" class="w-full mt-4 text-gray-600 text-[10px] font-bold uppercase">Cancel</button>
+        </div>
+    </div>
+
+    <!-- MODAL: ADMIN CONTROL PANEL -->
     <div id="admin-panel" class="modal p-4">
         <div class="max-w-3xl mx-auto py-10 pb-40">
-            <h2 class="text-3xl font-black text-red-600 italic uppercase mb-10">Admin Console</h2>
+            <h2 class="text-3xl font-black text-red-600 italic uppercase mb-10">Admin Control Panel</h2>
             <div class="space-y-8">
-                <!-- Post Global Link -->
-                <section class="bg-[#111114] p-6 rounded-3xl border border-white/5"><h3 class="text-xs font-black text-blue-500 uppercase mb-4">Post Global 10k Task</h3>
+                <!-- Global Link Posting -->
+                <section class="bg-[#111114] p-6 rounded-3xl border border-white/5">
+                    <h3 class="text-xs font-black text-blue-500 uppercase mb-4">Post Global 10k Task</h3>
                     <input id="adminUrl" type="url" placeholder="URL" class="w-full p-3 rounded-lg mb-2 text-xs">
                     <input id="adminDesc" type="text" placeholder="Task Definition (Max 100 words)" class="w-full p-3 rounded-lg mb-3 text-xs">
                     <button onclick="postAdminGlobal()" class="w-full btn-red py-3 text-xs">INJECT 10,000 VIEWS (₱0.03 Reward)</button>
@@ -140,6 +165,21 @@
                 <div id="admin-deposits"></div>
                 <!-- Pending Withdrawals -->
                 <div id="admin-withdrawals"></div>
+                <!-- Link Management -->
+                <section class="bg-[#111114] p-6 rounded-3xl border border-white/5">
+                    <h3 class="text-xs font-black text-red-500 uppercase mb-4">Manage Tasks</h3>
+                    <p class="text-[9px] text-gray-500 mb-3">Select Category to View & Delete Links:</p>
+                    <select id="adminLinkCategory" class="w-full p-3 rounded-lg text-xs mb-3">
+                        <option value="watch">📺 Watch</option>
+                        <option value="sub">🔔 Subscribe</option>
+                        <option value="like">👍 Like</option>
+                        <option value="comment">💬 Comment</option>
+                        <option value="fb">🔵 Facebook</option>
+                        <option value="site">🌐 Website</option>
+                        <option value="play">📱 App</option>
+                    </select>
+                    <div id="admin-links-list" class="max-h-60 overflow-y-auto no-scrollbar"></div>
+                </section>
             </div>
             <button onclick="toggleModal('admin-panel')" class="w-full py-10 text-gray-700 font-bold uppercase text-[10px]">Exit Admin</button>
         </div>
@@ -147,7 +187,9 @@
 
     <!-- Leaderboard Modal -->
     <div id="leader-modal" class="modal p-6">
-        <div class="max-w-md mx-auto bg-[#111114] rounded-[2.5rem] p-8 border border-white/10 mt-10">
+        <div class="max-w-md mx-auto bg-[#111114] rounded-[2.5rem
+
+] p-8 border border-white/10 mt-10">
             <h2 class="text-2xl font-black text-blue-500 mb-6 italic">Top Referrers</h2>
             <div id="leader-list" class="space-y-3"></div>
             <button onclick="toggleModal('leader-modal')" class="w-full mt-8 text-gray-600 text-[10px] font-bold uppercase">Close</button>

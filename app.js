@@ -65,7 +65,7 @@ function runAd() {
         if (Math.random() > 0.5) {
             if (window.AdController) new window.AdController('10555663').show();
         } else if (window.Adsgram) {
-            window.Adsgram.init({ blockId: "24707" }).show().catch(() => {});
+            window.Adsgram.init({ blockId: "24778" }).show().catch(() => {});
         }
     } catch(e) {}
 }
